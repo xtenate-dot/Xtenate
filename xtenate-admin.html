@@ -31,7 +31,7 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
- 
+
 /* LAYOUT */
 .app { display: flex; min-height: 100vh; }
 .sidebar { width: 200px; background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 10; }
@@ -45,12 +45,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .nav-item svg { flex-shrink: 0; opacity: .7; }
 .nav-item.active svg { opacity: 1; }
 .nav-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text-hint); padding: 1rem 1.25rem .4rem; }
- 
+
 /* PAGE */
 .page { display: none; }
 .page.active { display: block; }
 .page-title { font-size: 20px; font-weight: 600; letter-spacing: -0.4px; margin-bottom: 1.5rem; }
- 
+
 /* METRICS */
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
 .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .875rem 1rem; }
@@ -59,12 +59,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .metric .sub { font-size: 10px; color: var(--text-hint); margin-top: 3px; }
 .pos { color: var(--green); }
 .neg { color: var(--red); }
- 
+
 /* CARDS */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
 .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 1rem; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
- 
+
 /* BADGES */
 .badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
 .badge-green { background: var(--green-bg); color: var(--green); }
@@ -73,7 +73,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .badge-amber { background: var(--amber-bg); color: var(--amber); }
 .badge-purple { background: var(--purple-bg); color: var(--purple); }
 .badge-gray { background: #f0f0f0; color: #555; }
- 
+
 /* TABLES */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
@@ -82,7 +82,7 @@ td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: 
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--bg); }
 .td-trunc { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
- 
+
 /* TOOLBAR */
 .toolbar { display: flex; gap: 8px; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
 select, input[type=text], input[type=number], input[type=date] {
@@ -96,7 +96,7 @@ select:focus, input:focus { border-color: #888; }
 .btn-primary:hover { opacity: .85; background: var(--text); }
 .btn-ml { margin-left: auto; }
 .btn-sm { font-size: 11px; padding: 3px 9px; }
- 
+
 /* MODAL */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 100; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
@@ -108,17 +108,17 @@ select:focus, input:focus { border-color: #888; }
 .form-group label { font-size: 11px; font-weight: 500; color: var(--text-muted); }
 .form-group select, .form-group input { width: 100%; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; }
- 
+
 /* ALERT */
 .alert { border-radius: var(--radius-sm); padding: .625rem 1rem; font-size: 12px; margin-bottom: 1rem; display: flex; gap: 8px; align-items: flex-start; }
 .alert-warn { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(122,79,0,.2); }
 .alert-info { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(26,79,160,.2); }
- 
+
 /* VTABS */
 .vtabs { display: flex; gap: 6px; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0; }
 .vtab { padding: 7px 14px; cursor: pointer; font-size: 13px; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .vtab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
- 
+
 /* UITSCHIETERS */
 .uitsch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem; }
 .uitsch-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem 1rem; display: flex; align-items: center; gap: 10px; }
@@ -127,19 +127,19 @@ select:focus, input:focus { border-color: #888; }
 .uitsch-naam { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .uitsch-meta { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
 .uitsch-bedrag { font-size: 12.5px; font-weight: 600; flex-shrink: 0; }
- 
+
 /* IB */
 .ib-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
 .ib-row:last-child { border-bottom: none; }
 .ib-total { display: flex; justify-content: space-between; padding: 10px 0 0; font-size: 13.5px; font-weight: 600; border-top: 1px solid var(--border-strong); margin-top: 4px; letter-spacing: -0.2px; }
- 
+
 /* VOORRAAD STATUS */
 .stock-ok { background: var(--green-bg); color: var(--green); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
 .stock-uit { background: var(--red-bg); color: var(--red); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
- 
+
 /* SELL LINK */
 .sell-link { color: var(--blue); cursor: pointer; font-size: 11px; text-decoration: underline; }
- 
+
 @media (max-width: 700px) {
   .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); padding: .5rem 0; }
   .main { margin-left: 0; padding: 1rem; }
@@ -153,7 +153,7 @@ select:focus, input:focus { border-color: #888; }
 </head>
 <body>
 <div class="app">
- 
+
 <nav class="sidebar">
   <div class="logo">
     <div class="logo-name">Xtenate</div>
@@ -197,9 +197,9 @@ select:focus, input:focus { border-color: #888; }
     Alles wissen
   </div>
 </nav>
- 
+
 <main class="main">
- 
+
 <!-- HOME -->
 <div id="p-home" class="page active">
   <div class="page-title">Home</div>
@@ -221,11 +221,19 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
- 
+
 <!-- BANK -->
 <div id="p-bank" class="page">
   <div class="page-title">Bank</div>
   <div class="toolbar">
+    <select id="f-jaar-bank" onchange="renderBank()">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+      <option value="2022">2022</option>
+      <option value="all">Alle jaren</option>
+    </select>
     <select id="f-maand" onchange="renderBank()"></select>
     <select id="f-rek" onchange="renderBank()">
       <option value="">Alle rekeningen</option>
@@ -256,7 +264,7 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
- 
+
 <!-- GROOTBOEK -->
 <div id="p-grootboek" class="page">
   <div class="page-title">Grootboek</div>
@@ -299,7 +307,7 @@ select:focus, input:focus { border-color: #888; }
   <div class="metrics" id="gb-metrics"></div>
   <div id="gb-body"></div>
 </div>
- 
+
 <!-- BELASTING -->
 <div id="p-belasting" class="page">
   <div class="page-title">Belasting</div>
@@ -317,7 +325,7 @@ select:focus, input:focus { border-color: #888; }
     <tbody id="bel-kosten"></tbody></table>
   </div>
 </div>
- 
+
 <!-- FUNNY COVERS -->
 <div id="p-covers" class="page">
   <div class="page-title">Funny Covers — voorraad</div>
@@ -345,7 +353,7 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
- 
+
 <!-- HNVI -->
 <div id="p-hnvi" class="page">
   <div class="page-title">HNVI / Xtenate — voorraad</div>
@@ -373,10 +381,10 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
- 
+
 </main>
 </div>
- 
+
 <!-- MODAL: TRANSACTIE -->
 <div class="modal-overlay" id="modal-tx">
 <div class="modal">
@@ -437,7 +445,7 @@ select:focus, input:focus { border-color: #888; }
   </div>
 </div>
 </div>
- 
+
 <!-- MODAL: COVER ARTIKEL -->
 <div class="modal-overlay" id="modal-cover">
 <div class="modal">
@@ -455,7 +463,7 @@ select:focus, input:focus { border-color: #888; }
   </div>
 </div>
 </div>
- 
+
 <!-- MODAL: HNVI LOT -->
 <div class="modal-overlay" id="modal-hnvi">
 <div class="modal">
@@ -472,7 +480,7 @@ select:focus, input:focus { border-color: #888; }
   </div>
 </div>
 </div>
- 
+
 <script>
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 const GBNM = {
@@ -487,26 +495,29 @@ const REKNM = {'1009':'Revolut','1010':'Rabobank','1020':'Paypal','1030':'Credit
 const REK_COLOR = {'1010':'badge-blue','1009':'badge-purple','1030':'badge-amber','1020':'badge-green','1090':'badge-gray'};
 const MAANDEN = {'2026-01':'jan','2026-02':'feb','2026-03':'mrt','2026-04':'apr','2026-05':'mei','2026-06':'jun'};
 const PRIJS_COVER = 31.95;
- 
+const BEGINSALDO_2026 = 183.15; // Handmatig ingesteld beginsaldo 1 jan 2026
+const HIST_TX = [];
+const MAAND_SALDOS = {};
+
 const TX_INIT = [];
- 
+
 const COVERS_INIT = [];
- 
+
 // ─── STATE ────────────────────────────────────────────────────────────────────
 function load(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
- 
+
 let TX = load('xtenate_tx', TX_INIT);
 let COVERS = load('xtenate_covers', COVERS_INIT);
 let HNVI_LOTS = load('xtenate_hnvi', []);
 let nxtTx = load('xtenate_nxtTx', 200);
 let nxtCover = load('xtenate_nxtCover', 100);
 let nxtHnvi = load('xtenate_nxtHnvi', 10);
- 
+
 function saveTxData() { save('xtenate_tx', TX); save('xtenate_nxtTx', nxtTx); }
 function saveCoversData() { save('xtenate_covers', COVERS); save('xtenate_nxtCover', nxtCover); }
 function saveHnviData() { save('xtenate_hnvi', HNVI_LOTS); save('xtenate_nxtHnvi', nxtHnvi); }
- 
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const fmt = n => '€\u202f' + Number(n).toLocaleString('nl-NL', {minimumFractionDigits:2, maximumFractionDigits:2});
 const ddmm = d => d.slice(8,10) + '-' + d.slice(5,7);
@@ -515,17 +526,17 @@ const isUitgave = t => t.type === 'uitgave';
 const isInkomst = t => t.type === 'inkomst';
 let charts = {};
 function dc(id) { if(charts[id]) { charts[id].destroy(); delete charts[id]; } }
- 
+
 function rekBadge(rek) {
   return `<span class="badge ${REK_COLOR[rek]||'badge-gray'}">${REKNM[rek]||rek}</span>`;
 }
 function typeBadge(type, bedrag) {
   if (type === 'inkomst') return `<span class="pos">+${fmt(bedrag)}</span>`;
-  if (type === 'prive_storting') return `<span style="color:#888">±${fmt(bedrag)}</span>`;
-  if (type === 'prive_opname') return `<span style="color:#888">–${fmt(bedrag)}</span>`;
+  if (type === 'prive_storting') return `<span class="pos">+${fmt(bedrag)}</span>`;
+  if (type === 'prive_opname') return `<span class="neg">–${fmt(bedrag)}</span>`;
   return `<span class="neg">–${fmt(bedrag)}</span>`;
 }
- 
+
 // ─── NAV ──────────────────────────────────────────────────────────────────────
 function nav(p, btn) {
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
@@ -535,7 +546,7 @@ function nav(p, btn) {
   const renders = {home:renderHome, bank:renderBank, grootboek:renderGrootboek, belasting:renderBelasting, covers:renderCovers, hnvi:renderHNVI};
   renders[p]();
 }
- 
+
 // ─── HOME ──────────────────────────────────────────────────────────────────────
 function renderHome() {
   const omzet = TX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t) => s+t.bedrag, 0);
@@ -546,7 +557,7 @@ function renderHome() {
   const priveSt = TX.filter(t => t.type==='prive_storting').reduce((s,t) => s+t.bedrag, 0);
   const vrdCovers = COVERS.reduce((s,c) => s+c.voorraad, 0);
   const hnviInv = TX.filter(t => t.gb==='7010').reduce((s,t) => s+t.bedrag, 0);
- 
+
   document.getElementById('home-metrics').innerHTML = `
     <div class="metric"><div class="lbl">Omzet 2026</div><div class="val pos">${fmt(omzet)}</div></div>
     <div class="metric"><div class="lbl">Kosten 2026</div><div class="val neg">${fmt(kosten)}</div></div>
@@ -556,7 +567,7 @@ function renderHome() {
     <div class="metric"><div class="lbl">Covers voorraad</div><div class="val">${vrdCovers} stuks</div></div>
     <div class="metric"><div class="lbl">HNVI inkoop</div><div class="val neg">${fmt(hnviInv)}</div></div>
     <div class="metric"><div class="lbl">Privé opnames</div><div class="val" style="color:#888">${fmt(priveOp)}</div></div>`;
- 
+
   const topInc = [...TX].filter(t => isInkomst(t)).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
   const topExp = [...TX].filter(isUitgave).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
   document.getElementById('home-uitsch').innerHTML = [...topInc,...topExp].map(t => `
@@ -569,18 +580,18 @@ function renderHome() {
       <div class="uitsch-info"><div class="uitsch-naam">${t.naam}</div><div class="uitsch-meta">${ddmm(t.datum)} · ${GBNM[t.gb]||t.gb}</div></div>
       <div class="uitsch-bedrag ${isInkomst(t)?'pos':'neg'}">${isInkomst(t)?'+':'–'}${fmt(t.bedrag)}</div>
     </div>`).join('');
- 
+
   const maanden = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
   const labels = maanden.map(m => MAANDEN[m]);
   const incD = maanden.map(m => TX.filter(t => isInkomst(t) && isOmzet(t.gb) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
   const expD = maanden.map(m => TX.filter(t => isUitgave(t) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
   const netD = maanden.map((_,i) => incD[i]-expD[i]);
- 
+
   dc('c-ie');
-  charts['c-ie'] = new Chart(document.getElementById('c-ie'), {type:'bar',data:{labels,datasets:[{label:'Omzet',data:incD,backgroundColor:'#1a7a4a'},{label:'Kosten',data:expD,backgroundColor:'#e8d5d2'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
+  charts['c-ie'] = new Chart(document.getElementById('c-ie'), {type:'bar',data:{labels,datasets:[{label:'Omzet',data:incD,backgroundColor:'#7C4DFF'},{label:'Kosten',data:expD,backgroundColor:'#FF6B9D'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
   dc('c-net');
-  charts['c-net'] = new Chart(document.getElementById('c-net'), {type:'line',data:{labels,datasets:[{label:'Netto',data:netD,borderColor:'#1a4fa0',backgroundColor:'rgba(26,79,160,0.07)',tension:.35,fill:true,pointRadius:4,pointBackgroundColor:'#1a4fa0'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
- 
+  charts['c-net'] = new Chart(document.getElementById('c-net'), {type:'line',data:{labels,datasets:[{label:'Netto',data:netD,borderColor:'#FFB347',backgroundColor:'rgba(255,179,71,0.1)',tension:.35,fill:true,pointRadius:4,pointBackgroundColor:'#FFB347'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
+
   const recent = [...TX].sort((a,b) => b.datum.localeCompare(a.datum)).slice(0,8);
   document.getElementById('home-recent').innerHTML = recent.map(t => `<tr>
     <td style="color:var(--text-muted)">${ddmm(t.datum)}</td>
@@ -590,15 +601,29 @@ function renderHome() {
     <td style="text-align:right">${typeBadge(t.type, t.bedrag)}</td>
   </tr>`).join('');
 }
- 
+
 // ─── BANK ─────────────────────────────────────────────────────────────────────
 function renderBank() {
-  const maanden = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
+  const jaarSel = document.getElementById('f-jaar-bank');
+  const gekozenJaar = jaarSel ? jaarSel.value : '2026';
+  
+  // Kies databron
+  let bronData;
+  if (gekozenJaar === '2026') bronData = TX;
+  else if (gekozenJaar === 'all') bronData = [...HIST_TX, ...TX];
+  else bronData = HIST_TX.filter(t => t.datum.startsWith(gekozenJaar));
+
+  // Maanden voor het gekozen jaar
   const sel = document.getElementById('f-maand');
   const cur = sel.value;
-  sel.innerHTML = '<option value="">Alle maanden</option>' + maanden.map(m => `<option value="${m}"${m===cur?' selected':''}>${MAANDEN[m]} 2026</option>`).join('');
+  const beschikbareMaanden = [...new Set(bronData.map(t=>t.datum.slice(0,7)))].sort().reverse();
+  sel.innerHTML = '<option value="">Alle maanden</option>' + beschikbareMaanden.map(m => {
+    const mnms2 = {'2022-01':'jan','2022-02':'feb','2022-03':'mrt','2022-04':'apr','2022-05':'mei','2022-06':'jun','2022-07':'jul','2022-08':'aug','2022-09':'sep','2022-10':'okt','2022-11':'nov','2022-12':'dec','2023-01':'jan','2023-02':'feb','2023-03':'mrt','2023-04':'apr','2023-05':'mei','2023-06':'jun','2023-07':'jul','2023-08':'aug','2023-09':'sep','2023-10':'okt','2023-11':'nov','2023-12':'dec','2024-01':'jan','2024-02':'feb','2024-03':'mrt','2024-04':'apr','2024-05':'mei','2024-06':'jun','2024-07':'jul','2024-08':'aug','2024-09':'sep','2024-10':'okt','2024-11':'nov','2024-12':'dec','2025-01':'jan','2025-02':'feb','2025-03':'mrt','2025-04':'apr','2025-05':'mei','2025-06':'jun','2025-07':'jul','2025-08':'aug','2025-09':'sep','2025-10':'okt','2025-11':'nov','2025-12':'dec','2026-01':'jan','2026-02':'feb','2026-03':'mrt','2026-04':'apr','2026-05':'mei','2026-06':'jun'};
+    return `<option value="${m}"${m===cur?' selected':''}>${mnms2[m]||m} ${m.slice(0,4)}</option>`;
+  }).join('');
+
   const maand = sel.value, rek = document.getElementById('f-rek').value, typeF = document.getElementById('f-type').value;
-  let list = TX.filter(t => {
+  let list = bronData.filter(t => {
     if (maand && !t.datum.startsWith(maand)) return false;
     if (rek && t.rek !== rek) return false;
     if (typeF === 'prive' && !t.type.startsWith('prive')) return false;
@@ -608,13 +633,47 @@ function renderBank() {
   }).sort((a,b) => b.datum.localeCompare(a.datum));
   const inc = list.filter(isInkomst).reduce((s,t)=>s+t.bedrag,0);
   const exp = list.filter(isUitgave).reduce((s,t)=>s+t.bedrag,0);
-  const prive = list.filter(t=>t.type.startsWith('prive')).reduce((s,t)=>s+t.bedrag,0);
+  const verschil = inc - exp;
+
+  const allData = gekozenJaar === '2026' ? TX : gekozenJaar === 'all' ? [...HIST_TX, ...TX] : HIST_TX.filter(t=>t.datum.startsWith(gekozenJaar));
+  const mnNamen = {'01':'jan','02':'feb','03':'mrt','04':'apr','05':'mei','06':'jun','07':'jul','08':'aug','09':'sep','10':'okt','11':'nov','12':'dec'};
+
+  // Gebruik echte saldos altijd als beschikbaar
+  let periodeSaldo = null, vorigSaldo2 = null;
+  const vorigeMnd = maand
+    ? (() => { const d = new Date(maand+'-01'); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })()
+    : null;
+
+  if (maand) {
+    // Specifieke maand: gebruik saldo als bekend
+    periodeSaldo = MAAND_SALDOS[maand] ? MAAND_SALDOS[maand].eind : null;
+    vorigSaldo2 = vorigeMnd && MAAND_SALDOS[vorigeMnd] ? MAAND_SALDOS[vorigeMnd].eind : null;
+  } else if (gekozenJaar !== 'all') {
+    // Heel jaar: gebruik laatste bekende maand van dat jaar
+    const laatste = Object.keys(MAAND_SALDOS).filter(m=>m.startsWith(gekozenJaar)).sort().pop();
+    periodeSaldo = laatste ? MAAND_SALDOS[laatste].eind : null;
+    const vorigeJaar = String(parseInt(gekozenJaar)-1);
+    const vorigeL = Object.keys(MAAND_SALDOS).filter(m=>m.startsWith(vorigeJaar)).sort().pop();
+    vorigSaldo2 = vorigeL ? MAAND_SALDOS[vorigeL].eind : null;
+  }
+
+  const saldoLabel = maand ? 'Saldo einde '+mnNamen[maand.slice(5,7)] : gekozenJaar==='all'?'Saldo huidig':'Saldo einde '+gekozenJaar;
+
+  const vorigLabel = maand ? 'Saldo vorige maand' : ('Saldo einde '+String(parseInt(gekozenJaar==='all'?'2025':gekozenJaar)-1));
+  const vorigSaldo = vorigSaldo2;
+
+  const winstverlies = inc - exp;
+  const priveOp = list.filter(t=>t.type==='prive_opname').reduce((s,t)=>s+t.bedrag,0);
+  const priveSt = list.filter(t=>t.type==='prive_storting').reduce((s,t)=>s+t.bedrag,0);
+  const priveSaldo = priveSt - priveOp;
+
   document.getElementById('bank-metrics').innerHTML = `
-    <div class="metric"><div class="lbl">Inkomsten</div><div class="val pos">${fmt(inc)}</div></div>
-    <div class="metric"><div class="lbl">Uitgaven</div><div class="val neg">${fmt(exp)}</div></div>
-    <div class="metric"><div class="lbl">Saldo periode</div><div class="val ${inc-exp>=0?'pos':'neg'}">${fmt(inc-exp)}</div></div>
-    <div class="metric"><div class="lbl">Privé bewegingen</div><div class="val" style="color:#888">${fmt(prive)}</div></div>
-    <div class="metric"><div class="lbl">Transacties</div><div class="val">${list.length}</div></div>`;
+    <div class="metric"><div class="lbl">Inkomsten periode</div><div class="val pos">${fmt(inc)}</div><div class="sub">${list.filter(t=>t.type==='inkomst').length} transacties</div></div>
+    <div class="metric"><div class="lbl">Uitgaven periode</div><div class="val neg">${fmt(exp)}</div><div class="sub">${list.filter(t=>t.type==='uitgave').length} transacties</div></div>
+    <div class="metric"><div class="lbl">Winst / verlies</div><div class="val ${winstverlies>=0?'pos':'neg'}">${winstverlies>=0?'+':''}${fmt(winstverlies)}</div><div class="sub">zakelijk netto</div></div>
+    <div class="metric"><div class="lbl">Privé bewegingen</div><div class="val ${priveSaldo>=0?'pos':'neg'}">${priveSaldo>=0?'+':''}${fmt(priveSaldo)}</div><div class="sub">${fmt(priveSt)} in · ${fmt(priveOp)} uit</div></div>
+    <div class="metric"><div class="lbl">${saldoLabel}</div><div class="val ${periodeSaldo!=null?(periodeSaldo>=0?'pos':'neg'):''}" style="${periodeSaldo==null?'color:#ccc':''}">${periodeSaldo!=null?fmt(Math.round(periodeSaldo*100)/100):'—'}</div><div class="sub">eindbalans rekening</div></div>
+    <div class="metric"><div class="lbl">${vorigLabel}</div><div class="val" style="${vorigSaldo!=null?'color:#888':'color:#ccc'}">${vorigSaldo!=null?fmt(Math.round(vorigSaldo*100)/100):'—'}</div><div class="sub">vorige periode</div></div>`;
   document.getElementById('bank-body').innerHTML = list.map(t => `<tr>
     <td style="color:var(--text-muted);padding-left:14px">${ddmm(t.datum)}</td>
     <td class="td-trunc">${t.naam}${t.omschr&&t.omschr!==t.naam?` <span style="color:var(--text-hint);font-size:10px">· ${t.omschr}</span>`:''}</td>
@@ -623,7 +682,7 @@ function renderBank() {
     <td style="text-align:right;padding-right:14px">${typeBadge(t.type, t.bedrag)}</td>
   </tr>`).join('');
 }
- 
+
 // ─── GROOTBOEK ────────────────────────────────────────────────────────────────
 function renderGrootboek() {
   const maand = document.getElementById('f-maand-gb').value;
@@ -659,14 +718,14 @@ function renderGrootboek() {
     </div>`;
   }).join('') || '<div style="color:var(--text-muted);padding:1rem 0;font-size:13px">Geen boekingen gevonden.</div>';
 }
- 
+
 // ─── BELASTING ────────────────────────────────────────────────────────────────
 function renderBelasting() {
   const omzet = TX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t)=>s+t.bedrag,0);
- 
+
   // Alle overige kosten (niet 7010 = HNVI inkoop)
   const kostenOverig = TX.filter(t => isUitgave(t) && t.gb !== '7010').reduce((s,t)=>s+t.bedrag,0);
- 
+
   // HNVI inkoop: alleen verkochte loten zijn aftrekbaar
   const hnviVerkocht = HNVI_LOTS.filter(i => i.status === 'verkocht').reduce((s,i)=>s+i.inkoop,0);
   const hnviVoorraad = HNVI_LOTS.filter(i => i.status === 'voorraad').reduce((s,i)=>s+i.inkoop,0);
@@ -674,10 +733,10 @@ function renderBelasting() {
   const hnviTotaalBank = TX.filter(t => isUitgave(t) && t.gb === '7010').reduce((s,t)=>s+t.bedrag,0);
   const hnviAftrekbaar = HNVI_LOTS.length > 0 ? hnviVerkocht : hnviTotaalBank;
   const hnviNietAftrekbaar = HNVI_LOTS.length > 0 ? hnviVoorraad : 0;
- 
+
   const kostenAftrekbaar = kostenOverig + hnviAftrekbaar;
   const winst = omzet - kostenAftrekbaar;
- 
+
   // Jaarprojectie op basis van huidige maanden
   const maandenMet = [...new Set(TX.filter(t=>isInkomst(t)&&isOmzet(t.gb)).map(t=>t.datum.slice(0,7)))].length || 1;
   const omzetPerMaand = omzet / maandenMet;
@@ -685,7 +744,7 @@ function renderBelasting() {
   const omzetJaar = Math.round(omzetPerMaand * 12);
   const kostenJaar = Math.round(kostenPerMaand * 12);
   const winstJaar = omzetJaar - kostenJaar;
- 
+
   // IB berekening (huidig)
   const calcIB = (w) => {
     if (w <= 0) return w * 0.3697; // negatief = mogelijke teruggave
@@ -697,7 +756,7 @@ function renderBelasting() {
   const ibJaar = calcIB(winstJaar);
   const mkb = winst > 0 ? Math.round(winst * 0.142) : 0;
   const belastbaar = winst > 0 ? Math.max(0, winst - mkb) : 0;
- 
+
   document.getElementById('bel-metrics').innerHTML = `
     <div class="metric"><div class="lbl">Bruto omzet</div><div class="val">${fmt(omzet)}</div></div>
     <div class="metric"><div class="lbl">Aftrekbare kosten</div><div class="val neg">${fmt(kostenAftrekbaar)}</div></div>
@@ -705,12 +764,12 @@ function renderBelasting() {
     <div class="metric"><div class="lbl">${ib<=0?'Geschatte teruggave':'Geschatte IB'}</div><div class="val ${ib<=0?'pos':'neg'}">${ib<=0?'+':''}${fmt(Math.abs(Math.round(ib)))}</div></div>
     <div class="metric"><div class="lbl">HNVI voorraadwaarde</div><div class="val" style="color:#888">${fmt(hnviNietAftrekbaar)}</div><div class="sub">${HNVI_LOTS.filter(i=>i.status==='voorraad').length} loten · nog niet aftrekbaar</div></div>
     <div class="metric"><div class="lbl">Projectie heel jaar</div><div class="val ${winstJaar>=0?'pos':'neg'}">${fmt(winstJaar)}</div><div class="sub">op basis van ${maandenMet} mnd</div></div>`;
- 
+
   const teruggaveRegel = ib < 0 ? `
     <div style="background:var(--green-bg);border:1px solid rgba(26,122,74,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--green)">
       💡 Bij verlies kun je dit verrekenen met ander inkomen (bijv. loon). Geschatte teruggave: <strong>${fmt(Math.abs(Math.round(ib)))}</strong> — bespreek dit met je belastingadviseur.
     </div>` : '';
- 
+
   const hnviWaarschuwing = hnviNietAftrekbaar > 0 ? `
     <div style="background:var(--amber-bg);border:1px solid rgba(122,79,0,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
       ⚠ ${fmt(hnviNietAftrekbaar)} HNVI inkoop is nog niet aftrekbaar (voorraad). Zodra je die loten verkoopt in de HNVI-tab wordt dit automatisch aangepast.
@@ -718,7 +777,7 @@ function renderBelasting() {
     <div style="background:var(--amber-bg);border:1px solid rgba(122,79,0,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
       ⚠ Voeg je HNVI-loten toe in de HNVI-tab zodat de belasting correct wordt berekend. Nu wordt alle 7010 inkoop als aftrekbaar beschouwd.
     </div>` : '');
- 
+
   document.getElementById('bel-calc').innerHTML = `
     <div class="ib-row"><span>Bruto omzet</span><span>${fmt(omzet)}</span></div>
     <div class="ib-row"><span>Overige kosten & inkoop</span><span class="neg">– ${fmt(kostenOverig)}</span></div>
@@ -731,22 +790,22 @@ function renderBelasting() {
     <div class="ib-row"><span>Tarief schijf 1 (36,97%)</span><span></span></div>
     <div class="ib-total"><span>Geschatte inkomstenbelasting</span><span class="neg">${fmt(Math.round(ib))}</span></div>` : `
     <div class="ib-total"><span>${ib < 0 ? 'Geschatte teruggave (bij ander inkomen)' : 'Geen belasting verschuldigd'}</span><span class="${ib<0?'pos':''}">${ib<0?'+ '+fmt(Math.abs(Math.round(ib))):'€\u202f0,00'}</span></div>`}
- 
+
     <div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted)">
       <strong>Projectie heel jaar</strong> (op basis van ${maandenMet} maanden): omzet ${fmt(omzetJaar)} · kosten ${fmt(kostenJaar)} · winst ${fmt(winstJaar)} · geschatte IB ${ibJaar<0?'teruggave '+fmt(Math.abs(Math.round(ibJaar))):fmt(Math.round(ibJaar))}
     </div>`;
- 
+
   const omzData = [
     TX.filter(t=>isInkomst(t)&&t.gb==='8000').reduce((s,t)=>s+t.bedrag,0),
     TX.filter(t=>isInkomst(t)&&t.gb==='8010').reduce((s,t)=>s+t.bedrag,0),
     TX.filter(t=>isInkomst(t)&&t.gb==='8020').reduce((s,t)=>s+t.bedrag,0),
   ];
   const omzLabels = ['Xtenate (8000)','Bol.com covers (8010)','Helmetstore (8020)'];
-  const colors = ['#1a7a4a','#1a4fa0','#7a4f00'];
+  const colors = ['#7C4DFF','#FF6B9D','#FFB347'];
   dc('c-bel');
   charts['c-bel'] = new Chart(document.getElementById('c-bel'), {type:'doughnut',data:{labels:omzLabels,datasets:[{data:omzData,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
   document.getElementById('bel-legend').innerHTML = omzLabels.map((n,i)=>`<span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:${colors[i]}"></span>${n} ${fmt(omzData[i])}</span>`).join('');
- 
+
   const subkop = (tekst) => `<tr><td colspan="4" style="padding:10px 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">${tekst}</td></tr>`;
   const rij = (gb, bedrag, richting, label, kleur) => {
     const bg = kleur==='pos'?'var(--green-bg)':kleur==='neg'?'var(--red-bg)':'#f0f0f0';
@@ -758,25 +817,25 @@ function renderBelasting() {
       <td style="text-align:right" class="${kleur==='pos'?'pos':kleur==='neg'?'neg':''}">${richting==='plus'?'+ ':'– '}${fmt(Math.abs(bedrag))}</td>
     </tr>`;
   };
- 
+
   const omzetGbs2 = [...new Set(TX.filter(isInkomst).map(t=>t.gb))].filter(isOmzet).sort();
   const omzetRows = omzetGbs2.map(gb => {
     const tot = TX.filter(t=>isInkomst(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'plus', 'altijd baten', 'pos');
   }).join('');
- 
+
   const r4Gbs = [...new Set(TX.filter(isUitgave).map(t=>t.gb))].filter(g=>g.startsWith('4')).sort();
   const r4Rows = r4Gbs.map(gb => {
     const tot = TX.filter(t=>isUitgave(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'min', 'altijd aftrekbaar', 'neg');
   }).join('');
- 
+
   const r7AltijdGbs = [...new Set(TX.filter(isUitgave).map(t=>t.gb))].filter(g=>['7000','7020','7100','7900'].includes(g)).sort();
   const r7AltijdRows = r7AltijdGbs.map(gb => {
     const tot = TX.filter(t=>isUitgave(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'min', 'altijd aftrekbaar', 'neg');
   }).join('');
- 
+
   const hnviBankTot = TX.filter(t=>isUitgave(t)&&t.gb==='7010').reduce((s,t)=>s+t.bedrag,0);
   const hnviVktTot2 = HNVI_LOTS.filter(i=>i.status==='verkocht').reduce((s,i)=>s+i.inkoop,0);
   const hnviVrdTot2 = HNVI_LOTS.filter(i=>i.status==='voorraad').reduce((s,i)=>s+i.inkoop,0);
@@ -785,14 +844,14 @@ function renderBelasting() {
     ? rij('7010', hnviVktTot2, 'min', 'aftrekbaar — verkocht', 'neg') +
       (hnviVrdTot2 > 0 ? rij('7010', hnviVrdTot2, 'min', 'niet aftrekbaar — voorraad', '') : '')
     : rij('7010', hnviBankTot, 'min', 'voeg loten toe in HNVI-tab', '');
- 
+
   document.getElementById("bel-kosten").innerHTML =
     subkop('Baten') + omzetRows +
     subkop('Rubriek 4 — altijd aftrekbaar') + r4Rows +
     subkop('Inkoop — altijd aftrekbaar') + r7AltijdRows +
     subkop('Inkoop HNVI (7010) — gekoppeld aan HNVI-tab') + r7010Rows;
 }
- 
+
 // ─── COVERS ───────────────────────────────────────────────────────────────────
 function renderCovers() {
   const st = document.getElementById('f-covers-status').value;
@@ -816,7 +875,7 @@ function renderCovers() {
     <td><span class="sell-link" onclick="openCoverEdit(${c.id})">Bewerk</span></td>
   </tr>`).join('');
 }
- 
+
 // ─── HNVI ─────────────────────────────────────────────────────────────────────
 let hnviSellId = null;
 function renderHNVI() {
@@ -846,7 +905,7 @@ function renderHNVI() {
     </tr>`;
   }).join('') : '<tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--text-muted)">Nog geen loten toegevoegd. Klik op "+ Lot toevoegen".</td></tr>';
 }
- 
+
 // ─── MODALS TX ────────────────────────────────────────────────────────────────
 let editTxId = null;
 function openTxModal() {
@@ -877,7 +936,7 @@ function saveTx() {
   closeTx();
   renderBank();
 }
- 
+
 // ─── MODALS COVER ─────────────────────────────────────────────────────────────
 let editCoverId = null;
 function openCoverModal() {
@@ -913,7 +972,7 @@ function saveCover() {
   closeCoverModal();
   renderCovers();
 }
- 
+
 // ─── MODALS HNVI ──────────────────────────────────────────────────────────────
 function openHNVIModal() {
   hnviSellId = null;
@@ -949,8 +1008,8 @@ function saveHNVI() {
   closeHNVIModal();
   renderHNVI();
 }
- 
- 
+
+
 // ─── IMPORT EXCEL ─────────────────────────────────────────────────────────────
 function importExcel(input) {
   const file = input.files[0];
@@ -960,7 +1019,7 @@ function importExcel(input) {
   document.getElementById('import-body').innerHTML = 'Excel bestand lezen...';
   document.getElementById('import-actions').style.display = 'none';
   document.getElementById('modal-import').classList.add('open');
- 
+
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
@@ -970,7 +1029,7 @@ function importExcel(input) {
       let newTx = [];
       let newCovers = [];
       let tid = 500;
- 
+
       function excelDate(val) {
         if (!val) return null;
         if (val instanceof Date) return val.toISOString().split('T')[0];
@@ -985,11 +1044,11 @@ function importExcel(input) {
         }
         return null;
       }
- 
+
       const OMZET_GB = ['8000','8010','8020'];
       const bankSheets = ['Bank 2026-01','Bank 2026-02','Bank 2026-03','Bank 2026-04','Bank 2026-05','Bank 2026-06',
                           'Bank 2026-07','Bank 2026-08','Bank 2026-09','Bank 2026-10','Bank 2026-11','Bank 2026-12'];
- 
+
       // Bank tabs
       let bankCount = 0;
       bankSheets.forEach(sheetName => {
@@ -1019,7 +1078,7 @@ function importExcel(input) {
           });
         });
       });
- 
+
       // Creditkaart Prive
       let ccCount = 0;
       if (wb.SheetNames.includes('CreditkaartPrive')) {
@@ -1038,7 +1097,7 @@ function importExcel(input) {
           ccCount++;
         });
       }
- 
+
       // Voorraad & Mutaties (Funny Covers)
       let coverCount = 0;
       if (wb.SheetNames.includes('Voorraad & Mutaties')) {
@@ -1061,22 +1120,50 @@ function importExcel(input) {
           coverCount++;
         });
       }
- 
+
+      // Lees begin/eindsaldo per maand
+      let newSaldos = {};
+      bankSheets.forEach(sheetName => {
+        if (!wb.SheetNames.includes(sheetName)) return;
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        const maand = sheetName.slice(-7); // bijv. 2026-01
+        let begin = null, eind = null;
+        rows.forEach(row => {
+          if (row[8] === 'Beginsaldo' && typeof row[9] === 'number') begin = row[9];
+          if (row[8] === 'Eindsaldo' && typeof row[9] === 'number') eind = row[9];
+        });
+        if (begin !== null || eind !== null) newSaldos[maand] = {begin, eind};
+      });
+
+      // Valideer: alleen opslaan als er transacties zijn
+      if (newTx.length === 0) {
+        document.getElementById('import-title').textContent = 'Niets gevonden';
+        document.getElementById('import-body').innerHTML = '⚠️ Er zijn geen transacties gevonden in dit bestand.<br>Controleer of je het juiste Excel bestand hebt geselecteerd (Administratie_2026.xlsx).';
+        document.getElementById('import-actions').style.display = 'flex';
+        return;
+      }
+
       // Sla op
       TX = newTx;
       nxtTx = tid;
       if (newCovers.length > 0) { COVERS = newCovers; nxtCover = 300; }
+      // Update MAAND_SALDOS met nieuwe saldos (overschrijf alleen 2026)
+      Object.keys(MAAND_SALDOS).filter(m=>m.startsWith('2026')).forEach(m=>delete MAAND_SALDOS[m]);
+      Object.assign(MAAND_SALDOS, newSaldos);
       saveTxData();
       saveCoversData();
- 
+
+      const saldoCount = Object.keys(newSaldos).length;
       document.getElementById('import-title').textContent = 'Import geslaagd!';
       document.getElementById('import-body').innerHTML =
         `✅ <strong>${bankCount}</strong> banktransacties ingelezen<br>` +
         `✅ <strong>${ccCount}</strong> creditkaart boekingen ingelezen<br>` +
+        (saldoCount > 0 ? `✅ <strong>${saldoCount}</strong> maandsaldos ingelezen<br>` : '') +
         (newCovers.length > 0 ? `✅ <strong>${coverCount}</strong> covers artikelen ingelezen<br>` : '') +
         `<br>Je data is opgeslagen. HNVI-loten blijven bewaard.`;
       document.getElementById('import-actions').style.display = 'flex';
- 
+
       renderHome();
     } catch(err) {
       document.getElementById('import-title').textContent = 'Fout bij importeren';
@@ -1086,11 +1173,11 @@ function importExcel(input) {
   };
   reader.readAsArrayBuffer(file);
 }
- 
+
 function resetData() {
   document.getElementById('modal-reset').classList.add('open');
 }
- 
+
 function doReset() {
   TX = [];
   COVERS = [];
@@ -1100,14 +1187,14 @@ function doReset() {
   document.getElementById('modal-reset').classList.remove('open');
   renderHome();
 }
- 
+
 // close modals on overlay click
 document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); }));
- 
+
 // init
 renderHome();
 </script>
- 
+
 <!-- MODAL: IMPORT STATUS -->
 <div class="modal-overlay" id="modal-import">
 <div class="modal">
@@ -1118,7 +1205,7 @@ renderHome();
   </div>
 </div>
 </div>
- 
+
 <!-- MODAL: RESET BEVESTIGING -->
 <div class="modal-overlay" id="modal-reset">
 <div class="modal">
