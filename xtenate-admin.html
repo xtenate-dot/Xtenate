@@ -31,7 +31,7 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
- 
+
 /* LAYOUT */
 .app { display: flex; min-height: 100vh; }
 .sidebar { width: 200px; background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 10; }
@@ -45,12 +45,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .nav-item svg { flex-shrink: 0; opacity: .7; }
 .nav-item.active svg { opacity: 1; }
 .nav-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text-hint); padding: 1rem 1.25rem .4rem; }
- 
+
 /* PAGE */
 .page { display: none; }
 .page.active { display: block; }
 .page-title { font-size: 20px; font-weight: 600; letter-spacing: -0.4px; margin-bottom: 1.5rem; }
- 
+
 /* METRICS */
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
 .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .875rem 1rem; }
@@ -59,12 +59,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .metric .sub { font-size: 10px; color: var(--text-hint); margin-top: 3px; }
 .pos { color: var(--green); }
 .neg { color: var(--red); }
- 
+
 /* CARDS */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
 .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 1rem; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
- 
+
 /* BADGES */
 .badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
 .badge-green { background: var(--green-bg); color: var(--green); }
@@ -73,7 +73,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .badge-amber { background: var(--amber-bg); color: var(--amber); }
 .badge-purple { background: var(--purple-bg); color: var(--purple); }
 .badge-gray { background: #f0f0f0; color: #555; }
- 
+
 /* TABLES */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
@@ -82,7 +82,7 @@ td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: 
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--bg); }
 .td-trunc { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
- 
+
 /* TOOLBAR */
 .toolbar { display: flex; gap: 8px; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
 select, input[type=text], input[type=number], input[type=date] {
@@ -96,7 +96,7 @@ select:focus, input:focus { border-color: #888; }
 .btn-primary:hover { opacity: .85; background: var(--text); }
 .btn-ml { margin-left: auto; }
 .btn-sm { font-size: 11px; padding: 3px 9px; }
- 
+
 /* MODAL */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 100; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
@@ -108,17 +108,17 @@ select:focus, input:focus { border-color: #888; }
 .form-group label { font-size: 11px; font-weight: 500; color: var(--text-muted); }
 .form-group select, .form-group input { width: 100%; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; }
- 
+
 /* ALERT */
 .alert { border-radius: var(--radius-sm); padding: .625rem 1rem; font-size: 12px; margin-bottom: 1rem; display: flex; gap: 8px; align-items: flex-start; }
 .alert-warn { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(122,79,0,.2); }
 .alert-info { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(26,79,160,.2); }
- 
+
 /* VTABS */
 .vtabs { display: flex; gap: 6px; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0; }
 .vtab { padding: 7px 14px; cursor: pointer; font-size: 13px; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .vtab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
- 
+
 /* UITSCHIETERS */
 .uitsch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem; }
 .uitsch-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem 1rem; display: flex; align-items: center; gap: 10px; }
@@ -127,19 +127,19 @@ select:focus, input:focus { border-color: #888; }
 .uitsch-naam { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .uitsch-meta { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
 .uitsch-bedrag { font-size: 12.5px; font-weight: 600; flex-shrink: 0; }
- 
+
 /* IB */
 .ib-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
 .ib-row:last-child { border-bottom: none; }
 .ib-total { display: flex; justify-content: space-between; padding: 10px 0 0; font-size: 13.5px; font-weight: 600; border-top: 1px solid var(--border-strong); margin-top: 4px; letter-spacing: -0.2px; }
- 
+
 /* VOORRAAD STATUS */
 .stock-ok { background: var(--green-bg); color: var(--green); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
 .stock-uit { background: var(--red-bg); color: var(--red); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
- 
+
 /* SELL LINK */
 .sell-link { color: var(--blue); cursor: pointer; font-size: 11px; text-decoration: underline; }
- 
+
 @media (max-width: 700px) {
   .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); padding: .5rem 0; }
   .main { margin-left: 0; padding: 1rem; }
@@ -153,7 +153,7 @@ select:focus, input:focus { border-color: #888; }
 </head>
 <body>
 <div class="app">
- 
+
 <nav class="sidebar">
   <div class="logo">
     <div class="logo-name">Xtenate</div>
@@ -197,9 +197,9 @@ select:focus, input:focus { border-color: #888; }
     Alles wissen
   </div>
 </nav>
- 
+
 <main class="main">
- 
+
 <!-- HOME -->
 <div id="p-home" class="page active">
   <div class="page-title">Home</div>
@@ -221,11 +221,19 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
- 
+
 <!-- BANK -->
 <div id="p-bank" class="page">
   <div class="page-title">Bank</div>
   <div class="toolbar">
+    <select id="f-jaar-bank" onchange="renderBank()">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+      <option value="2022">2022</option>
+      <option value="all">Alle jaren</option>
+    </select>
     <select id="f-maand" onchange="renderBank()"></select>
     <select id="f-rek" onchange="renderBank()">
       <option value="">Alle rekeningen</option>
@@ -256,7 +264,7 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
- 
+
 <!-- GROOTBOEK -->
 <div id="p-grootboek" class="page">
   <div class="page-title">Grootboek</div>
@@ -299,7 +307,7 @@ select:focus, input:focus { border-color: #888; }
   <div class="metrics" id="gb-metrics"></div>
   <div id="gb-body"></div>
 </div>
- 
+
 <!-- BELASTING -->
 <div id="p-belasting" class="page">
   <div class="page-title">Belasting</div>
@@ -317,7 +325,7 @@ select:focus, input:focus { border-color: #888; }
     <tbody id="bel-kosten"></tbody></table>
   </div>
 </div>
- 
+
 <!-- FUNNY COVERS -->
 <div id="p-covers" class="page">
   <div class="page-title">Funny Covers — voorraad</div>
@@ -345,7 +353,7 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
- 
+
 <!-- HNVI -->
 <div id="p-hnvi" class="page">
   <div class="page-title">HNVI / Xtenate — voorraad</div>
@@ -373,10 +381,10 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
- 
+
 </main>
 </div>
- 
+
 <!-- MODAL: TRANSACTIE -->
 <div class="modal-overlay" id="modal-tx">
 <div class="modal">
@@ -437,7 +445,7 @@ select:focus, input:focus { border-color: #888; }
   </div>
 </div>
 </div>
- 
+
 <!-- MODAL: COVER ARTIKEL -->
 <div class="modal-overlay" id="modal-cover">
 <div class="modal">
@@ -455,7 +463,7 @@ select:focus, input:focus { border-color: #888; }
   </div>
 </div>
 </div>
- 
+
 <!-- MODAL: HNVI LOT -->
 <div class="modal-overlay" id="modal-hnvi">
 <div class="modal">
@@ -472,7 +480,7 @@ select:focus, input:focus { border-color: #888; }
   </div>
 </div>
 </div>
- 
+
 <script>
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 const GBNM = {
@@ -487,9 +495,12 @@ const REKNM = {'1009':'Revolut','1010':'Rabobank','1020':'Paypal','1030':'Credit
 const REK_COLOR = {'1010':'badge-blue','1009':'badge-purple','1030':'badge-amber','1020':'badge-green','1090':'badge-gray'};
 const MAANDEN = {'2026-01':'jan','2026-02':'feb','2026-03':'mrt','2026-04':'apr','2026-05':'mei','2026-06':'jun'};
 const PRIJS_COVER = 31.95;
- 
+const BEGINSALDO_2026 = 183.15; // Handmatig ingesteld beginsaldo 1 jan 2026
+const HIST_TX = [{"id":"h2022_0","datum":"2022-08-02","gb":"8010","bedrag":98.22,"naam":"Betaling bol.com 3907078445057. Zie verkoopaccount (1725317) voor factuur.","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2022_1","datum":"2022-08-23","gb":"7900","bedrag":7.25,"naam":"Postnl verzendkosten Emmen","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2022_2","datum":"2022-08-28","gb":"7900","bedrag":7.25,"naam":"Postnl verzendkosten T.Donders","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2022_3","datum":"2022-08-28","gb":"7900","bedrag":10.75,"naam":"Postnl verzendkosten Strijbos","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2022_4","datum":"2022-08-30","gb":"7900","bedrag":6.75,"naam":"Postnl verzendkosten ","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2022_5","datum":"2022-09-02","gb":"8010","bedrag":267.74,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3907238111232 en 3907238190986. Zie verkoop","rek":"1010","type":"inkomst"},{"id":"h2022_6","datum":"2022-09-12","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank1CFAA5A 1030000681670833 Versturen Ordernummer: ?1CF","rek":"1010","type":"uitgave"},{"id":"h2022_7","datum":"2022-09-16","gb":"4350","bedrag":0.01,"naam":"NL51DEUT0265262461","omschr":"M01842781MEBWOON 1150011755131966 Verify account ID 15992747","rek":"1010","type":"uitgave"},{"id":"h2022_8","datum":"2022-09-20","gb":"7000","bedrag":69.99,"naam":"DE14202208000094994055","omschr":"4567UB6 0140000710121361 XTENATE.COM x8019 pasnr.001","rek":"1010","type":"uitgave"},{"id":"h2022_9","datum":"2022-09-21","gb":"7010","bedrag":40.25,"naam":"DE68202208000092825036","omschr":"2FDX0QA 0140000710269122 ZAZZLEIRELA x8019 pasnr.001","rek":"1010","type":"uitgave"},{"id":"h2022_10","datum":"2022-10-03","gb":"8000","bedrag":69.7,"naam":"DK8789000000014387","omschr":"WooCommerce Payments O7P9K9","rek":"1010","type":"inkomst"},{"id":"h2022_11","datum":"2022-10-03","gb":"8010","bedrag":167.97,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3907397080514. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2022_12","datum":"2022-10-04","gb":"4350","bedrag":1.56,"naam":"","omschr":"Periode 01-09-2022 t/m 30-09-2022","rek":"1010","type":"uitgave"},{"id":"h2022_13","datum":"2022-10-11","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank1YZMB5N 1030000689404086 Versturen Ordernummer: ?1YZ","rek":"1010","type":"uitgave"},{"id":"h2022_14","datum":"2022-10-13","gb":"7900","bedrag":7.25,"naam":"NL57RABO0129757675","omschr":"PostNL verzending","rek":"1010","type":"uitgave"},{"id":"h2022_15","datum":"2022-10-17","gb":"7900","bedrag":7.25,"naam":"NL35RABO0129757683","omschr":"PostNL verzendlabel 5 Augustus","rek":"1010","type":"uitgave"},{"id":"h2022_16","datum":"2022-10-17","gb":"7010","bedrag":95.62,"naam":"DE68202208000092825036","omschr":"4UMTF41 0140000715854308 ZAZZLEIRELA x8019 pasnr.001","rek":"1010","type":"uitgave"},{"id":"h2022_17","datum":"2022-10-18","gb":"8000","bedrag":32.69,"naam":"NL82RABO0308801377","omschr":"NL08ABNA0515165476:TM STRIJBOS:Mannen Hoodie maat s Xtenate","rek":"1010","type":"inkomst"},{"id":"h2022_18","datum":"2022-10-25","gb":"1520","bedrag":122.0,"naam":"NL86INGB0002445588","omschr":"Btw betaald kwartaal 3","rek":"1010","type":"uitgave"},{"id":"h2022_19","datum":"2022-10-27","gb":"8000","bedrag":32.69,"naam":"NL82RABO0308801377","omschr":"NL57RABO0129757675:T.J.H.J. Donders:Hoodie:T.donders","rek":"1010","type":"inkomst"},{"id":"h2022_20","datum":"2022-10-28","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank4DPYS9M 1030000693759570 Versturen Ordernummer: ?4DP","rek":"1010","type":"uitgave"},{"id":"h2022_21","datum":"2022-11-02","gb":"4350","bedrag":3.9,"naam":"","omschr":"Periode 01-10-2022 t/m 31-10-2022","rek":"1010","type":"uitgave"},{"id":"h2022_22","datum":"2022-11-02","gb":"8010","bedrag":223.49,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3907567958340. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2022_23","datum":"2022-11-04","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank5AHFX1Y 1030000695885045 Versturen Ordernummer: ?5AH","rek":"1010","type":"uitgave"},{"id":"h2022_24","datum":"2022-11-24","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank6FVHV5W 1030000701189426 Versturen Ordernummer: ?6FV","rek":"1010","type":"uitgave"},{"id":"h2022_25","datum":"2022-11-25","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank4ITUC3P 1030000701670115 Versturen Ordernummer: ?4IT","rek":"1010","type":"uitgave"},{"id":"h2022_26","datum":"2022-11-26","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank8TEKI8N 1030000701935479 Versturen Ordernummer: ?8TE","rek":"1010","type":"uitgave"},{"id":"h2022_27","datum":"2022-12-02","gb":"4350","bedrag":1.95,"naam":"","omschr":"Periode 01-11-2022 t/m 30-11-2022","rek":"1010","type":"uitgave"},{"id":"h2022_28","datum":"2022-12-02","gb":"8010","bedrag":222.06,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3907800631969. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2022_29","datum":"2022-12-03","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank3PYCX5O 1030000704067147 Versturen Ordernummer: ?3PY","rek":"1010","type":"uitgave"},{"id":"h2022_30","datum":"2022-12-05","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank2DPYC8N 1030000704584378 Versturen Ordernummer: ?2DP","rek":"1010","type":"uitgave"},{"id":"h2022_31","datum":"2022-12-05","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank7WMQJ9C 1030000704771689 Versturen Ordernummer: ?7WM","rek":"1010","type":"uitgave"},{"id":"h2022_32","datum":"2022-12-06","gb":"601","bedrag":100.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2022_33","datum":"2022-12-12","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank2TENG5S 1030000706553403 Versturen Ordernummer: ?2TE","rek":"1010","type":"uitgave"},{"id":"h2022_34","datum":"2022-12-12","gb":"7100","bedrag":24.74,"naam":"NL51DEUT0265262461","omschr":"M02479991MF5ZEXR 1150012597354624 Order 56320 verpakkingvoor","rek":"1010","type":"uitgave"},{"id":"h2022_35","datum":"2022-12-14","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank8VCAN6M 1030000707177700 Versturen Ordernummer: ?8VC","rek":"1010","type":"uitgave"},{"id":"h2022_36","datum":"2022-12-15","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank9MQMB5U 1030000707487015 Versturen Ordernummer: ?9MQ","rek":"1010","type":"uitgave"},{"id":"h2022_37","datum":"2022-12-20","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank1CKGV0P 1030000708968657 Versturen Ordernummer: ?1CK","rek":"1010","type":"uitgave"},{"id":"h2022_38","datum":"2022-12-22","gb":"4895","bedrag":142.56,"naam":"NL04ADYB2017400157","omschr":"BQLXJM5C3HVJFXB2JE9M 0180235625041688 1Z78Y1230402779321FD76","rek":"1010","type":"uitgave"},{"id":"h2022_39","datum":"2022-12-24","gb":"7900","bedrag":6.75,"naam":"NL56DEUT0265186420","omschr":"PnlFrank5ZPWU0I 1030000710265096 Versturen Ordernummer: ?5ZP","rek":"1010","type":"uitgave"},{"id":"h2022_40","datum":"2022-12-31","gb":"601","bedrag":150.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2023_0","datum":"2023-01-01","gb":"4350","bedrag":0.01,"naam":"NL47ABNA0840934424","omschr":"KVKOndertekenen 0030012778305074 ZFD4VDI2KMSGEU6EENP5NX4NQDS","rek":"1010","type":"uitgave"},{"id":"h2023_1","datum":"2023-01-02","gb":"601","bedrag":100.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2023_2","datum":"2023-01-02","gb":"8010","bedrag":394.42,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3908037406733. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2023_3","datum":"2023-01-03","gb":"4350","bedrag":5.07,"naam":"","omschr":"Periode 01-12-2022 t/m 31-12-2022","rek":"1010","type":"uitgave"},{"id":"h2023_4","datum":"2023-01-03","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank6ZKOO5J 1030000713262136 Versturen Ordernummer: ?6ZK","rek":"1010","type":"uitgave"},{"id":"h2023_5","datum":"2023-01-04","gb":"601","bedrag":200.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2023_6","datum":"2023-01-07","gb":"601","bedrag":200.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2023_7","datum":"2023-01-17","gb":"601","bedrag":80.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2023_8","datum":"2023-01-25","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank5BSJI7Q 1030000719142943 Versturen Ordernummer: .5BS","rek":"1010","type":"uitgave"},{"id":"h2023_9","datum":"2023-02-01","gb":"4350","bedrag":0.16,"naam":"IE64CITI99005124417026","omschr":"GG1032V028","rek":"1010","type":"inkomst"},{"id":"h2023_10","datum":"2023-02-02","gb":"4350","bedrag":3.12,"naam":"","omschr":"Periode 01-01-2023 t/m 31-01-2023","rek":"1010","type":"uitgave"},{"id":"h2023_11","datum":"2023-02-02","gb":"8010","bedrag":98.54,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3908226301385. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2023_12","datum":"2023-02-16","gb":"601","bedrag":90.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2023_13","datum":"2023-03-02","gb":"4350","bedrag":1.17,"naam":"","omschr":"Periode 01-02-2023 t/m 28-02-2023","rek":"1010","type":"uitgave"},{"id":"h2023_14","datum":"2023-03-02","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank3POEV5I 1030000730153393 Versturen Ordernummer: ?3PO","rek":"1010","type":"uitgave"},{"id":"h2023_15","datum":"2023-03-04","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank6NDSB7G 1030000730682594 Versturen Ordernummer: ?6ND","rek":"1010","type":"uitgave"},{"id":"h2023_16","datum":"2023-03-06","gb":"601","bedrag":30.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_storting"},{"id":"h2023_17","datum":"2023-03-06","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank7THVM7K 1030000731362361 Versturen Ordernummer: ?7TH","rek":"1010","type":"uitgave"},{"id":"h2023_18","datum":"2023-03-22","gb":"600","bedrag":650.39,"naam":"DK8789000000014387","omschr":"Storting","rek":"1010","type":"prive_storting"},{"id":"h2023_19","datum":"2023-04-03","gb":"8010","bedrag":147.83,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3908581415999. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2023_20","datum":"2023-04-04","gb":"4350","bedrag":1.95,"naam":"","omschr":"Periode 01-03-2023 t/m 31-03-2023","rek":"1010","type":"uitgave"},{"id":"h2023_21","datum":"2023-04-09","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank6MTZZ6X 1030000741393805 Versturen Ordernummer: .6MT","rek":"1010","type":"uitgave"},{"id":"h2023_22","datum":"2023-04-12","gb":"601","bedrag":700.0,"naam":"NL35RABO0129757683","omschr":"Opname","rek":"1010","type":"prive_opname"},{"id":"h2023_23","datum":"2023-04-17","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank5XCCP5R 1030000743763420 Versturen Ordernummer: .5XC","rek":"1010","type":"uitgave"},{"id":"h2023_24","datum":"2023-04-18","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank7WUMQ7U 1030000744010546 Versturen Ordernummer: .7WU","rek":"1010","type":"uitgave"},{"id":"h2023_25","datum":"2023-04-20","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank2CNLT2U 1030000744683170 Versturen Ordernummer: .2CN","rek":"1010","type":"uitgave"},{"id":"h2023_26","datum":"2023-05-02","gb":"8010","bedrag":145.17,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3908736278967. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2023_27","datum":"2023-05-03","gb":"4350","bedrag":2.34,"naam":"","omschr":"Periode 01-04-2023 t/m 30-04-2023","rek":"1010","type":"uitgave"},{"id":"h2023_28","datum":"2023-05-11","gb":"600","bedrag":200.0,"naam":"NL35RABO0129757683","omschr":"Prive storting","rek":"1010","type":"prive_storting"},{"id":"h2023_29","datum":"2023-05-11","gb":"601","bedrag":400.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2023_30","datum":"2023-05-17","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank7YFKB5A 1030000753359022 Versturen Ordernummer: 7YFK","rek":"1010","type":"uitgave"},{"id":"h2023_31","datum":"2023-05-22","gb":"7100","bedrag":21.24,"naam":"NL51DEUT0265262461","omschr":"M02479991MGPPFAB 1150014024867480 Order 61241 verpakkingvoor","rek":"1010","type":"uitgave"},{"id":"h2023_32","datum":"2023-05-26","gb":"600","bedrag":50.0,"naam":"NL35RABO0129757683","omschr":"Prive storting","rek":"1010","type":"prive_storting"},{"id":"h2023_33","datum":"2023-05-26","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank2LLGY7A 1030000756115885 Versturen Ordernummer: 2LLG","rek":"1010","type":"uitgave"},{"id":"h2023_34","datum":"2023-06-02","gb":"4350","bedrag":2.73,"naam":"","omschr":"Periode 01-05-2023 t/m 31-05-2023","rek":"1010","type":"uitgave"},{"id":"h2023_35","datum":"2023-06-04","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank8JYXZ4F 1030000759035076 Versturen Ordernummer: 8JYX","rek":"1010","type":"uitgave"},{"id":"h2023_36","datum":"2023-06-05","gb":"8010","bedrag":142.67,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3908919337383. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2023_37","datum":"2023-06-06","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank1LTJY7A 1030000759641038 Versturen Ordernummer: 1LTJ","rek":"1010","type":"uitgave"},{"id":"h2023_38","datum":"2023-06-09","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank0IYXP6Z 1030000760595744 Versturen Ordernummer: 0IYX","rek":"1010","type":"uitgave"},{"id":"h2023_39","datum":"2023-06-14","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank3XKBP3L 1030000762106836 Versturen Ordernummer: 3XKB","rek":"1010","type":"uitgave"},{"id":"h2023_40","datum":"2023-06-18","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank9CIAH3V 1030000763381521 Versturen Ordernummer: 9CIA","rek":"1010","type":"uitgave"},{"id":"h2023_41","datum":"2023-06-23","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank7WXKD9X 1030000764723692 Versturen Ordernummer: 7WXK","rek":"1010","type":"uitgave"},{"id":"h2023_42","datum":"2023-06-27","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank3JAPG6P 1030000766028318 Versturen Ordernummer: 3JAP","rek":"1010","type":"uitgave"},{"id":"h2023_43","datum":"2023-07-01","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank5QTZZ9L 1030000767422083 Versturen Ordernummer: 5QTZ","rek":"1010","type":"uitgave"},{"id":"h2023_44","datum":"2023-07-03","gb":"8010","bedrag":297.55,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3909095866739. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2023_45","datum":"2023-07-04","gb":"4350","bedrag":3.12,"naam":"","omschr":"Periode 01-06-2023 t/m 30-06-2023","rek":"1010","type":"uitgave"},{"id":"h2023_46","datum":"2023-07-10","gb":"4815","bedrag":0.88,"naam":"NL51DEUT0265262461","omschr":"M03178654MH8JGHH 1150014510677856 Vimexx Bestelling 20233410","rek":"1010","type":"uitgave"},{"id":"h2023_47","datum":"2023-07-14","gb":"2080","bedrag":100.0,"naam":"NL04ADYB2017400157","omschr":"KVNW4BZNRK5FQ63214QGL 0180319522052336 dpst:f9ba2958-4e17-46","rek":"1010","type":"uitgave"},{"id":"h2023_48","datum":"2023-07-14","gb":"2080","bedrag":100.0,"naam":"NL51BUNQ2035661323","omschr":"Refund","rek":"1010","type":"inkomst"},{"id":"h2023_49","datum":"2023-07-14","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank6HVCS9G 1030000771560114 Versturen Ordernummer: 6HVC","rek":"1010","type":"uitgave"},{"id":"h2023_50","datum":"2023-08-02","gb":"4350","bedrag":2.34,"naam":"","omschr":"Periode 01-07-2023 t/m 31-07-2023","rek":"1010","type":"uitgave"},{"id":"h2023_51","datum":"2023-08-02","gb":"8010","bedrag":97.97,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3909272143588. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2023_52","datum":"2023-08-10","gb":"601","bedrag":400.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2023_53","datum":"2023-09-02","gb":"4350","bedrag":0.78,"naam":"","omschr":"Periode 01-08-2023 t/m 31-08-2023","rek":"1010","type":"uitgave"},{"id":"h2023_54","datum":"2023-09-03","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank0PROY2H 1030000787968287 Versturen Ordernummer: 0PRO","rek":"1010","type":"uitgave"},{"id":"h2023_55","datum":"2023-09-04","gb":"7900","bedrag":8.9,"naam":"NL56DEUT0265186420","omschr":"PnlFrank9TEXE6W 1030000788527289 Versturen Ordernummer: 9TEX","rek":"1010","type":"uitgave"},{"id":"h2023_56","datum":"2023-09-09","gb":"601","bedrag":50.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2023_57","datum":"2023-10-02","gb":"8010","bedrag":46.46,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3909605472591. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2023_58","datum":"2023-10-03","gb":"4350","bedrag":1.17,"naam":"","omschr":"Periode 01-09-2023 t/m 30-09-2023","rek":"1010","type":"uitgave"},{"id":"h2023_59","datum":"2023-10-23","gb":"600","bedrag":50.0,"naam":"NL35RABO0129757683","omschr":"Prive storting","rek":"1010","type":"prive_storting"},{"id":"h2023_60","datum":"2023-10-31","gb":"7900","bedrag":8.9,"naam":"NL56DEUT0265186420","omschr":"PnlFrank8CIAX3R 1030000806638932 Versturen Ordernummer: 8CIA","rek":"1010","type":"uitgave"},{"id":"h2023_61","datum":"2023-11-01","gb":"8000","bedrag":38.0,"naam":"NL82RABO0308801377","omschr":"NL43RABO0301744068:R. Damen:1234567:Renee","rek":"1010","type":"inkomst"},{"id":"h2023_62","datum":"2023-11-02","gb":"4350","bedrag":1.17,"naam":"","omschr":"Periode 01-10-2023 t/m 31-10-2023","rek":"1010","type":"uitgave"},{"id":"h2023_63","datum":"2023-11-02","gb":"8010","bedrag":45.48,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3909801575280. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2023_64","datum":"2023-11-18","gb":"2080","bedrag":100.0,"naam":"NL04ADYB2017400157","omschr":"L45M2LJZMMRSK2C214QGL 0180332100623743 dpst:5765e275-c2e9-4a","rek":"1010","type":"uitgave"},{"id":"h2023_65","datum":"2023-11-18","gb":"2080","bedrag":100.0,"naam":"NL51BUNQ2035661323","omschr":"Refund","rek":"1010","type":"inkomst"},{"id":"h2023_66","datum":"2023-11-30","gb":"4815","bedrag":2.44,"naam":"NL04ADYB2017400157","omschr":"PS9S7W8KZMNNWPG2JFD4 0180333429501441 2285781554 xui-5488058","rek":"1010","type":"uitgave"},{"id":"h2023_67","datum":"2023-12-02","gb":"4350","bedrag":1.95,"naam":"","omschr":"Periode 01-11-2023 t/m 30-11-2023","rek":"1010","type":"uitgave"},{"id":"h2023_68","datum":"2023-12-08","gb":"601","bedrag":200.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2023_69","datum":"2023-12-18","gb":"7900","bedrag":8.9,"naam":"NL56DEUT0265186420","omschr":"PnlFrank3MGNT6Z 1030000823000413 Versturen Ordernummer: 3MGN","rek":"1010","type":"uitgave"},{"id":"h2024_0","datum":"2024-01-02","gb":"8010","bedrag":42.32,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3910262902123. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2024_1","datum":"2024-01-03","gb":"4350","bedrag":0.78,"naam":"","omschr":"Periode 01-12-2023 t/m 31-12-2023","rek":"1010","type":"uitgave"},{"id":"h2024_2","datum":"2024-01-23","gb":"601","bedrag":20.0,"naam":"NL35RABO0129757683","omschr":"","rek":"1010","type":"prive_opname"},{"id":"h2024_3","datum":"2024-02-02","gb":"4350","bedrag":0.78,"naam":"","omschr":"Periode 01-01-2024 t/m 31-01-2024","rek":"1010","type":"uitgave"},{"id":"h2024_4","datum":"2024-02-04","gb":"4350","bedrag":0.01,"naam":"NL51DEUT0265262461","omschr":"M07328861MJD3WMI 1152163930180636 Lidmaatschap (tel 070 378 ","rek":"1010","type":"uitgave"},{"id":"h2024_5","datum":"2024-02-13","gb":"2080","bedrag":39.9,"naam":"NL38DEUT7027017944","omschr":"Lidmaatschap (tel 070 378 9825)","rek":"1010","type":"uitgave"},{"id":"h2024_6","datum":"2024-02-19","gb":"2080","bedrag":39.9,"naam":"NL38DEUT7027017944","omschr":"Lidmaatschap (tel 070 378 9825)","rek":"1010","type":"inkomst"},{"id":"h2024_7","datum":"2024-03-02","gb":"4350","bedrag":1.17,"naam":"","omschr":"Periode 01-02-2024 t/m 29-02-2024","rek":"1010","type":"uitgave"},{"id":"h2024_8","datum":"2024-03-10","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank6KBAK6T 1030000849530736 Versturen Ordernummer: 6KBA","rek":"1010","type":"uitgave"},{"id":"h2024_9","datum":"2024-04-02","gb":"4895","bedrag":2.79,"naam":"NL45INGB0000257133","omschr":"Factuurnummer 3910796944299, Xtenate","rek":"1010","type":"uitgave"},{"id":"h2024_10","datum":"2024-04-02","gb":"8000","bedrag":38.0,"naam":"NL80RABO0151290776","omschr":"Kruimeldief","rek":"1010","type":"inkomst"},{"id":"h2024_11","datum":"2024-04-03","gb":"4350","bedrag":0.39,"naam":"","omschr":"Periode 01-03-2024 t/m 31-03-2024","rek":"1010","type":"uitgave"},{"id":"h2024_12","datum":"2024-04-03","gb":"8000","bedrag":38.0,"naam":"NL42ABNA0564439215","omschr":"1x kruimel dief voor Inge","rek":"1010","type":"inkomst"},{"id":"h2024_13","datum":"2024-04-26","gb":"8000","bedrag":38.0,"naam":"NL80RABO0151290776","omschr":"Kruimeldief voor thuis","rek":"1010","type":"inkomst"},{"id":"h2024_14","datum":"2024-05-03","gb":"4350","bedrag":1.56,"naam":"","omschr":"Periode 01-04-2024 t/m 30-04-2024","rek":"1010","type":"uitgave"},{"id":"h2024_15","datum":"2024-05-15","gb":"7900","bedrag":9.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank9AXZX4T 8030577678734694 Versturen Ordernummer: 9AXZ","rek":"1010","type":"uitgave"},{"id":"h2024_16","datum":"2024-05-17","gb":"7900","bedrag":9.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank5XRGA8P 8030107381697467 Versturen Ordernummer: 5XRG","rek":"1010","type":"uitgave"},{"id":"h2024_17","datum":"2024-05-17","gb":"7900","bedrag":9.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank0LITM7Q 8030679184667302 Versturen Ordernummer: 0LIT","rek":"1010","type":"uitgave"},{"id":"h2024_18","datum":"2024-05-22","gb":"7900","bedrag":9.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank3WEXH1P 8030009166472128 Versturen Ordernummer: 3WEX","rek":"1010","type":"uitgave"},{"id":"h2024_19","datum":"2024-05-26","gb":"4815","bedrag":6.7,"naam":"NL51DEUT0265262461","omschr":"M03178654MKKDYYS 1152143189033848 Vimexx Bestelling 20243811","rek":"1010","type":"uitgave"},{"id":"h2024_20","datum":"2024-05-27","gb":"7900","bedrag":9.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank2YFQG8G 8030417063428856 Versturen Ordernummer: 2YFQ","rek":"1010","type":"uitgave"},{"id":"h2024_21","datum":"2024-05-27","gb":"7900","bedrag":9.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank0OGNQ8D 8030557963458271 Versturen Ordernummer: 0OGN","rek":"1010","type":"uitgave"},{"id":"h2024_22","datum":"2024-06-03","gb":"8010","bedrag":230.24,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3911150514842. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2024_23","datum":"2024-06-04","gb":"4350","bedrag":2.73,"naam":"","omschr":"Periode 01-05-2024 t/m 31-05-2024","rek":"1010","type":"uitgave"},{"id":"h2024_24","datum":"2024-06-11","gb":"7900","bedrag":9.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank9LOWP8S 8030569738813241 Versturen Ordernummer: 9LOW","rek":"1010","type":"uitgave"},{"id":"h2024_25","datum":"2024-06-11","gb":"7900","bedrag":9.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank6PORT0Q 8030037635963517 Versturen Ordernummer: 6POR","rek":"1010","type":"uitgave"},{"id":"h2024_26","datum":"2024-06-12","gb":"4815","bedrag":9.97,"naam":"NL51DEUT0265262461","omschr":"db64524d389ec12666f8fcbb6866b9e9 8152379141840343 Vimexx Bes","rek":"1010","type":"uitgave"},{"id":"h2024_27","datum":"2024-06-24","gb":"7900","bedrag":9.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank4UEVC2Y 8030649159622186 Versturen Ordernummer: 4UEV","rek":"1010","type":"uitgave"},{"id":"h2024_28","datum":"2024-06-24","gb":"7900","bedrag":9.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank2WCPB0I 8030338532622540 Versturen Ordernummer: 2WCP","rek":"1010","type":"uitgave"},{"id":"h2024_29","datum":"2024-07-02","gb":"4350","bedrag":2.34,"naam":"","omschr":"Periode 01-06-2024 t/m 30-06-2024","rek":"1010","type":"uitgave"},{"id":"h2024_30","datum":"2024-07-02","gb":"8010","bedrag":160.31,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3911322246138. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2024_31","datum":"2024-07-04","gb":"7900","bedrag":6.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank8WEIT9Z 8030199747202522 Versturen Ordernummer: 8WEI","rek":"1010","type":"uitgave"},{"id":"h2024_32","datum":"2024-08-02","gb":"4350","bedrag":0.78,"naam":"","omschr":"Periode 01-07-2024 t/m 31-07-2024","rek":"1010","type":"uitgave"},{"id":"h2024_33","datum":"2024-08-02","gb":"8010","bedrag":36.97,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3911508570287. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2024_34","datum":"2024-08-30","gb":"4815","bedrag":9.97,"naam":"NL51DEUT0265262461","omschr":"10882981684e9eeaca4823b6d7ad5caf 8152387951442737 Vimexx Bes","rek":"1010","type":"uitgave"},{"id":"h2024_35","datum":"2024-08-31","gb":"4815","bedrag":95.53,"naam":"NL58CITI2032329913","omschr":"7E9XWSJ 0220597930320253 SiteGround Hosting xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_36","datum":"2024-09-01","gb":"7900","bedrag":10.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank7JNJV3X 8030888848345639 Versturen Ordernummer: 7JNJ","rek":"1010","type":"uitgave"},{"id":"h2024_37","datum":"2024-09-02","gb":"7900","bedrag":10.25,"naam":"NL56DEUT0265186420","omschr":"PnlFrank0PGSJ4P 8030888245373527 Versturen Ordernummer: 0PGS","rek":"1010","type":"uitgave"},{"id":"h2024_38","datum":"2024-09-03","gb":"4350","bedrag":1.17,"naam":"","omschr":"Periode 01-08-2024 t/m 31-08-2024","rek":"1010","type":"uitgave"},{"id":"h2024_39","datum":"2024-09-09","gb":"4350","bedrag":1.04,"naam":"DE17202208000000020234","omschr":"5ZE9SPU 7140049748202326 XTENATE Xtenate xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_40","datum":"2024-09-09","gb":"7000","bedrag":11.44,"naam":"DE75202208000000019190","omschr":"510CSY7 7140147933263433 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_41","datum":"2024-09-17","gb":"4815","bedrag":32.56,"naam":"NL04ADYB2017400157","omschr":"VF9SL53SN3NFHSD3MNZ7 7180048529728878 T1682857400661966882 x","rek":"1010","type":"uitgave"},{"id":"h2024_42","datum":"2024-09-23","gb":"4810","bedrag":20.0,"naam":"NL04ADYB2017400157","omschr":"LH9PQ6NKCCTJBLX32MXMP 7180107920951349 Meta Ads xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_43","datum":"2024-09-30","gb":"4810","bedrag":60.5,"naam":"NL04ADYB2017400157","omschr":"SR86R4N5GFHG9RG62P4SE 7180479114419392 AQYAADWNhn2nsU9S9Pknw","rek":"1010","type":"uitgave"},{"id":"h2024_44","datum":"2024-10-02","gb":"4350","bedrag":2.73,"naam":"","omschr":"Periode 01-09-2024 t/m 30-09-2024","rek":"1010","type":"uitgave"},{"id":"h2024_45","datum":"2024-10-02","gb":"8010","bedrag":80.08,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3911853829137, 3911679071240 en 39118536422","rek":"1010","type":"inkomst"},{"id":"h2024_46","datum":"2024-10-03","gb":"4815","bedrag":21.71,"naam":"NL37ABNA0423430890","omschr":"Wondershare T1682857400661966882 T1687936916170211374","rek":"1010","type":"uitgave"},{"id":"h2024_47","datum":"2024-10-09","gb":"4350","bedrag":0.53,"naam":"IE64CITI99005124417026","omschr":"GG103QEF93","rek":"1010","type":"inkomst"},{"id":"h2024_48","datum":"2024-10-14","gb":"4350","bedrag":1.0,"naam":"NL56DEUT0265186420","omschr":"PortoVP20249VH09BS 8030687926197335 3SOPKA4948767978245LG xu","rek":"1010","type":"uitgave"},{"id":"h2024_49","datum":"2024-10-22","gb":"601","bedrag":120.0,"naam":"NL35RABO0129757683","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2024_50","datum":"2024-10-30","gb":"4810","bedrag":10.0,"naam":"NL04ADYB2017400157","omschr":"DLWZFKNH75QL99G62MXMP 7180838813668729 Meta Ads xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_51","datum":"2024-11-02","gb":"4350","bedrag":2.34,"naam":"","omschr":"Periode 01-10-2024 t/m 31-10-2024","rek":"1010","type":"uitgave"},{"id":"h2024_52","datum":"2024-11-04","gb":"4895","bedrag":9.0,"naam":"NL26INGB0006865503","omschr":"I241104201256986CB8AC200NB 7051517910653711 Uittreksel Hande","rek":"1010","type":"uitgave"},{"id":"h2024_53","datum":"2024-11-05","gb":"4815","bedrag":21.71,"naam":"NL37ABNA0423430890","omschr":"Wondershare T1682857400661966882 T1699187645044228115","rek":"1010","type":"uitgave"},{"id":"h2024_54","datum":"2024-11-11","gb":"4895","bedrag":7.99,"naam":"NL51DEUT0265262461","omschr":"b1385f8cdd5cc00ea5060cb682f0141a 8152669410453659 Order 2017","rek":"1010","type":"uitgave"},{"id":"h2024_55","datum":"2024-11-17","gb":"7000","bedrag":16.08,"naam":"DE75202208000000019190","omschr":"70EPMGS 7140307625015794 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_56","datum":"2024-11-19","gb":"7000","bedrag":14.29,"naam":"DE75202208000000019190","omschr":"70F1IKL 7140157022008465 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_57","datum":"2024-11-22","gb":"600","bedrag":500.0,"naam":"NL35RABO0129757683","omschr":"","rek":"1010","type":"prive_storting"},{"id":"h2024_58","datum":"2024-11-23","gb":"7000","bedrag":13.39,"naam":"DE75202208000000019190","omschr":"70FVGD2 7140359419086306 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_59","datum":"2024-11-27","gb":"4760","bedrag":17.55,"naam":"NL82RABO0169941124","omschr":"Factuur: 65988737 e-Boekhouden.nl","rek":"1010","type":"uitgave"},{"id":"h2024_60","datum":"2024-11-27","gb":"7000","bedrag":28.38,"naam":"DE75202208000000019190","omschr":"70GQ6CP 7140048806895266 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_61","datum":"2024-11-27","gb":"4895","bedrag":29.99,"naam":"NL51DEUT0265262461","omschr":"c28f9a78206915e7f9555eecca307b87 8152118518654396 Order 2017","rek":"1010","type":"uitgave"},{"id":"h2024_62","datum":"2024-12-01","gb":"7900","bedrag":10.0,"naam":"NL56DEUT0265186420","omschr":"PnlFrank4RRZP6Z 8030409400732768 Versturen Ordernummer: 4RRZ","rek":"1010","type":"uitgave"},{"id":"h2024_63","datum":"2024-12-01","gb":"7000","bedrag":14.59,"naam":"DE75202208000000019190","omschr":"70HJQLQ 7140888812793344 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_64","datum":"2024-12-02","gb":"8010","bedrag":62.46,"naam":"NL45INGB0000257133","omschr":"Betaling bol.com 3912266562409. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2024_65","datum":"2024-12-02","gb":"7000","bedrag":25.38,"naam":"DE75202208000000019190","omschr":"70HSCJX 7140668803730713 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_66","datum":"2024-12-03","gb":"4350","bedrag":3.9,"naam":"NL09RABO0189398019","omschr":"Kosten Periode 01-11-2024 t/m 30-11-2024","rek":"1010","type":"uitgave"},{"id":"h2024_67","datum":"2024-12-03","gb":"7000","bedrag":15.03,"naam":"DE75202208000000019190","omschr":"70HYWC7 7140438203816444 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_68","datum":"2024-12-03","gb":"4350","bedrag":0.5,"naam":"NL56DEUT0265186420","omschr":"PortoVP20248RO50SJ 8030867015638862 LA133654873NL-5175PT xui","rek":"1010","type":"uitgave"},{"id":"h2024_69","datum":"2024-12-06","gb":"7000","bedrag":231.95,"naam":"DE75202208000000019190","omschr":"70IL3S6 7140429703387036 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_70","datum":"2024-12-06","gb":"7100","bedrag":43.5,"naam":"NL17DEUT0265262879","omschr":"1033786017 8151319100329325 Payment for order -1000309593 Ve","rek":"1010","type":"uitgave"},{"id":"h2024_71","datum":"2024-12-07","gb":"4810","bedrag":50.0,"naam":"NL04ADYB2017400157","omschr":"ZQ2LBH9JC2G823Z32MXMP 7180659106596139 Meta Ads xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_72","datum":"2024-12-09","gb":"7000","bedrag":13.99,"naam":"DE75202208000000019190","omschr":"70J8BIF 7140707303469701 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_73","datum":"2024-12-14","gb":"7000","bedrag":16.72,"naam":"DE75202208000000019190","omschr":"70K77SK 7140277009514797 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_74","datum":"2024-12-14","gb":"7900","bedrag":5.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank7EIIA1J 8030208203334803 Versturen Ordernummer: 7EII","rek":"1010","type":"uitgave"},{"id":"h2024_75","datum":"2024-12-14","gb":"7900","bedrag":5.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank3EAPO5L 8030107315573285 Versturen Ordernummer: 3EAP","rek":"1010","type":"uitgave"},{"id":"h2024_76","datum":"2024-12-14","gb":"7900","bedrag":5.95,"naam":"NL56DEUT0265186420","omschr":"PnlFrank9IYCK4V 8030438500575832 Versturen Ordernummer: 9IYC","rek":"1010","type":"uitgave"},{"id":"h2024_77","datum":"2024-12-18","gb":"7900","bedrag":10.0,"naam":"NL56DEUT0265186420","omschr":"PnlFrank9AXHD7Y 8030497624232242 Versturen Ordernummer: 9AXH","rek":"1010","type":"uitgave"},{"id":"h2024_78","datum":"2024-12-18","gb":"7900","bedrag":10.0,"naam":"NL56DEUT0265186420","omschr":"PnlFrank6QTOB7L 8030089409292146 Versturen Ordernummer: 6QTO","rek":"1010","type":"uitgave"},{"id":"h2024_79","datum":"2024-12-18","gb":"7000","bedrag":17.39,"naam":"DE75202208000000019190","omschr":"51EWV2S 7140378227172410 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2024_80","datum":"2024-12-18","gb":"7900","bedrag":10.0,"naam":"NL56DEUT0265186420","omschr":"PnlFrank8IYFV4A 8030829118022842 Versturen Ordernummer: 8IYF","rek":"1010","type":"uitgave"},{"id":"h2024_81","datum":"2024-12-27","gb":"4760","bedrag":17.55,"naam":"NL82RABO0169941124","omschr":"Factuur: 66092085 e-Boekhouden.nl","rek":"1010","type":"uitgave"},{"id":"h2025_0","datum":"2025-01-02","gb":"8010","bedrag":529.96,"naam":"BOLCOM BV","omschr":"Betaling bol.com 3912526837241. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2025_1","datum":"2025-01-02","gb":"7000","bedrag":86.87,"naam":"Alipay","omschr":"Aliexpres","rek":"1010","type":"uitgave"},{"id":"h2025_2","datum":"2025-01-03","gb":"4350","bedrag":7.41,"naam":"Rabobank","omschr":"Kosten Periode 01-12-2024 t/m 31-12-2024","rek":"1010","type":"uitgave"},{"id":"h2025_3","datum":"2025-02-01","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank7SUPE1K 8030384895806810 Versturen Ordernummer: 7SUP","rek":"1010","type":"uitgave"},{"id":"h2025_4","datum":"2025-02-04","gb":"4350","bedrag":0.78,"naam":"Rabobank","omschr":"Kosten Periode 01-01-2025 t/m 31-01-2025","rek":"1010","type":"uitgave"},{"id":"h2025_5","datum":"2025-02-08","gb":"8010","bedrag":70.25,"naam":"Bol.com","omschr":"Factuurnummer 391278010619, Xtenate","rek":"1010","type":"uitgave"},{"id":"h2025_6","datum":"2025-02-17","gb":"7000","bedrag":27.98,"naam":"Alipay EUROPE LTD S.A","omschr":"719LFBS 7140385774340940 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_7","datum":"2025-02-17","gb":"7900","bedrag":6.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank9ITEX8K 8030956077308093 Versturen Ordernummer: 9ITE","rek":"1010","type":"uitgave"},{"id":"h2025_8","datum":"2025-02-19","gb":"7000","bedrag":35.0,"naam":"Alipay EUROPE LTD S.A","omschr":"Inkoop aliexpress","rek":"1010","type":"uitgave"},{"id":"h2025_9","datum":"2025-03-03","gb":"8010","bedrag":59.06,"naam":"BOLCOM BV","omschr":"Betaling bol.com 3912894371366. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2025_10","datum":"2025-03-04","gb":"4350","bedrag":1.95,"naam":"Rabobank","omschr":"Kosten Periode 01-02-2025 t/m 28-02-2025","rek":"1010","type":"uitgave"},{"id":"h2025_11","datum":"2025-03-08","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank7SMBF9P 8030984297892356 Versturen Ordernummer: 7SMB","rek":"1010","type":"uitgave"},{"id":"h2025_12","datum":"2025-03-11","gb":"7000","bedrag":13.38,"naam":"Alipay EUROPE LTD S.A","omschr":"71IEPQ5 7140126973792402 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_13","datum":"2025-03-11","gb":"7000","bedrag":12.99,"naam":"Alipay EUROPE LTD S.A","omschr":"71IBK0T 7140454279704715 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_14","datum":"2025-03-11","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank1QGFQ2B 8030704897792573 Versturen Ordernummer: 1QGF","rek":"1010","type":"uitgave"},{"id":"h2025_15","datum":"2025-03-11","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank5HLYX3E 8030434876704391 Versturen Ordernummer: 5HLY","rek":"1010","type":"uitgave"},{"id":"h2025_16","datum":"2025-03-18","gb":"7900","bedrag":6.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank6HINJ2K 8030706394383376 Versturen Ordernummer: 6HIN","rek":"1010","type":"uitgave"},{"id":"h2025_17","datum":"2025-03-25","gb":"7000","bedrag":24.07,"naam":"Alipay EUROPE LTD S.A","omschr":"71OVIUH 7140135497481086 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_18","datum":"2025-03-25","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank0IVZC6D 8030895485422991 Versturen Ordernummer: 0IVZ","rek":"1010","type":"uitgave"},{"id":"h2025_19","datum":"2025-03-26","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank6HSBK5L 8030645170297126 Versturen Ordernummer: 6HSB","rek":"1010","type":"uitgave"},{"id":"h2025_20","datum":"2025-03-27","gb":"7000","bedrag":13.62,"naam":"Alipay EUROPE LTD S.A","omschr":"71PQYF3 7140015182056814 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_21","datum":"2025-03-28","gb":"7000","bedrag":13.07,"naam":"Alipay EUROPE LTD S.A","omschr":"71QEW8Y 7140924879263613 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_22","datum":"2025-03-28","gb":"7000","bedrag":11.89,"naam":"Alipay EUROPE LTD S.A","omschr":"71Q1FKS 7140586697022290 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_23","datum":"2025-03-29","gb":"7000","bedrag":23.38,"naam":"Alipay EUROPE LTD S.A","omschr":"71QIE9N 7140956082079194 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_24","datum":"2025-03-29","gb":"7000","bedrag":13.19,"naam":"Alipay EUROPE LTD S.A","omschr":"71QIDJA 7140176979139677 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_25","datum":"2025-03-29","gb":"7900","bedrag":1.0,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20256LV12DC 8030394585049275 3SOPKA245529365-6127CV x","rek":"1010","type":"uitgave"},{"id":"h2025_26","datum":"2025-04-01","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank5NORG0Z 8030926094161553 Versturen Ordernummer: 5NOR","rek":"1010","type":"uitgave"},{"id":"h2025_27","datum":"2025-04-02","gb":"4350","bedrag":6.24,"naam":"Rabobank","omschr":"Kosten Periode 01-03-2025 t/m 31-03-2025","rek":"1010","type":"uitgave"},{"id":"h2025_28","datum":"2025-04-02","gb":"8010","bedrag":218.6,"naam":"BOLCOM BV","omschr":"Betaling bol.com 3913076360357. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2025_29","datum":"2025-04-03","gb":"7000","bedrag":23.88,"naam":"Alipay EUROPE LTD S.A","omschr":"71TELVK 7140465776063387 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_30","datum":"2025-04-03","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank8MJDN2Q 8030345770005172 Versturen Ordernummer: 8MJD","rek":"1010","type":"uitgave"},{"id":"h2025_31","datum":"2025-04-03","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank1NOES4M 8030105494065550 Versturen Ordernummer: 1NOE","rek":"1010","type":"uitgave"},{"id":"h2025_32","datum":"2025-04-04","gb":"7000","bedrag":54.16,"naam":"Alipay EUROPE LTD S.A","omschr":"71TUH7I 7140456394271557 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_33","datum":"2025-04-04","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank8TZCN6H 8030076679240648 Versturen Ordernummer: 8TZC","rek":"1010","type":"uitgave"},{"id":"h2025_34","datum":"2025-04-04","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank6JLIY8P 8030115494180303 Versturen Ordernummer: 6JLI","rek":"1010","type":"uitgave"},{"id":"h2025_35","datum":"2025-04-05","gb":"7900","bedrag":2.4,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20250SU38VP 8030614551967954 LA109382300NL-5175PT xui","rek":"1010","type":"uitgave"},{"id":"h2025_36","datum":"2025-04-05","gb":"7900","bedrag":2.4,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20252LG62YK 8030245751878842 LA109376216NL-5175PT xui","rek":"1010","type":"uitgave"},{"id":"h2025_37","datum":"2025-04-07","gb":"7900","bedrag":2.4,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20255GN25WH 8030205766842794 LA109415855NL-5175PT xui","rek":"1010","type":"uitgave"},{"id":"h2025_38","datum":"2025-04-13","gb":"7000","bedrag":10.19,"naam":"Alipay EUROPE LTD S.A","omschr":"71Y4KP4 7140264851914140 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_39","datum":"2025-04-13","gb":"7000","bedrag":27.41,"naam":"Alipay EUROPE LTD S.A","omschr":"71Y3W6R 7140004563825442 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_40","datum":"2025-04-13","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank9OLQM7Q 8030315463763840 Versturen Ordernummer: 9OLQ","rek":"1010","type":"uitgave"},{"id":"h2025_41","datum":"2025-04-13","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank0LOEA2S 8030606663734719 Versturen Ordernummer: 0LOE","rek":"1010","type":"uitgave"},{"id":"h2025_42","datum":"2025-04-15","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank4LTBF8V 8030106045488827 Versturen Ordernummer: 4LTB","rek":"1010","type":"uitgave"},{"id":"h2025_43","datum":"2025-04-24","gb":"7000","bedrag":13.49,"naam":"Alipay EUROPE LTD S.A","omschr":"723AYCS 7140446066491704 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_44","datum":"2025-04-25","gb":"4350","bedrag":0.01,"naam":"PayPal Europe S.a.r.l. et Cie S.C.A","omschr":"PP.7181.PP/YYR1041757852530","rek":"1010","type":"inkomst"},{"id":"h2025_45","datum":"2025-05-02","gb":"8010","bedrag":249.83,"naam":"BOLCOM BV","omschr":"Betaling bol.com 3913245727564. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2025_46","datum":"2025-05-04","gb":"4350","bedrag":7.02,"naam":"Rabobank","omschr":"Kosten Periode 01-04-2025 t/m 30-04-2025","rek":"1010","type":"uitgave"},{"id":"h2025_47","datum":"2025-05-11","gb":"7000","bedrag":12.49,"naam":"Alipay EUROPE LTD S.A","omschr":"72BO469 7140644559959216 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_48","datum":"2025-05-12","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank0SHSZ9Z 8030656348016780 Versturen Ordernummer: 0SHS","rek":"1010","type":"uitgave"},{"id":"h2025_49","datum":"2025-05-18","gb":"7000","bedrag":12.69,"naam":"Alipay EUROPE LTD S.A","omschr":"72F6TNR 7140245759518528 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_50","datum":"2025-05-18","gb":"7900","bedrag":11.9,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank1JDFI7Q 8030654259610205 Versturen Ordernummer: 1JDF","rek":"1010","type":"uitgave"},{"id":"h2025_cc_209","datum":"2025-05-23","gb":"4235","bedrag":743.24,"naam":"Computer","omschr":"Computer","rek":"1030","type":"uitgave"},{"id":"h2025_51","datum":"2025-05-26","gb":"600","bedrag":500.0,"naam":"C.L.D.J. Donders","omschr":"Prive storting","rek":"1010","type":"prive_storting"},{"id":"h2025_52","datum":"2025-05-26","gb":"4810","bedrag":643.0,"naam":"Coolblue","omschr":"J6T6ZNP57BCNTQF62GKII 7180136050464696 trnsnr:745596786 xui-","rek":"1010","type":"uitgave"},{"id":"h2025_53","datum":"2025-05-26","gb":"4815","bedrag":7.19,"naam":"Vimexx via Stichting Mollie Payments","omschr":"f3b5e88302534be37e624d0209f89f8e 8152405144346379 Vimexx Bes","rek":"1010","type":"uitgave"},{"id":"h2025_54","datum":"2025-05-26","gb":"7000","bedrag":13.29,"naam":"Alipay EUROPE LTD S.A","omschr":"72JS9XE 7140404841286022 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_55","datum":"2025-05-26","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank4QGYX1K 8030685753285899 Versturen Ordernummer: 4QGY","rek":"1010","type":"uitgave"},{"id":"h2025_56","datum":"2025-05-28","gb":"8000","bedrag":400.0,"naam":"Het Nederlands Veiling Instituut","omschr":"Factuur XTE001, verwijderen etiketten","rek":"1010","type":"inkomst"},{"id":"h2025_57","datum":"2025-05-29","gb":"601","bedrag":500.0,"naam":"C.L.D.J. Donders","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2025_58","datum":"2025-06-02","gb":"8010","bedrag":58.91,"naam":"BOLCOM BV","omschr":"Betaling bol.com 3913433109609. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2025_59","datum":"2025-06-03","gb":"4350","bedrag":4.68,"naam":"Rabobank","omschr":"Kosten Periode 01-05-2025 t/m 31-05-2025","rek":"1010","type":"uitgave"},{"id":"h2025_60","datum":"2025-06-04","gb":"4810","bedrag":57.98,"naam":"Motea","omschr":"WIKYUGZ 0220676646987486 MOTEA - MOTO xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_61","datum":"2025-06-15","gb":"7000","bedrag":27.38,"naam":"Alipay EUROPE LTD S.A","omschr":"72UGZ4D 7140915755896616 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_62","datum":"2025-06-18","gb":"8020","bedrag":57.8,"naam":"Stripe Technology Europe Ltd","omschr":"Xtenate N7X6T7","rek":"1010","type":"inkomst"},{"id":"h2025_63","datum":"2025-06-20","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank0PJIL2L 8030835158670800 Versturen Ordernummer: 0PJI","rek":"1010","type":"uitgave"},{"id":"h2025_64","datum":"2025-06-20","gb":"8020","bedrag":32.93,"naam":"PAYPAL","omschr":"INSTANT TRANSFER","rek":"1010","type":"inkomst"},{"id":"h2025_65","datum":"2025-06-23","gb":"7900","bedrag":1.0,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20258CX22UH 8030555746752226 3SOPKA629839313-4849AL x","rek":"1010","type":"uitgave"},{"id":"h2025_66","datum":"2025-07-01","gb":"8000","bedrag":4349.59,"naam":"Het Nederlands Veiling Instituut","omschr":"Factuur XTE002","rek":"1010","type":"inkomst"},{"id":"h2025_67","datum":"2025-07-02","gb":"601","bedrag":4000.0,"naam":"C.L.D.J. Donders","omschr":"Prive opname","rek":"1010","type":"prive_opname"},{"id":"h2025_68","datum":"2025-07-02","gb":"4350","bedrag":2.73,"naam":"Rabobank","omschr":"Kosten Periode 01-06-2025 t/m 30-06-2025","rek":"1010","type":"uitgave"},{"id":"h2025_69","datum":"2025-07-02","gb":"8010","bedrag":31.23,"naam":"BOLCOM BV","omschr":"Betaling bol.com 3913619587412. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2025_70","datum":"2025-07-07","gb":"7900","bedrag":1.0,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20251MB80XE 8030056061229869 3SOPKA629839313-4849AL x","rek":"1010","type":"uitgave"},{"id":"h2025_71","datum":"2025-07-10","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank4RTMO8X 8030895449190131 Versturen Ordernummer: 4RTM","rek":"1010","type":"uitgave"},{"id":"h2025_72","datum":"2025-07-14","gb":"7000","bedrag":54.16,"naam":"Alipay EUROPE LTD S.A","omschr":"73AF243 7140446933728554 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_73","datum":"2025-07-14","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank7WPOO5X 8030564536909142 Versturen Ordernummer: 7WPO","rek":"1010","type":"uitgave"},{"id":"h2025_74","datum":"2025-07-14","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank1LYSU4A 8030345727909445 Versturen Ordernummer: 1LYS","rek":"1010","type":"uitgave"},{"id":"h2025_75","datum":"2025-07-16","gb":"7900","bedrag":1.0,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20256VC27SJ 8030776921783904 3SOPKA486209272-8061CV x","rek":"1010","type":"uitgave"},{"id":"h2025_76","datum":"2025-07-19","gb":"7900","bedrag":1.0,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20252CV01GQ 8030336012714124 3SOPKA677022957-7415DH x","rek":"1010","type":"uitgave"},{"id":"h2025_77","datum":"2025-07-24","gb":"4815","bedrag":24.49,"naam":"Vimexx via Stichting Mollie Payments","omschr":"44cea7fc54124324b88df8653a4e765a 8152145130638851 Vimexx Bes","rek":"1010","type":"uitgave"},{"id":"h2025_78","datum":"2025-07-24","gb":"4815","bedrag":0.1,"naam":"Vimexx via Stichting Mollie Payments","omschr":"1c1cd7575bd7fc08f3598879fb227d78 8152425718488260 Verificati","rek":"1010","type":"uitgave"},{"id":"h2025_79","datum":"2025-07-26","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank0JIAN8F 8030286636662026 Versturen Ordernummer: 0JIA","rek":"1010","type":"uitgave"},{"id":"h2025_80","datum":"2025-07-30","gb":"7900","bedrag":1.0,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20255AF94UH 8030946633590014 3SOPKA677022957-7415DH x","rek":"1010","type":"uitgave"},{"id":"h2025_81","datum":"2025-07-31","gb":"601","bedrag":154.98,"naam":"Bescards.com","omschr":"YE9IAW9 0220345730498784 Bescards xui-54880581","rek":"1010","type":"prive_opname"},{"id":"h2025_82","datum":"2025-08-01","gb":"4350","bedrag":5.85,"naam":"Rabobank","omschr":"Kosten Periode 01-07-2025 t/m 31-07-2025","rek":"1010","type":"uitgave"},{"id":"h2025_83","datum":"2025-08-04","gb":"601","bedrag":116.99,"naam":"Bescards.com","omschr":"VDZ2SWB 0220006030364180 Bescards xui-54880581","rek":"1010","type":"prive_opname"},{"id":"h2025_84","datum":"2025-08-04","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank6BPEA8W 8030314212124732 Versturen Ordernummer: 6BPE","rek":"1010","type":"uitgave"},{"id":"h2025_85","datum":"2025-08-04","gb":"8010","bedrag":124.91,"naam":"BOLCOM BV","omschr":"Betaling bol.com 3913812465488. Zie verkoopaccount (1725317)","rek":"1010","type":"inkomst"},{"id":"h2025_cc_210","datum":"2025-08-07","gb":"4230","bedrag":5.64,"naam":"Schaar en tape","omschr":"Schaar en tape","rek":"1030","type":"uitgave"},{"id":"h2025_86","datum":"2025-08-11","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank9YMOW1R 8030714221374095 Versturen Ordernummer: 9YMO","rek":"1010","type":"uitgave"},{"id":"h2025_87","datum":"2025-08-12","gb":"7000","bedrag":26.08,"naam":"Alipay EUROPE LTD S.A","omschr":"73PZOCN 7140176312221614 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_88","datum":"2025-08-12","gb":"7000","bedrag":12.49,"naam":"Alipay EUROPE LTD S.A","omschr":"73PZM7H 7140824830100894 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_89","datum":"2025-08-12","gb":"7000","bedrag":52.36,"naam":"Alipay EUROPE LTD S.A","omschr":"73PZKF4 7140005130311383 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_90","datum":"2025-08-17","gb":"7900","bedrag":9.0,"naam":"Postnl","omschr":"PostNL verzendkosten","rek":"1010","type":"uitgave"},{"id":"h2025_91","datum":"2025-08-20","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank2JNOE0Z 8030266618048424 Versturen Ordernummer: 2JNO","rek":"1010","type":"uitgave"},{"id":"h2025_92","datum":"2025-08-22","gb":"7000","bedrag":13.39,"naam":"Alipay EUROPE LTD S.A","omschr":"73V4D5R 7140955426950573 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_93","datum":"2025-08-28","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank1XROL1N 8030775714513554 Versturen Ordernummer: 1XRO","rek":"1010","type":"uitgave"},{"id":"h2025_94","datum":"2025-09-01","gb":"4350","bedrag":4.29,"naam":"Rabobank","omschr":"Kosten Periode 01-08-2025 t/m 31-08-2025","rek":"1010","type":"uitgave"},{"id":"h2025_95","datum":"2025-09-01","gb":"7000","bedrag":13.52,"naam":"Alipay EUROPE LTD S.A","omschr":"740VP1H 7140266935710366 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_96","datum":"2025-09-01","gb":"7000","bedrag":23.48,"naam":"Alipay EUROPE LTD S.A","omschr":"740VELW 7140475117502922 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_97","datum":"2025-09-01","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank7UUCN8T 8030176029531119 Versturen Ordernummer: 7UUC","rek":"1010","type":"uitgave"},{"id":"h2025_98","datum":"2025-09-01","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank2EFKI6P 8030395114530141 Versturen Ordernummer: 2EFK","rek":"1010","type":"uitgave"},{"id":"h2025_99","datum":"2025-09-02","gb":"8010","bedrag":162.12,"naam":"BOLCOM BV","omschr":"Betaling bol.com 3913985175191 en 3913985173287. Zie verkoop","rek":"1010","type":"inkomst"},{"id":"h2025_100","datum":"2025-09-07","gb":"7000","bedrag":40.37,"naam":"Alipay EUROPE LTD S.A","omschr":"744BXCL 7140676932214964 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_101","datum":"2025-09-08","gb":"7000","bedrag":52.72,"naam":"Alipay EUROPE LTD S.A","omschr":"7451QI0 7140776938480356 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_102","datum":"2025-09-08","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank4DAAC7E 8030606038241241 Versturen Ordernummer: 4DAA","rek":"1010","type":"uitgave"},{"id":"h2025_103","datum":"2025-09-08","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank6IDAU4T 8030146320209516 Versturen Ordernummer: 6IDA","rek":"1010","type":"uitgave"},{"id":"h2025_104","datum":"2025-09-08","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank2HNLG9C 8030146623449267 Versturen Ordernummer: 2HNL","rek":"1010","type":"uitgave"},{"id":"h2025_105","datum":"2025-09-08","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank7TENB0C 8030285720389219 Versturen Ordernummer: 7TEN","rek":"1010","type":"uitgave"},{"id":"h2025_106","datum":"2025-09-09","gb":"7000","bedrag":24.98,"naam":"Alipay EUROPE LTD S.A","omschr":"745SBRZ 7140544517298808 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_107","datum":"2025-09-10","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank0EFAC7Y 8030655126414011 Versturen Ordernummer: 0EFA","rek":"1010","type":"uitgave"},{"id":"h2025_108","datum":"2025-09-11","gb":"7000","bedrag":12.85,"naam":"Alipay EUROPE LTD S.A","omschr":"746P82N 7140306629351521 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_109","datum":"2025-09-11","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank6GDII3N 8030046329321515 Versturen Ordernummer: 6GDI","rek":"1010","type":"uitgave"},{"id":"h2025_110","datum":"2025-09-12","gb":"7000","bedrag":11.39,"naam":"Alipay EUROPE LTD S.A","omschr":"747FIZE 7140665138199208 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_cc_211","datum":"2025-09-12","gb":"7010","bedrag":254.83,"naam":"Inkopen","omschr":"Inkopen","rek":"1030","type":"uitgave"},{"id":"h2025_111","datum":"2025-09-13","gb":"7000","bedrag":52.06,"naam":"Alipay EUROPE LTD S.A","omschr":"747UZP5 7140185728985707 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_112","datum":"2025-09-13","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank9KBPY8B 8030485732016514 Versturen Ordernummer: 9KBP","rek":"1010","type":"uitgave"},{"id":"h2025_113","datum":"2025-09-13","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank3LOTR3L 8030474516986943 Versturen Ordernummer: 3LOT","rek":"1010","type":"uitgave"},{"id":"h2025_114","datum":"2025-09-16","gb":"600","bedrag":50.0,"naam":"C.L.D.J. Donders","omschr":"Prive storting","rek":"1010","type":"prive_storting"},{"id":"h2025_115","datum":"2025-09-16","gb":"7900","bedrag":2.4,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20257JD73GI 8030945435065984 LA125687282NL-5141AK xui","rek":"1010","type":"uitgave"},{"id":"h2025_116","datum":"2025-09-18","gb":"4350","bedrag":0.01,"naam":"Online Payment Platform via Online Payments Stichting","omschr":"tra80fb8dfab174 8152525738090476 Bankrekening verificatie On","rek":"1010","type":"uitgave"},{"id":"h2025_117","datum":"2025-09-23","gb":"7000","bedrag":11.29,"naam":"Alipay EUROPE LTD S.A","omschr":"74CQQJ5 7140075119804654 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_118","datum":"2025-09-23","gb":"7000","bedrag":39.57,"naam":"PPRO PAYMENT SERVICES SA","omschr":"REFUND","rek":"1010","type":"inkomst"},{"id":"h2025_119","datum":"2025-09-25","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank3XHVC1R 8030616625830361 Versturen Ordernummer: 3XHV","rek":"1010","type":"uitgave"},{"id":"h2025_120","datum":"2025-09-26","gb":"8000","bedrag":34.9,"naam":"Rabo Betaalverzoek","omschr":"NL17RABO0112229719:A. Afassi:Inkt 62 2 soorten","rek":"1010","type":"inkomst"},{"id":"h2025_121","datum":"2025-09-29","gb":"7900","bedrag":4.25,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank6LGQO3R 8030255719637917 Versturen Ordernummer: 6LGQ","rek":"1010","type":"uitgave"},{"id":"h2025_122","datum":"2025-09-30","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank6AFAC8I 8030355725634941 Versturen Ordernummer: 6AFA","rek":"1010","type":"uitgave"},{"id":"h2025_123","datum":"2025-09-30","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank0WPWK5K 8030714237724335 Versturen Ordernummer: 0WPW","rek":"1010","type":"uitgave"},{"id":"h2025_128","datum":"2025-10-01","gb":"7000","bedrag":23.81,"naam":"Alipay EUROPE LTD S.A","omschr":"74H5YEF 7140556313871002 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_136","datum":"2025-10-01","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank6PLBK0E 8030095134751356 Versturen Ordernummer: 6PLB","rek":"1010","type":"uitgave"},{"id":"h2025_137","datum":"2025-10-01","gb":"7900","bedrag":2.4,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20257MG79EI 8030115422722928 LA127383805NL-5141AK xui","rek":"1010","type":"uitgave"},{"id":"h2025_124","datum":"2025-10-02","gb":"4350","bedrag":11.31,"naam":"Rabobank","omschr":"Kosten Periode 01-09-2025 t/m 30-09-2025","rek":"1010","type":"uitgave"},{"id":"h2025_149","datum":"2025-10-02","gb":"8010","bedrag":333.07,"naam":"BOLCOM BV","omschr":"Betaling bol.com 3914159917274 en 3914159932857. Zie verkoop","rek":"1010","type":"inkomst"},{"id":"h2025_125","datum":"2025-10-03","gb":"4350","bedrag":0.01,"naam":"Online Payment Platform via Online Payments Stichting","omschr":"tra12b604b82974 8152594231506904 Bankrekening verificatie On","rek":"1010","type":"uitgave"},{"id":"h2025_cc_212","datum":"2025-10-03","gb":"7010","bedrag":22.99,"naam":"Inkopen","omschr":"Inkopen","rek":"1030","type":"uitgave"},{"id":"h2025_cc_213","datum":"2025-10-03","gb":"7010","bedrag":169.88,"naam":"Inkopen","omschr":"Inkopen","rek":"1030","type":"uitgave"},{"id":"h2025_cc_214","datum":"2025-10-03","gb":"7010","bedrag":83.53,"naam":"Inkopen","omschr":"Inkopen","rek":"1030","type":"uitgave"},{"id":"h2025_126","datum":"2025-10-07","gb":"4815","bedrag":4.3,"naam":"Shopify International Limited","omschr":"Shopify. 425484020","rek":"1010","type":"uitgave"},{"id":"h2025_145","datum":"2025-10-07","gb":"8000","bedrag":12.5,"naam":"Online Payment Stichting","omschr":"Betaling m2315279392: HP 302 - Inktcartridge - Origineel - Z","rek":"1010","type":"inkomst"},{"id":"h2025_134","datum":"2025-10-08","gb":"7100","bedrag":66.25,"naam":"Verpakking Voordeel via Stichting Mollie Payments","omschr":"cda5c551f70b4ebcc48dacdb6ab99dd0 8152355134430449 Order 8606","rek":"1010","type":"uitgave"},{"id":"h2025_138","datum":"2025-10-09","gb":"7900","bedrag":5.45,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank6KTJV4A 8030025728577443 Versturen Ordernummer: 6KTJ","rek":"1010","type":"uitgave"},{"id":"h2025_129","datum":"2025-10-10","gb":"7000","bedrag":19.68,"naam":"Alipay EUROPE LTD S.A","omschr":"74M0P4U 7140635713425967 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_135","datum":"2025-10-10","gb":"7100","bedrag":46.89,"naam":"Verpakking Voordeel via Stichting Mollie Payments","omschr":"df29e19c01297008ce069984aa51ec20 8152774831573960 Order 8612","rek":"1010","type":"uitgave"},{"id":"h2025_139","datum":"2025-10-10","gb":"7900","bedrag":6.45,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank4HITH6U 8030416631483606 Versturen Ordernummer: 4HIT","rek":"1010","type":"uitgave"},{"id":"h2025_140","datum":"2025-10-10","gb":"7900","bedrag":1.0,"naam":"Koninklijke PostNL B.V.","omschr":"PortoVP20259SM56BC 8030335716544797 3SOPKA117747724-6901DV x","rek":"1010","type":"uitgave"},{"id":"h2025_130","datum":"2025-10-13","gb":"7000","bedrag":11.52,"naam":"Alipay EUROPE LTD S.A","omschr":"74NNI1B 7140564834026943 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_146","datum":"2025-10-19","gb":"8000","bedrag":30.0,"naam":"Online Payment Stichting","omschr":"Betaling m2315279009: HP 303 - Inktcartridge - Origineel - Z","rek":"1010","type":"inkomst"},{"id":"h2025_147","datum":"2025-10-19","gb":"8000","bedrag":21.75,"naam":"Online Payment Stichting","omschr":"Betaling m2319423602: HP 302XL - Inktcartridge - Origineel -","rek":"1010","type":"inkomst"},{"id":"h2025_131","datum":"2025-10-20","gb":"7000","bedrag":9.49,"naam":"PPRO PAYMENT SERVICES SA","omschr":"REFUND","rek":"1010","type":"inkomst"},{"id":"h2025_132","datum":"2025-10-22","gb":"7000","bedrag":11.25,"naam":"Alipay EUROPE LTD S.A","omschr":"74S29CR 7140505106727699 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_141","datum":"2025-10-22","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank2NJAS0R 8030095709998407 Versturen Ordernummer: 2NJA","rek":"1010","type":"uitgave"},{"id":"h2025_142","datum":"2025-10-22","gb":"7900","bedrag":4.25,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank4FXMT0C 8030396594787414 Versturen Ordernummer: 4FXM","rek":"1010","type":"uitgave"},{"id":"h2025_143","datum":"2025-10-22","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank5HVJA3W 8030225382877003 Versturen Ordernummer: 5HVJ","rek":"1010","type":"uitgave"},{"id":"h2025_127","datum":"2025-10-23","gb":"4815","bedrag":72.09,"naam":"Vimexx via Mollie","omschr":"Vimexx Bestelling 20254470249","rek":"1010","type":"uitgave"},{"id":"h2025_144","datum":"2025-10-26","gb":"7900","bedrag":5.45,"naam":"Koninklijke PostNL B.V.","omschr":"PnlFrank7GDFK3U 8030825088717292 Versturen Ordernummer: 7GDF","rek":"1010","type":"uitgave"},{"id":"h2025_133","datum":"2025-10-29","gb":"7000","bedrag":9.98,"naam":"Alipay EUROPE LTD S.A","omschr":"74VHKXG 7140896606917278 Alipay xui-54880581","rek":"1010","type":"uitgave"},{"id":"h2025_148","datum":"2025-10-29","gb":"8000","bedrag":15.0,"naam":"Online Payment Stichting","omschr":"Betaling m2312650691: HP 301 - Inktcartridge - Origineel - Z","rek":"1010","type":"inkomst"},{"id":"h2025_150","datum":"2025-11-01","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_151","datum":"2025-11-03","gb":"8010","bedrag":163.93,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_152","datum":"2025-11-04","gb":"4350","bedrag":9.75,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_153","datum":"2025-11-04","gb":"4815","bedrag":4.36,"naam":"Shopify International Limited","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_154","datum":"2025-11-05","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_155","datum":"2025-11-11","gb":"600","bedrag":1500.0,"naam":"C.L.D.J. Donders","omschr":"","rek":"1010","type":"prive_storting"},{"id":"h2025_156","datum":"2025-11-11","gb":"7010","bedrag":934.36,"naam":"Het Nederlands Veiling Instituut (HNVI)","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_157","datum":"2025-11-11","gb":"7010","bedrag":530.89,"naam":"Het Nederlands Veiling Instituut (HNVI)","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_158","datum":"2025-11-11","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_159","datum":"2025-11-13","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_160","datum":"2025-11-13","gb":"7900","bedrag":4.25,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_161","datum":"2025-11-16","gb":"7000","bedrag":11.73,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_162","datum":"2025-11-17","gb":"8000","bedrag":16.75,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_163","datum":"2025-11-18","gb":"7900","bedrag":4.25,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_164","datum":"2025-11-20","gb":"7000","bedrag":10.98,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_165","datum":"2025-11-20","gb":"7010","bedrag":191.12,"naam":"Het Nederlands Veiling Instituut (HNVI)","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_166","datum":"2025-11-24","gb":"8000","bedrag":12.5,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_167","datum":"2025-11-25","gb":"7900","bedrag":3.8,"naam":"DHL eCommerce (Services) B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_168","datum":"2025-11-25","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_169","datum":"2025-11-26","gb":"4810","bedrag":1.8,"naam":"Marktplaats","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_170","datum":"2025-11-26","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_171","datum":"2025-11-26","gb":"7900","bedrag":3.8,"naam":"DHL eCommerce (Services) B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_172","datum":"2025-11-26","gb":"7900","bedrag":3.8,"naam":"DHL eCommerce (Services) B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_173","datum":"2025-11-26","gb":"7900","bedrag":4.3,"naam":"DHL eCommerce (Services) B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_174","datum":"2025-11-26","gb":"8000","bedrag":8.3,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_175","datum":"2025-11-26","gb":"8000","bedrag":8.3,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_176","datum":"2025-11-26","gb":"8000","bedrag":12.8,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_177","datum":"2025-11-27","gb":"8000","bedrag":29.25,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_178","datum":"2025-11-28","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_179","datum":"2025-11-28","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_180","datum":"2025-11-29","gb":"7000","bedrag":19.58,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_181","datum":"2025-12-02","gb":"4350","bedrag":11.7,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_183","datum":"2025-12-02","gb":"8010","bedrag":222.63,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_185","datum":"2025-12-04","gb":"7010","bedrag":21.24,"naam":"Het Nederlands Veiling Instituut (HNVI)","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_cc_215","datum":"2025-12-04","gb":"4235","bedrag":559.96,"naam":"Alternate Monitoren","omschr":"Alternate Monitoren","rek":"1030","type":"uitgave"},{"id":"h2025_187","datum":"2025-12-05","gb":"7000","bedrag":10.88,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_188","datum":"2025-12-05","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_189","datum":"2025-12-05","gb":"7900","bedrag":4.25,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_190","datum":"2025-12-05","gb":"8000","bedrag":15.0,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_191","datum":"2025-12-08","gb":"7000","bedrag":11.58,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_192","datum":"2025-12-08","gb":"7000","bedrag":11.18,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_193","datum":"2025-12-09","gb":"4810","bedrag":6.48,"naam":"Google Ireland Limited","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_194","datum":"2025-12-09","gb":"7000","bedrag":11.58,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_195","datum":"2025-12-09","gb":"7000","bedrag":10.18,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_196","datum":"2025-12-09","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_182","datum":"2025-12-11","gb":"4815","bedrag":10.55,"naam":"Vimexx","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_197","datum":"2025-12-14","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_198","datum":"2025-12-14","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_cc_216","datum":"2025-12-14","gb":"4235","bedrag":228.2,"naam":"Nimara Bureau's","omschr":"Nimara Bureau's","rek":"1030","type":"uitgave"},{"id":"h2025_199","datum":"2025-12-15","gb":"8000","bedrag":16.75,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_cc_217","datum":"2025-12-15","gb":"4235","bedrag":52.88,"naam":"Monitoren Draagarmen","omschr":"Monitoren Draagarmen","rek":"1030","type":"uitgave"},{"id":"h2025_184","datum":"2025-12-16","gb":"4760","bedrag":0.01,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_200","datum":"2025-12-16","gb":"7900","bedrag":5.95,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_201","datum":"2025-12-16","gb":"7900","bedrag":4.25,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_202","datum":"2025-12-16","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_186","datum":"2025-12-18","gb":"4760","bedrag":10.0,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_203","datum":"2025-12-19","gb":"8000","bedrag":30.0,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_204","datum":"2025-12-22","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_205","datum":"2025-12-28","gb":"7000","bedrag":41.59,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_206","datum":"2025-12-28","gb":"7000","bedrag":9.59,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_207","datum":"2025-12-28","gb":"8000","bedrag":16.75,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":"h2025_208","datum":"2025-12-29","gb":"7900","bedrag":4.25,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":"h2025_cc_218","datum":"2025-12-30","gb":"4235","bedrag":350.0,"naam":"Werk telefoon Iphone 13","omschr":"Werk telefoon Iphone 13","rek":"1030","type":"uitgave"}];
+const MAAND_SALDOS = {"2022-09":{"begin":66.22,"eind":216.96},"2022-10":{"begin":216.96,"eind":272.83},"2022-11":{"begin":272.83,"eind":465.42},"2022-12":{"begin":465.42,"eind":214.23},"2023-01":{"begin":214.23,"eind":9.67},"2023-02":{"begin":9.67,"eind":15.25},"2023-03":{"begin":15.25,"eind":673.62},"2023-04":{"begin":673.62,"eind":91.7},"2023-05":{"begin":91.7,"eind":49.39},"2023-06":{"begin":49.39,"eind":140.68},"2023-07":{"begin":140.68,"eind":420.33},"2023-08":{"begin":420.33,"eind":115.96},"2023-09":{"begin":115.96,"eind":49.33},"2023-10":{"begin":49.33,"eind":135.72},"2023-11":{"begin":135.72,"eind":215.59},"2023-12":{"begin":215.59,"eind":4.74},"2025-01":{"begin":-1.97,"eind":433.71},"2025-02":{"begin":433.71,"eind":286.8},"2025-03":{"begin":286.8,"eind":210.09},"2025-04":{"begin":210.09,"eind":191.31},"2025-05":{"begin":191.31,"eind":121.66},"2025-06":{"begin":121.66,"eind":174.31},"2025-07":{"begin":174.31,"eind":287.32},"2025-08":{"begin":287.32,"eind":145.17},"2025-09":{"begin":145.17,"eind":92.55},"2025-10":{"begin":92.55,"eind":372.65},"2025-11":{"begin":372.65,"eind":132.63},"2024-01":{"begin":4.74,"eind":26.28},"2024-02":{"begin":26.28,"eind":25.49},"2024-03":{"begin":25.49,"eind":17.37},"2024-04":{"begin":17.37,"eind":128.19},"2024-05":{"begin":128.19,"eind":64.43},"2024-06":{"begin":64.43,"eind":244.97},"2024-07":{"begin":244.97,"eind":395.99},"2024-08":{"begin":395.99,"eind":326.68},"2024-09":{"begin":326.68,"eind":179.47},"2024-10":{"begin":179.47,"eind":104.64},"2024-11":{"begin":104.64,"eind":443.92},"2024-12":{"begin":443.92,"eind":-1.97}};
+
 const TX_INIT = [{"id":1,"datum":"2026-01-30","gb":"601","bedrag":218.0,"naam":"SumUp *Pokefanz TCG","omschr":"","rek":"1010","type":"prive_opname"},{"id":2,"datum":"2026-01-19","gb":"4760","bedrag":10.0,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":3,"datum":"2026-01-28","gb":"7900","bedrag":4.4,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":4,"datum":"2026-01-28","gb":"7020","bedrag":20.51,"naam":"Nikki Han","omschr":"","rek":"1010","type":"uitgave"},{"id":5,"datum":"2026-01-28","gb":"8000","bedrag":12.4,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":6,"datum":"2026-01-27","gb":"601","bedrag":27.96,"naam":"Intertoys Waalwijk","omschr":"","rek":"1010","type":"prive_opname"},{"id":7,"datum":"2026-01-27","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":8,"datum":"2026-01-24","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":9,"datum":"2026-01-24","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":10,"datum":"2026-01-24","gb":"7000","bedrag":10.01,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":11,"datum":"2026-01-23","gb":"7000","bedrag":10.78,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":12,"datum":"2026-01-22","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":13,"datum":"2026-01-22","gb":"7000","bedrag":11.88,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":14,"datum":"2026-01-22","gb":"4810","bedrag":1.8,"naam":"Marktplaats","omschr":"","rek":"1010","type":"uitgave"},{"id":15,"datum":"2026-01-21","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":16,"datum":"2026-01-21","gb":"7000","bedrag":11.78,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":17,"datum":"2026-01-18","gb":"7000","bedrag":26.57,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":18,"datum":"2026-01-18","gb":"7000","bedrag":10.19,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":19,"datum":"2026-01-17","gb":"601","bedrag":17.15,"naam":"JD0001Gamma Waalwijk","omschr":"","rek":"1010","type":"prive_opname"},{"id":20,"datum":"2026-01-17","gb":"601","bedrag":24.35,"naam":"JD0001Gamma Waalwijk","omschr":"","rek":"1010","type":"prive_opname"},{"id":21,"datum":"2026-01-17","gb":"8000","bedrag":657.45,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":22,"datum":"2026-01-16","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":23,"datum":"2026-01-14","gb":"4810","bedrag":1.8,"naam":"Marktplaats","omschr":"","rek":"1010","type":"uitgave"},{"id":24,"datum":"2026-01-06","gb":"4810","bedrag":14.07,"naam":"Marktplaats","omschr":"","rek":"1010","type":"uitgave"},{"id":25,"datum":"2026-01-03","gb":"4350","bedrag":10.92,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":26,"datum":"2026-01-02","gb":"7000","bedrag":16.78,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":27,"datum":"2026-01-02","gb":"8010","bedrag":222.63,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":28,"datum":"2026-02-02","gb":"8010","bedrag":107.42,"naam":"Bol.com","omschr":"","rek":"1010","type":"inkomst"},{"id":29,"datum":"2026-02-17","gb":"4760","bedrag":10.0,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":30,"datum":"2026-02-03","gb":"4350","bedrag":10.14,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":31,"datum":"2026-02-03","gb":"4815","bedrag":24.6,"naam":"Shopify International Limited","omschr":"","rek":"1010","type":"uitgave"},{"id":32,"datum":"2026-02-03","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":33,"datum":"2026-02-06","gb":"7010","bedrag":198.198,"naam":"HNVI (Inkoop)","omschr":"","rek":"1010","type":"uitgave"},{"id":34,"datum":"2026-02-06","gb":"4235","bedrag":56.628,"naam":"HNVI (inventaris)","omschr":"","rek":"1010","type":"uitgave"},{"id":35,"datum":"2026-02-06","gb":"601","bedrag":63.71,"naam":"HNVI (privé deel)","omschr":"","rek":"1010","type":"prive_opname"},{"id":36,"datum":"2026-02-10","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":37,"datum":"2026-02-12","gb":"4810","bedrag":1.8,"naam":"Marktplaats B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":38,"datum":"2026-02-12","gb":"7900","bedrag":6.35,"naam":"PostNL terugbetaling","omschr":"","rek":"1010","type":"inkomst"},{"id":39,"datum":"2026-02-14","gb":"7000","bedrag":10.09,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":40,"datum":"2026-02-14","gb":"8000","bedrag":592.14,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":41,"datum":"2026-02-14","gb":"7000","bedrag":11.28,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":42,"datum":"2026-02-15","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":43,"datum":"2026-02-16","gb":"7900","bedrag":5.85,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":44,"datum":"2026-02-17","gb":"7000","bedrag":11.58,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":45,"datum":"2026-02-19","gb":"601","bedrag":100.0,"naam":"Revolut overboeking","omschr":"","rek":"1010","type":"prive_opname"},{"id":46,"datum":"2026-02-20","gb":"4810","bedrag":1.8,"naam":"Marktplaats B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":47,"datum":"2026-02-20","gb":"7000","bedrag":14.31,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":48,"datum":"2026-02-24","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":49,"datum":"2026-02-24","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":50,"datum":"2026-02-26","gb":"4810","bedrag":7.33,"naam":"Marktplaats","omschr":"","rek":"1010","type":"uitgave"},{"id":51,"datum":"2026-02-27","gb":"4810","bedrag":0.16,"naam":"Google Ireland Limited","omschr":"","rek":"1010","type":"inkomst"},{"id":52,"datum":"2026-02-27","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":53,"datum":"2026-03-02","gb":"8010","bedrag":194.8,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":54,"datum":"2026-03-17","gb":"4760","bedrag":10.0,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":55,"datum":"2026-03-02","gb":"4350","bedrag":8.58,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":56,"datum":"2026-03-03","gb":"8000","bedrag":599.4,"naam":"Marktplaats / terugbetaling","omschr":"mogelijk retour klant","rek":"1010","type":"uitgave"},{"id":57,"datum":"2026-03-07","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":58,"datum":"2026-03-09","gb":"7000","bedrag":11.28,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":59,"datum":"2026-03-10","gb":"8000","bedrag":16.0,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":60,"datum":"2026-03-10","gb":"8000","bedrag":36.2,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":61,"datum":"2026-03-10","gb":"7900","bedrag":6.3,"naam":"DHL eCommerce","omschr":"","rek":"1010","type":"uitgave"},{"id":62,"datum":"2026-03-11","gb":"7900","bedrag":4.4,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":63,"datum":"2026-03-12","gb":"4810","bedrag":1.8,"naam":"Marktplaats B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":64,"datum":"2026-03-15","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":65,"datum":"2026-03-15","gb":"7000","bedrag":16.02,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":66,"datum":"2026-03-16","gb":"8000","bedrag":8.0,"naam":"T. Hanekamp","omschr":"","rek":"1010","type":"uitgave"},{"id":67,"datum":"2026-03-20","gb":"4810","bedrag":1.8,"naam":"Marktplaats B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":68,"datum":"2026-03-22","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":69,"datum":"2026-03-26","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":70,"datum":"2026-03-26","gb":"7000","bedrag":27.57,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":71,"datum":"2026-04-01","gb":"7900","bedrag":8.75,"naam":"SumUp *ESKA Fulfilmen","omschr":"","rek":"1010","type":"uitgave"},{"id":72,"datum":"2026-04-10","gb":"4760","bedrag":12.0,"naam":"Nikki Han (Canva)","omschr":"Canva kosten","rek":"1010","type":"uitgave"},{"id":73,"datum":"2026-04-01","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":74,"datum":"2026-04-17","gb":"4760","bedrag":10.0,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":75,"datum":"2026-04-01","gb":"7000","bedrag":27.57,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":76,"datum":"2026-04-02","gb":"4350","bedrag":6.63,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":77,"datum":"2026-04-02","gb":"4815","bedrag":284.82,"naam":"Shopify International Limited","omschr":"","rek":"1010","type":"uitgave"},{"id":78,"datum":"2026-04-02","gb":"600","bedrag":100.0,"naam":"C.L.D.J. Donders","omschr":"","rek":"1010","type":"prive_storting"},{"id":79,"datum":"2026-04-02","gb":"8010","bedrag":155.92,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":80,"datum":"2026-04-09","gb":"7900","bedrag":6.35,"naam":"PostNL terugbetaling","omschr":"","rek":"1010","type":"inkomst"},{"id":81,"datum":"2026-04-09","gb":"4810","bedrag":1.8,"naam":"Marktplaats B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":82,"datum":"2026-04-10","gb":"7900","bedrag":5.95,"naam":"DPD (Nederland) B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":83,"datum":"2026-04-11","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":84,"datum":"2026-04-11","gb":"7000","bedrag":18.04,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":85,"datum":"2026-04-12","gb":"7100","bedrag":53.25,"naam":"Verpakking Voordeel","omschr":"","rek":"1010","type":"uitgave"},{"id":86,"datum":"2026-04-17","gb":"8000","bedrag":30.0,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":87,"datum":"2026-04-21","gb":"7000","bedrag":10.19,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":88,"datum":"2026-04-21","gb":"7000","bedrag":20.59,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":89,"datum":"2026-04-22","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":90,"datum":"2026-04-23","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":91,"datum":"2026-04-23","gb":"7000","bedrag":20.38,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":92,"datum":"2026-04-26","gb":"7000","bedrag":20.58,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":93,"datum":"2026-04-27","gb":"600","bedrag":25.0,"naam":"Cas Donders","omschr":"","rek":"1010","type":"prive_storting"},{"id":94,"datum":"2026-04-27","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":95,"datum":"2026-04-27","gb":"600","bedrag":25.0,"naam":"Cas Donders","omschr":"","rek":"1010","type":"prive_storting"},{"id":96,"datum":"2026-04-27","gb":"7000","bedrag":29.67,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":97,"datum":"2026-04-28","gb":"7900","bedrag":5.95,"naam":"DPD terugbetaling","omschr":"","rek":"1010","type":"inkomst"},{"id":98,"datum":"2026-04-30","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":99,"datum":"2026-05-02","gb":"8000","bedrag":575.0,"naam":"Marktplaats / Online Payments","omschr":"","rek":"1010","type":"inkomst"},{"id":100,"datum":"2026-05-19","gb":"4760","bedrag":10.0,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":101,"datum":"2026-05-04","gb":"8000","bedrag":33.3,"naam":"STRIPE","omschr":"","rek":"1010","type":"inkomst"},{"id":102,"datum":"2026-05-04","gb":"8010","bedrag":161.87,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":103,"datum":"2026-05-04","gb":"4350","bedrag":10.53,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":104,"datum":"2026-05-24","gb":"7000","bedrag":33.27,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":105,"datum":"2026-05-27","gb":"4815","bedrag":7.95,"naam":"Vimexx via Mollie","omschr":"","rek":"1010","type":"uitgave"},{"id":106,"datum":"2026-05-28","gb":"600","bedrag":150.0,"naam":"Cas Donders","omschr":"","rek":"1010","type":"prive_storting"},{"id":107,"datum":"2026-05-28","gb":"7010","bedrag":814.03,"naam":"HNVI","omschr":"","rek":"1010","type":"uitgave"},{"id":108,"datum":"2026-05-28","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":109,"datum":"2026-05-29","gb":"4810","bedrag":21.93,"naam":"Vistaprint B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":110,"datum":"2026-05-29","gb":"7000","bedrag":10.59,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":111,"datum":"2026-05-29","gb":"8000","bedrag":382.45,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":112,"datum":"2026-05-30","gb":"7900","bedrag":21.25,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":113,"datum":"2026-06-01","gb":"4290","bedrag":5.0,"naam":"Simyo","omschr":"","rek":"1010","type":"uitgave"},{"id":114,"datum":"2026-06-02","gb":"4350","bedrag":5.07,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":115,"datum":"2026-06-02","gb":"7010","bedrag":14.16,"naam":"HNVI","omschr":"","rek":"1010","type":"uitgave"},{"id":116,"datum":"2026-06-02","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":117,"datum":"2026-06-02","gb":"8010","bedrag":26.13,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":118,"datum":"2026-06-02","gb":"8000","bedrag":145.0,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":119,"datum":"2026-06-03","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":120,"datum":"2026-06-04","gb":"8000","bedrag":26.71,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":121,"datum":"2026-06-04","gb":"7900","bedrag":6.55,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":122,"datum":"2026-06-05","gb":"7000","bedrag":47.97,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":123,"datum":"2026-01-01","gb":"7010","bedrag":169.88,"naam":"Wasmachine Miele V9545","omschr":"Let op: mogelijk geen 7010","rek":"1030","type":"uitgave"},{"id":124,"datum":"2026-01-07","gb":"4235","bedrag":303.5,"naam":"Bureaustoelen (Amazon)","omschr":"","rek":"1030","type":"uitgave"},{"id":125,"datum":"2026-04-22","gb":"7000","bedrag":9.09,"naam":"Aliexpress","omschr":"","rek":"1030","type":"uitgave"},{"id":126,"datum":"2026-04-24","gb":"4760","bedrag":21.78,"naam":"Claude","omschr":"","rek":"1030","type":"uitgave"},{"id":127,"datum":"2026-05-13","gb":"4760","bedrag":9.68,"naam":"Cloudconvert","omschr":"","rek":"1030","type":"uitgave"},{"id":128,"datum":"2026-05-24","gb":"4760","bedrag":21.78,"naam":"Claude","omschr":"","rek":"1030","type":"uitgave"},{"id":129,"datum":"2026-05-29","gb":"4810","bedrag":31.49,"naam":"Haribo snoep","omschr":"Let op: reclame?","rek":"1030","type":"uitgave"},{"id":130,"datum":"2026-06-01","gb":"4815","bedrag":12.98,"naam":"Shopify","omschr":"","rek":"1030","type":"uitgave"},{"id":131,"datum":"2026-06-03","gb":"4760","bedrag":10.39,"naam":"Lets Enhance","omschr":"","rek":"1030","type":"uitgave"}];
- 
+
 const COVERS_INIT = [
   {id:1,artikel:"Kerstman",voorraad:1,inkoop:2,verkoop:1,omzet2026:1},
   {id:2,artikel:"Stitch",voorraad:3,inkoop:6,verkoop:3,omzet2026:2},
@@ -513,22 +524,22 @@ const COVERS_INIT = [
   {id:20,artikel:"Panda",voorraad:0,inkoop:0,verkoop:0,omzet2026:0},
   {id:21,artikel:"Light Fury",voorraad:0,inkoop:0,verkoop:0,omzet2026:0}
 ];
- 
+
 // ─── STATE ────────────────────────────────────────────────────────────────────
 function load(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
- 
+
 let TX = load('xtenate_tx', TX_INIT);
 let COVERS = load('xtenate_covers', COVERS_INIT);
 let HNVI_LOTS = load('xtenate_hnvi', []);
 let nxtTx = load('xtenate_nxtTx', 200);
 let nxtCover = load('xtenate_nxtCover', 100);
 let nxtHnvi = load('xtenate_nxtHnvi', 10);
- 
+
 function saveTxData() { save('xtenate_tx', TX); save('xtenate_nxtTx', nxtTx); }
 function saveCoversData() { save('xtenate_covers', COVERS); save('xtenate_nxtCover', nxtCover); }
 function saveHnviData() { save('xtenate_hnvi', HNVI_LOTS); save('xtenate_nxtHnvi', nxtHnvi); }
- 
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const fmt = n => '€\u202f' + Number(n).toLocaleString('nl-NL', {minimumFractionDigits:2, maximumFractionDigits:2});
 const ddmm = d => d.slice(8,10) + '-' + d.slice(5,7);
@@ -537,17 +548,17 @@ const isUitgave = t => t.type === 'uitgave';
 const isInkomst = t => t.type === 'inkomst';
 let charts = {};
 function dc(id) { if(charts[id]) { charts[id].destroy(); delete charts[id]; } }
- 
+
 function rekBadge(rek) {
   return `<span class="badge ${REK_COLOR[rek]||'badge-gray'}">${REKNM[rek]||rek}</span>`;
 }
 function typeBadge(type, bedrag) {
   if (type === 'inkomst') return `<span class="pos">+${fmt(bedrag)}</span>`;
-  if (type === 'prive_storting') return `<span style="color:#888">±${fmt(bedrag)}</span>`;
-  if (type === 'prive_opname') return `<span style="color:#888">–${fmt(bedrag)}</span>`;
+  if (type === 'prive_storting') return `<span class="pos">+${fmt(bedrag)}</span>`;
+  if (type === 'prive_opname') return `<span class="neg">–${fmt(bedrag)}</span>`;
   return `<span class="neg">–${fmt(bedrag)}</span>`;
 }
- 
+
 // ─── NAV ──────────────────────────────────────────────────────────────────────
 function nav(p, btn) {
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
@@ -557,7 +568,7 @@ function nav(p, btn) {
   const renders = {home:renderHome, bank:renderBank, grootboek:renderGrootboek, belasting:renderBelasting, covers:renderCovers, hnvi:renderHNVI};
   renders[p]();
 }
- 
+
 // ─── HOME ──────────────────────────────────────────────────────────────────────
 function renderHome() {
   const omzet = TX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t) => s+t.bedrag, 0);
@@ -568,7 +579,7 @@ function renderHome() {
   const priveSt = TX.filter(t => t.type==='prive_storting').reduce((s,t) => s+t.bedrag, 0);
   const vrdCovers = COVERS.reduce((s,c) => s+c.voorraad, 0);
   const hnviInv = TX.filter(t => t.gb==='7010').reduce((s,t) => s+t.bedrag, 0);
- 
+
   document.getElementById('home-metrics').innerHTML = `
     <div class="metric"><div class="lbl">Omzet 2026</div><div class="val pos">${fmt(omzet)}</div></div>
     <div class="metric"><div class="lbl">Kosten 2026</div><div class="val neg">${fmt(kosten)}</div></div>
@@ -578,7 +589,7 @@ function renderHome() {
     <div class="metric"><div class="lbl">Covers voorraad</div><div class="val">${vrdCovers} stuks</div></div>
     <div class="metric"><div class="lbl">HNVI inkoop</div><div class="val neg">${fmt(hnviInv)}</div></div>
     <div class="metric"><div class="lbl">Privé opnames</div><div class="val" style="color:#888">${fmt(priveOp)}</div></div>`;
- 
+
   const topInc = [...TX].filter(t => isInkomst(t)).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
   const topExp = [...TX].filter(isUitgave).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
   document.getElementById('home-uitsch').innerHTML = [...topInc,...topExp].map(t => `
@@ -591,18 +602,18 @@ function renderHome() {
       <div class="uitsch-info"><div class="uitsch-naam">${t.naam}</div><div class="uitsch-meta">${ddmm(t.datum)} · ${GBNM[t.gb]||t.gb}</div></div>
       <div class="uitsch-bedrag ${isInkomst(t)?'pos':'neg'}">${isInkomst(t)?'+':'–'}${fmt(t.bedrag)}</div>
     </div>`).join('');
- 
+
   const maanden = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
   const labels = maanden.map(m => MAANDEN[m]);
   const incD = maanden.map(m => TX.filter(t => isInkomst(t) && isOmzet(t.gb) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
   const expD = maanden.map(m => TX.filter(t => isUitgave(t) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
   const netD = maanden.map((_,i) => incD[i]-expD[i]);
- 
+
   dc('c-ie');
-  charts['c-ie'] = new Chart(document.getElementById('c-ie'), {type:'bar',data:{labels,datasets:[{label:'Omzet',data:incD,backgroundColor:'#1a7a4a'},{label:'Kosten',data:expD,backgroundColor:'#e8d5d2'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
+  charts['c-ie'] = new Chart(document.getElementById('c-ie'), {type:'bar',data:{labels,datasets:[{label:'Omzet',data:incD,backgroundColor:'#7C4DFF'},{label:'Kosten',data:expD,backgroundColor:'#FF6B9D'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
   dc('c-net');
-  charts['c-net'] = new Chart(document.getElementById('c-net'), {type:'line',data:{labels,datasets:[{label:'Netto',data:netD,borderColor:'#1a4fa0',backgroundColor:'rgba(26,79,160,0.07)',tension:.35,fill:true,pointRadius:4,pointBackgroundColor:'#1a4fa0'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
- 
+  charts['c-net'] = new Chart(document.getElementById('c-net'), {type:'line',data:{labels,datasets:[{label:'Netto',data:netD,borderColor:'#FFB347',backgroundColor:'rgba(255,179,71,0.1)',tension:.35,fill:true,pointRadius:4,pointBackgroundColor:'#FFB347'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
+
   const recent = [...TX].sort((a,b) => b.datum.localeCompare(a.datum)).slice(0,8);
   document.getElementById('home-recent').innerHTML = recent.map(t => `<tr>
     <td style="color:var(--text-muted)">${ddmm(t.datum)}</td>
@@ -612,15 +623,29 @@ function renderHome() {
     <td style="text-align:right">${typeBadge(t.type, t.bedrag)}</td>
   </tr>`).join('');
 }
- 
+
 // ─── BANK ─────────────────────────────────────────────────────────────────────
 function renderBank() {
-  const maanden = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
+  const jaarSel = document.getElementById('f-jaar-bank');
+  const gekozenJaar = jaarSel ? jaarSel.value : '2026';
+  
+  // Kies databron
+  let bronData;
+  if (gekozenJaar === '2026') bronData = TX;
+  else if (gekozenJaar === 'all') bronData = [...HIST_TX, ...TX];
+  else bronData = HIST_TX.filter(t => t.datum.startsWith(gekozenJaar));
+
+  // Maanden voor het gekozen jaar
   const sel = document.getElementById('f-maand');
   const cur = sel.value;
-  sel.innerHTML = '<option value="">Alle maanden</option>' + maanden.map(m => `<option value="${m}"${m===cur?' selected':''}>${MAANDEN[m]} 2026</option>`).join('');
+  const beschikbareMaanden = [...new Set(bronData.map(t=>t.datum.slice(0,7)))].sort().reverse();
+  sel.innerHTML = '<option value="">Alle maanden</option>' + beschikbareMaanden.map(m => {
+    const mnms2 = {'2022-01':'jan','2022-02':'feb','2022-03':'mrt','2022-04':'apr','2022-05':'mei','2022-06':'jun','2022-07':'jul','2022-08':'aug','2022-09':'sep','2022-10':'okt','2022-11':'nov','2022-12':'dec','2023-01':'jan','2023-02':'feb','2023-03':'mrt','2023-04':'apr','2023-05':'mei','2023-06':'jun','2023-07':'jul','2023-08':'aug','2023-09':'sep','2023-10':'okt','2023-11':'nov','2023-12':'dec','2024-01':'jan','2024-02':'feb','2024-03':'mrt','2024-04':'apr','2024-05':'mei','2024-06':'jun','2024-07':'jul','2024-08':'aug','2024-09':'sep','2024-10':'okt','2024-11':'nov','2024-12':'dec','2025-01':'jan','2025-02':'feb','2025-03':'mrt','2025-04':'apr','2025-05':'mei','2025-06':'jun','2025-07':'jul','2025-08':'aug','2025-09':'sep','2025-10':'okt','2025-11':'nov','2025-12':'dec','2026-01':'jan','2026-02':'feb','2026-03':'mrt','2026-04':'apr','2026-05':'mei','2026-06':'jun'};
+    return `<option value="${m}"${m===cur?' selected':''}>${mnms2[m]||m} ${m.slice(0,4)}</option>`;
+  }).join('');
+
   const maand = sel.value, rek = document.getElementById('f-rek').value, typeF = document.getElementById('f-type').value;
-  let list = TX.filter(t => {
+  let list = bronData.filter(t => {
     if (maand && !t.datum.startsWith(maand)) return false;
     if (rek && t.rek !== rek) return false;
     if (typeF === 'prive' && !t.type.startsWith('prive')) return false;
@@ -630,13 +655,47 @@ function renderBank() {
   }).sort((a,b) => b.datum.localeCompare(a.datum));
   const inc = list.filter(isInkomst).reduce((s,t)=>s+t.bedrag,0);
   const exp = list.filter(isUitgave).reduce((s,t)=>s+t.bedrag,0);
-  const prive = list.filter(t=>t.type.startsWith('prive')).reduce((s,t)=>s+t.bedrag,0);
+  const verschil = inc - exp;
+
+  const allData = gekozenJaar === '2026' ? TX : gekozenJaar === 'all' ? [...HIST_TX, ...TX] : HIST_TX.filter(t=>t.datum.startsWith(gekozenJaar));
+  const mnNamen = {'01':'jan','02':'feb','03':'mrt','04':'apr','05':'mei','06':'jun','07':'jul','08':'aug','09':'sep','10':'okt','11':'nov','12':'dec'};
+
+  // Gebruik echte saldos altijd als beschikbaar
+  let periodeSaldo = null, vorigSaldo2 = null;
+  const vorigeMnd = maand
+    ? (() => { const d = new Date(maand+'-01'); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })()
+    : null;
+
+  if (maand) {
+    // Specifieke maand: gebruik saldo als bekend
+    periodeSaldo = MAAND_SALDOS[maand] ? MAAND_SALDOS[maand].eind : null;
+    vorigSaldo2 = vorigeMnd && MAAND_SALDOS[vorigeMnd] ? MAAND_SALDOS[vorigeMnd].eind : null;
+  } else if (gekozenJaar !== 'all') {
+    // Heel jaar: gebruik laatste bekende maand van dat jaar
+    const laatste = Object.keys(MAAND_SALDOS).filter(m=>m.startsWith(gekozenJaar)).sort().pop();
+    periodeSaldo = laatste ? MAAND_SALDOS[laatste].eind : null;
+    const vorigeJaar = String(parseInt(gekozenJaar)-1);
+    const vorigeL = Object.keys(MAAND_SALDOS).filter(m=>m.startsWith(vorigeJaar)).sort().pop();
+    vorigSaldo2 = vorigeL ? MAAND_SALDOS[vorigeL].eind : null;
+  }
+
+  const saldoLabel = maand ? 'Saldo einde '+mnNamen[maand.slice(5,7)] : gekozenJaar==='all'?'Saldo huidig':'Saldo einde '+gekozenJaar;
+
+  const vorigLabel = maand ? 'Saldo vorige maand' : ('Saldo einde '+String(parseInt(gekozenJaar==='all'?'2025':gekozenJaar)-1));
+  const vorigSaldo = vorigSaldo2;
+
+  const winstverlies = inc - exp;
+  const priveOp = list.filter(t=>t.type==='prive_opname').reduce((s,t)=>s+t.bedrag,0);
+  const priveSt = list.filter(t=>t.type==='prive_storting').reduce((s,t)=>s+t.bedrag,0);
+  const priveSaldo = priveSt - priveOp;
+
   document.getElementById('bank-metrics').innerHTML = `
-    <div class="metric"><div class="lbl">Inkomsten</div><div class="val pos">${fmt(inc)}</div></div>
-    <div class="metric"><div class="lbl">Uitgaven</div><div class="val neg">${fmt(exp)}</div></div>
-    <div class="metric"><div class="lbl">Saldo periode</div><div class="val ${inc-exp>=0?'pos':'neg'}">${fmt(inc-exp)}</div></div>
-    <div class="metric"><div class="lbl">Privé bewegingen</div><div class="val" style="color:#888">${fmt(prive)}</div></div>
-    <div class="metric"><div class="lbl">Transacties</div><div class="val">${list.length}</div></div>`;
+    <div class="metric"><div class="lbl">Inkomsten periode</div><div class="val pos">${fmt(inc)}</div><div class="sub">${list.filter(t=>t.type==='inkomst').length} transacties</div></div>
+    <div class="metric"><div class="lbl">Uitgaven periode</div><div class="val neg">${fmt(exp)}</div><div class="sub">${list.filter(t=>t.type==='uitgave').length} transacties</div></div>
+    <div class="metric"><div class="lbl">Winst / verlies</div><div class="val ${winstverlies>=0?'pos':'neg'}">${winstverlies>=0?'+':''}${fmt(winstverlies)}</div><div class="sub">zakelijk netto</div></div>
+    <div class="metric"><div class="lbl">Privé bewegingen</div><div class="val ${priveSaldo>=0?'pos':'neg'}">${priveSaldo>=0?'+':''}${fmt(priveSaldo)}</div><div class="sub">${fmt(priveSt)} in · ${fmt(priveOp)} uit</div></div>
+    <div class="metric"><div class="lbl">${saldoLabel}</div><div class="val ${periodeSaldo!=null?(periodeSaldo>=0?'pos':'neg'):''}" style="${periodeSaldo==null?'color:#ccc':''}">${periodeSaldo!=null?fmt(Math.round(periodeSaldo*100)/100):'—'}</div><div class="sub">eindbalans rekening</div></div>
+    <div class="metric"><div class="lbl">${vorigLabel}</div><div class="val" style="${vorigSaldo!=null?'color:#888':'color:#ccc'}">${vorigSaldo!=null?fmt(Math.round(vorigSaldo*100)/100):'—'}</div><div class="sub">vorige periode</div></div>`;
   document.getElementById('bank-body').innerHTML = list.map(t => `<tr>
     <td style="color:var(--text-muted);padding-left:14px">${ddmm(t.datum)}</td>
     <td class="td-trunc">${t.naam}${t.omschr&&t.omschr!==t.naam?` <span style="color:var(--text-hint);font-size:10px">· ${t.omschr}</span>`:''}</td>
@@ -645,7 +704,7 @@ function renderBank() {
     <td style="text-align:right;padding-right:14px">${typeBadge(t.type, t.bedrag)}</td>
   </tr>`).join('');
 }
- 
+
 // ─── GROOTBOEK ────────────────────────────────────────────────────────────────
 function renderGrootboek() {
   const maand = document.getElementById('f-maand-gb').value;
@@ -681,14 +740,14 @@ function renderGrootboek() {
     </div>`;
   }).join('') || '<div style="color:var(--text-muted);padding:1rem 0;font-size:13px">Geen boekingen gevonden.</div>';
 }
- 
+
 // ─── BELASTING ────────────────────────────────────────────────────────────────
 function renderBelasting() {
   const omzet = TX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t)=>s+t.bedrag,0);
- 
+
   // Alle overige kosten (niet 7010 = HNVI inkoop)
   const kostenOverig = TX.filter(t => isUitgave(t) && t.gb !== '7010').reduce((s,t)=>s+t.bedrag,0);
- 
+
   // HNVI inkoop: alleen verkochte loten zijn aftrekbaar
   const hnviVerkocht = HNVI_LOTS.filter(i => i.status === 'verkocht').reduce((s,i)=>s+i.inkoop,0);
   const hnviVoorraad = HNVI_LOTS.filter(i => i.status === 'voorraad').reduce((s,i)=>s+i.inkoop,0);
@@ -696,10 +755,10 @@ function renderBelasting() {
   const hnviTotaalBank = TX.filter(t => isUitgave(t) && t.gb === '7010').reduce((s,t)=>s+t.bedrag,0);
   const hnviAftrekbaar = HNVI_LOTS.length > 0 ? hnviVerkocht : hnviTotaalBank;
   const hnviNietAftrekbaar = HNVI_LOTS.length > 0 ? hnviVoorraad : 0;
- 
+
   const kostenAftrekbaar = kostenOverig + hnviAftrekbaar;
   const winst = omzet - kostenAftrekbaar;
- 
+
   // Jaarprojectie op basis van huidige maanden
   const maandenMet = [...new Set(TX.filter(t=>isInkomst(t)&&isOmzet(t.gb)).map(t=>t.datum.slice(0,7)))].length || 1;
   const omzetPerMaand = omzet / maandenMet;
@@ -707,7 +766,7 @@ function renderBelasting() {
   const omzetJaar = Math.round(omzetPerMaand * 12);
   const kostenJaar = Math.round(kostenPerMaand * 12);
   const winstJaar = omzetJaar - kostenJaar;
- 
+
   // IB berekening (huidig)
   const calcIB = (w) => {
     if (w <= 0) return w * 0.3697; // negatief = mogelijke teruggave
@@ -719,7 +778,7 @@ function renderBelasting() {
   const ibJaar = calcIB(winstJaar);
   const mkb = winst > 0 ? Math.round(winst * 0.142) : 0;
   const belastbaar = winst > 0 ? Math.max(0, winst - mkb) : 0;
- 
+
   document.getElementById('bel-metrics').innerHTML = `
     <div class="metric"><div class="lbl">Bruto omzet</div><div class="val">${fmt(omzet)}</div></div>
     <div class="metric"><div class="lbl">Aftrekbare kosten</div><div class="val neg">${fmt(kostenAftrekbaar)}</div></div>
@@ -727,12 +786,12 @@ function renderBelasting() {
     <div class="metric"><div class="lbl">${ib<=0?'Geschatte teruggave':'Geschatte IB'}</div><div class="val ${ib<=0?'pos':'neg'}">${ib<=0?'+':''}${fmt(Math.abs(Math.round(ib)))}</div></div>
     <div class="metric"><div class="lbl">HNVI voorraadwaarde</div><div class="val" style="color:#888">${fmt(hnviNietAftrekbaar)}</div><div class="sub">${HNVI_LOTS.filter(i=>i.status==='voorraad').length} loten · nog niet aftrekbaar</div></div>
     <div class="metric"><div class="lbl">Projectie heel jaar</div><div class="val ${winstJaar>=0?'pos':'neg'}">${fmt(winstJaar)}</div><div class="sub">op basis van ${maandenMet} mnd</div></div>`;
- 
+
   const teruggaveRegel = ib < 0 ? `
     <div style="background:var(--green-bg);border:1px solid rgba(26,122,74,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--green)">
       💡 Bij verlies kun je dit verrekenen met ander inkomen (bijv. loon). Geschatte teruggave: <strong>${fmt(Math.abs(Math.round(ib)))}</strong> — bespreek dit met je belastingadviseur.
     </div>` : '';
- 
+
   const hnviWaarschuwing = hnviNietAftrekbaar > 0 ? `
     <div style="background:var(--amber-bg);border:1px solid rgba(122,79,0,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
       ⚠ ${fmt(hnviNietAftrekbaar)} HNVI inkoop is nog niet aftrekbaar (voorraad). Zodra je die loten verkoopt in de HNVI-tab wordt dit automatisch aangepast.
@@ -740,7 +799,7 @@ function renderBelasting() {
     <div style="background:var(--amber-bg);border:1px solid rgba(122,79,0,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
       ⚠ Voeg je HNVI-loten toe in de HNVI-tab zodat de belasting correct wordt berekend. Nu wordt alle 7010 inkoop als aftrekbaar beschouwd.
     </div>` : '');
- 
+
   document.getElementById('bel-calc').innerHTML = `
     <div class="ib-row"><span>Bruto omzet</span><span>${fmt(omzet)}</span></div>
     <div class="ib-row"><span>Overige kosten & inkoop</span><span class="neg">– ${fmt(kostenOverig)}</span></div>
@@ -753,22 +812,22 @@ function renderBelasting() {
     <div class="ib-row"><span>Tarief schijf 1 (36,97%)</span><span></span></div>
     <div class="ib-total"><span>Geschatte inkomstenbelasting</span><span class="neg">${fmt(Math.round(ib))}</span></div>` : `
     <div class="ib-total"><span>${ib < 0 ? 'Geschatte teruggave (bij ander inkomen)' : 'Geen belasting verschuldigd'}</span><span class="${ib<0?'pos':''}">${ib<0?'+ '+fmt(Math.abs(Math.round(ib))):'€\u202f0,00'}</span></div>`}
- 
+
     <div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted)">
       <strong>Projectie heel jaar</strong> (op basis van ${maandenMet} maanden): omzet ${fmt(omzetJaar)} · kosten ${fmt(kostenJaar)} · winst ${fmt(winstJaar)} · geschatte IB ${ibJaar<0?'teruggave '+fmt(Math.abs(Math.round(ibJaar))):fmt(Math.round(ibJaar))}
     </div>`;
- 
+
   const omzData = [
     TX.filter(t=>isInkomst(t)&&t.gb==='8000').reduce((s,t)=>s+t.bedrag,0),
     TX.filter(t=>isInkomst(t)&&t.gb==='8010').reduce((s,t)=>s+t.bedrag,0),
     TX.filter(t=>isInkomst(t)&&t.gb==='8020').reduce((s,t)=>s+t.bedrag,0),
   ];
   const omzLabels = ['Xtenate (8000)','Bol.com covers (8010)','Helmetstore (8020)'];
-  const colors = ['#1a7a4a','#1a4fa0','#7a4f00'];
+  const colors = ['#7C4DFF','#FF6B9D','#FFB347'];
   dc('c-bel');
   charts['c-bel'] = new Chart(document.getElementById('c-bel'), {type:'doughnut',data:{labels:omzLabels,datasets:[{data:omzData,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
   document.getElementById('bel-legend').innerHTML = omzLabels.map((n,i)=>`<span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:${colors[i]}"></span>${n} ${fmt(omzData[i])}</span>`).join('');
- 
+
   const subkop = (tekst) => `<tr><td colspan="4" style="padding:10px 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">${tekst}</td></tr>`;
   const rij = (gb, bedrag, richting, label, kleur) => {
     const bg = kleur==='pos'?'var(--green-bg)':kleur==='neg'?'var(--red-bg)':'#f0f0f0';
@@ -780,25 +839,25 @@ function renderBelasting() {
       <td style="text-align:right" class="${kleur==='pos'?'pos':kleur==='neg'?'neg':''}">${richting==='plus'?'+ ':'– '}${fmt(Math.abs(bedrag))}</td>
     </tr>`;
   };
- 
+
   const omzetGbs2 = [...new Set(TX.filter(isInkomst).map(t=>t.gb))].filter(isOmzet).sort();
   const omzetRows = omzetGbs2.map(gb => {
     const tot = TX.filter(t=>isInkomst(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'plus', 'altijd baten', 'pos');
   }).join('');
- 
+
   const r4Gbs = [...new Set(TX.filter(isUitgave).map(t=>t.gb))].filter(g=>g.startsWith('4')).sort();
   const r4Rows = r4Gbs.map(gb => {
     const tot = TX.filter(t=>isUitgave(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'min', 'altijd aftrekbaar', 'neg');
   }).join('');
- 
+
   const r7AltijdGbs = [...new Set(TX.filter(isUitgave).map(t=>t.gb))].filter(g=>['7000','7020','7100','7900'].includes(g)).sort();
   const r7AltijdRows = r7AltijdGbs.map(gb => {
     const tot = TX.filter(t=>isUitgave(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'min', 'altijd aftrekbaar', 'neg');
   }).join('');
- 
+
   const hnviBankTot = TX.filter(t=>isUitgave(t)&&t.gb==='7010').reduce((s,t)=>s+t.bedrag,0);
   const hnviVktTot2 = HNVI_LOTS.filter(i=>i.status==='verkocht').reduce((s,i)=>s+i.inkoop,0);
   const hnviVrdTot2 = HNVI_LOTS.filter(i=>i.status==='voorraad').reduce((s,i)=>s+i.inkoop,0);
@@ -807,14 +866,14 @@ function renderBelasting() {
     ? rij('7010', hnviVktTot2, 'min', 'aftrekbaar — verkocht', 'neg') +
       (hnviVrdTot2 > 0 ? rij('7010', hnviVrdTot2, 'min', 'niet aftrekbaar — voorraad', '') : '')
     : rij('7010', hnviBankTot, 'min', 'voeg loten toe in HNVI-tab', '');
- 
+
   document.getElementById("bel-kosten").innerHTML =
     subkop('Baten') + omzetRows +
     subkop('Rubriek 4 — altijd aftrekbaar') + r4Rows +
     subkop('Inkoop — altijd aftrekbaar') + r7AltijdRows +
     subkop('Inkoop HNVI (7010) — gekoppeld aan HNVI-tab') + r7010Rows;
 }
- 
+
 // ─── COVERS ───────────────────────────────────────────────────────────────────
 function renderCovers() {
   const st = document.getElementById('f-covers-status').value;
@@ -838,7 +897,7 @@ function renderCovers() {
     <td><span class="sell-link" onclick="openCoverEdit(${c.id})">Bewerk</span></td>
   </tr>`).join('');
 }
- 
+
 // ─── HNVI ─────────────────────────────────────────────────────────────────────
 let hnviSellId = null;
 function renderHNVI() {
@@ -868,7 +927,7 @@ function renderHNVI() {
     </tr>`;
   }).join('') : '<tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--text-muted)">Nog geen loten toegevoegd. Klik op "+ Lot toevoegen".</td></tr>';
 }
- 
+
 // ─── MODALS TX ────────────────────────────────────────────────────────────────
 let editTxId = null;
 function openTxModal() {
@@ -899,7 +958,7 @@ function saveTx() {
   closeTx();
   renderBank();
 }
- 
+
 // ─── MODALS COVER ─────────────────────────────────────────────────────────────
 let editCoverId = null;
 function openCoverModal() {
@@ -935,7 +994,7 @@ function saveCover() {
   closeCoverModal();
   renderCovers();
 }
- 
+
 // ─── MODALS HNVI ──────────────────────────────────────────────────────────────
 function openHNVIModal() {
   hnviSellId = null;
@@ -971,8 +1030,8 @@ function saveHNVI() {
   closeHNVIModal();
   renderHNVI();
 }
- 
- 
+
+
 // ─── IMPORT EXCEL ─────────────────────────────────────────────────────────────
 function importExcel(input) {
   const file = input.files[0];
@@ -982,7 +1041,7 @@ function importExcel(input) {
   document.getElementById('import-body').innerHTML = 'Excel bestand lezen...';
   document.getElementById('import-actions').style.display = 'none';
   document.getElementById('modal-import').classList.add('open');
- 
+
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
@@ -992,7 +1051,7 @@ function importExcel(input) {
       let newTx = [];
       let newCovers = [];
       let tid = 500;
- 
+
       function excelDate(val) {
         if (!val) return null;
         if (val instanceof Date) return val.toISOString().split('T')[0];
@@ -1007,11 +1066,11 @@ function importExcel(input) {
         }
         return null;
       }
- 
+
       const OMZET_GB = ['8000','8010','8020'];
       const bankSheets = ['Bank 2026-01','Bank 2026-02','Bank 2026-03','Bank 2026-04','Bank 2026-05','Bank 2026-06',
                           'Bank 2026-07','Bank 2026-08','Bank 2026-09','Bank 2026-10','Bank 2026-11','Bank 2026-12'];
- 
+
       // Bank tabs
       let bankCount = 0;
       bankSheets.forEach(sheetName => {
@@ -1041,7 +1100,7 @@ function importExcel(input) {
           });
         });
       });
- 
+
       // Creditkaart Prive
       let ccCount = 0;
       if (wb.SheetNames.includes('CreditkaartPrive')) {
@@ -1060,7 +1119,7 @@ function importExcel(input) {
           ccCount++;
         });
       }
- 
+
       // Voorraad & Mutaties (Funny Covers)
       let coverCount = 0;
       if (wb.SheetNames.includes('Voorraad & Mutaties')) {
@@ -1083,22 +1142,50 @@ function importExcel(input) {
           coverCount++;
         });
       }
- 
+
+      // Lees begin/eindsaldo per maand
+      let newSaldos = {};
+      bankSheets.forEach(sheetName => {
+        if (!wb.SheetNames.includes(sheetName)) return;
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        const maand = sheetName.slice(-7); // bijv. 2026-01
+        let begin = null, eind = null;
+        rows.forEach(row => {
+          if (row[8] === 'Beginsaldo' && typeof row[9] === 'number') begin = row[9];
+          if (row[8] === 'Eindsaldo' && typeof row[9] === 'number') eind = row[9];
+        });
+        if (begin !== null || eind !== null) newSaldos[maand] = {begin, eind};
+      });
+
+      // Valideer: alleen opslaan als er transacties zijn
+      if (newTx.length === 0) {
+        document.getElementById('import-title').textContent = 'Niets gevonden';
+        document.getElementById('import-body').innerHTML = '⚠️ Er zijn geen transacties gevonden in dit bestand.<br>Controleer of je het juiste Excel bestand hebt geselecteerd (Administratie_2026.xlsx).';
+        document.getElementById('import-actions').style.display = 'flex';
+        return;
+      }
+
       // Sla op
       TX = newTx;
       nxtTx = tid;
       if (newCovers.length > 0) { COVERS = newCovers; nxtCover = 300; }
+      // Update MAAND_SALDOS met nieuwe saldos (overschrijf alleen 2026)
+      Object.keys(MAAND_SALDOS).filter(m=>m.startsWith('2026')).forEach(m=>delete MAAND_SALDOS[m]);
+      Object.assign(MAAND_SALDOS, newSaldos);
       saveTxData();
       saveCoversData();
- 
+
+      const saldoCount = Object.keys(newSaldos).length;
       document.getElementById('import-title').textContent = 'Import geslaagd!';
       document.getElementById('import-body').innerHTML =
         `✅ <strong>${bankCount}</strong> banktransacties ingelezen<br>` +
         `✅ <strong>${ccCount}</strong> creditkaart boekingen ingelezen<br>` +
+        (saldoCount > 0 ? `✅ <strong>${saldoCount}</strong> maandsaldos ingelezen<br>` : '') +
         (newCovers.length > 0 ? `✅ <strong>${coverCount}</strong> covers artikelen ingelezen<br>` : '') +
         `<br>Je data is opgeslagen. HNVI-loten blijven bewaard.`;
       document.getElementById('import-actions').style.display = 'flex';
- 
+
       renderHome();
     } catch(err) {
       document.getElementById('import-title').textContent = 'Fout bij importeren';
@@ -1108,11 +1195,11 @@ function importExcel(input) {
   };
   reader.readAsArrayBuffer(file);
 }
- 
+
 function resetData() {
   document.getElementById('modal-reset').classList.add('open');
 }
- 
+
 function doReset() {
   TX = [];
   COVERS = [];
@@ -1122,14 +1209,14 @@ function doReset() {
   document.getElementById('modal-reset').classList.remove('open');
   renderHome();
 }
- 
+
 // close modals on overlay click
 document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); }));
- 
+
 // init
 renderHome();
 </script>
- 
+
 <!-- MODAL: IMPORT STATUS -->
 <div class="modal-overlay" id="modal-import">
 <div class="modal">
@@ -1140,7 +1227,7 @@ renderHome();
   </div>
 </div>
 </div>
- 
+
 <!-- MODAL: RESET BEVESTIGING -->
 <div class="modal-overlay" id="modal-reset">
 <div class="modal">
