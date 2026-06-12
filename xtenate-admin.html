@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Xtenate Administratie 2026</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg: #f7f6f3;
@@ -30,7 +31,7 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
+ 
 /* LAYOUT */
 .app { display: flex; min-height: 100vh; }
 .sidebar { width: 200px; background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 10; }
@@ -44,12 +45,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .nav-item svg { flex-shrink: 0; opacity: .7; }
 .nav-item.active svg { opacity: 1; }
 .nav-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text-hint); padding: 1rem 1.25rem .4rem; }
-
+ 
 /* PAGE */
 .page { display: none; }
 .page.active { display: block; }
 .page-title { font-size: 20px; font-weight: 600; letter-spacing: -0.4px; margin-bottom: 1.5rem; }
-
+ 
 /* METRICS */
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
 .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .875rem 1rem; }
@@ -58,12 +59,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .metric .sub { font-size: 10px; color: var(--text-hint); margin-top: 3px; }
 .pos { color: var(--green); }
 .neg { color: var(--red); }
-
+ 
 /* CARDS */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
 .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 1rem; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-
+ 
 /* BADGES */
 .badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
 .badge-green { background: var(--green-bg); color: var(--green); }
@@ -72,7 +73,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .badge-amber { background: var(--amber-bg); color: var(--amber); }
 .badge-purple { background: var(--purple-bg); color: var(--purple); }
 .badge-gray { background: #f0f0f0; color: #555; }
-
+ 
 /* TABLES */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
@@ -81,7 +82,7 @@ td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: 
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--bg); }
 .td-trunc { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
+ 
 /* TOOLBAR */
 .toolbar { display: flex; gap: 8px; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
 select, input[type=text], input[type=number], input[type=date] {
@@ -95,7 +96,7 @@ select:focus, input:focus { border-color: #888; }
 .btn-primary:hover { opacity: .85; background: var(--text); }
 .btn-ml { margin-left: auto; }
 .btn-sm { font-size: 11px; padding: 3px 9px; }
-
+ 
 /* MODAL */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 100; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
@@ -107,17 +108,17 @@ select:focus, input:focus { border-color: #888; }
 .form-group label { font-size: 11px; font-weight: 500; color: var(--text-muted); }
 .form-group select, .form-group input { width: 100%; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; }
-
+ 
 /* ALERT */
 .alert { border-radius: var(--radius-sm); padding: .625rem 1rem; font-size: 12px; margin-bottom: 1rem; display: flex; gap: 8px; align-items: flex-start; }
 .alert-warn { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(122,79,0,.2); }
 .alert-info { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(26,79,160,.2); }
-
+ 
 /* VTABS */
 .vtabs { display: flex; gap: 6px; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0; }
 .vtab { padding: 7px 14px; cursor: pointer; font-size: 13px; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .vtab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
-
+ 
 /* UITSCHIETERS */
 .uitsch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem; }
 .uitsch-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem 1rem; display: flex; align-items: center; gap: 10px; }
@@ -126,19 +127,19 @@ select:focus, input:focus { border-color: #888; }
 .uitsch-naam { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .uitsch-meta { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
 .uitsch-bedrag { font-size: 12.5px; font-weight: 600; flex-shrink: 0; }
-
+ 
 /* IB */
 .ib-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
 .ib-row:last-child { border-bottom: none; }
 .ib-total { display: flex; justify-content: space-between; padding: 10px 0 0; font-size: 13.5px; font-weight: 600; border-top: 1px solid var(--border-strong); margin-top: 4px; letter-spacing: -0.2px; }
-
+ 
 /* VOORRAAD STATUS */
 .stock-ok { background: var(--green-bg); color: var(--green); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
 .stock-uit { background: var(--red-bg); color: var(--red); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
-
+ 
 /* SELL LINK */
 .sell-link { color: var(--blue); cursor: pointer; font-size: 11px; text-decoration: underline; }
-
+ 
 @media (max-width: 700px) {
   .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); padding: .5rem 0; }
   .main { margin-left: 0; padding: 1rem; }
@@ -152,7 +153,7 @@ select:focus, input:focus { border-color: #888; }
 </head>
 <body>
 <div class="app">
-
+ 
 <nav class="sidebar">
   <div class="logo">
     <div class="logo-name">Xtenate</div>
@@ -185,10 +186,20 @@ select:focus, input:focus { border-color: #888; }
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     HNVI / Xtenate
   </div>
+  <div class="nav-section">Beheer</div>
+  <div class="nav-item" onclick="document.getElementById('import-file').click()" style="color:var(--blue)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Importeer Excel
+  </div>
+  <input type="file" id="import-file" accept=".xlsx" style="display:none" onchange="importExcel(this)">
+  <div class="nav-item" onclick="resetData()" style="color:var(--red)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+    Alles wissen
+  </div>
 </nav>
-
+ 
 <main class="main">
-
+ 
 <!-- HOME -->
 <div id="p-home" class="page active">
   <div class="page-title">Home</div>
@@ -210,7 +221,7 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
-
+ 
 <!-- BANK -->
 <div id="p-bank" class="page">
   <div class="page-title">Bank</div>
@@ -245,7 +256,7 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
-
+ 
 <!-- GROOTBOEK -->
 <div id="p-grootboek" class="page">
   <div class="page-title">Grootboek</div>
@@ -288,7 +299,7 @@ select:focus, input:focus { border-color: #888; }
   <div class="metrics" id="gb-metrics"></div>
   <div id="gb-body"></div>
 </div>
-
+ 
 <!-- BELASTING -->
 <div id="p-belasting" class="page">
   <div class="page-title">Belasting</div>
@@ -306,7 +317,7 @@ select:focus, input:focus { border-color: #888; }
     <tbody id="bel-kosten"></tbody></table>
   </div>
 </div>
-
+ 
 <!-- FUNNY COVERS -->
 <div id="p-covers" class="page">
   <div class="page-title">Funny Covers — voorraad</div>
@@ -334,7 +345,7 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
-
+ 
 <!-- HNVI -->
 <div id="p-hnvi" class="page">
   <div class="page-title">HNVI / Xtenate — voorraad</div>
@@ -362,10 +373,10 @@ select:focus, input:focus { border-color: #888; }
     </table></div>
   </div>
 </div>
-
+ 
 </main>
 </div>
-
+ 
 <!-- MODAL: TRANSACTIE -->
 <div class="modal-overlay" id="modal-tx">
 <div class="modal">
@@ -426,7 +437,7 @@ select:focus, input:focus { border-color: #888; }
   </div>
 </div>
 </div>
-
+ 
 <!-- MODAL: COVER ARTIKEL -->
 <div class="modal-overlay" id="modal-cover">
 <div class="modal">
@@ -444,7 +455,7 @@ select:focus, input:focus { border-color: #888; }
   </div>
 </div>
 </div>
-
+ 
 <!-- MODAL: HNVI LOT -->
 <div class="modal-overlay" id="modal-hnvi">
 <div class="modal">
@@ -461,7 +472,7 @@ select:focus, input:focus { border-color: #888; }
   </div>
 </div>
 </div>
-
+ 
 <script>
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 const GBNM = {
@@ -476,9 +487,9 @@ const REKNM = {'1009':'Revolut','1010':'Rabobank','1020':'Paypal','1030':'Credit
 const REK_COLOR = {'1010':'badge-blue','1009':'badge-purple','1030':'badge-amber','1020':'badge-green','1090':'badge-gray'};
 const MAANDEN = {'2026-01':'jan','2026-02':'feb','2026-03':'mrt','2026-04':'apr','2026-05':'mei','2026-06':'jun'};
 const PRIJS_COVER = 31.95;
-
+ 
 const TX_INIT = [{"id":1,"datum":"2026-01-30","gb":"601","bedrag":218.0,"naam":"SumUp *Pokefanz TCG","omschr":"","rek":"1010","type":"prive_opname"},{"id":2,"datum":"2026-01-19","gb":"4760","bedrag":10.0,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":3,"datum":"2026-01-28","gb":"7900","bedrag":4.4,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":4,"datum":"2026-01-28","gb":"7020","bedrag":20.51,"naam":"Nikki Han","omschr":"","rek":"1010","type":"uitgave"},{"id":5,"datum":"2026-01-28","gb":"8000","bedrag":12.4,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":6,"datum":"2026-01-27","gb":"601","bedrag":27.96,"naam":"Intertoys Waalwijk","omschr":"","rek":"1010","type":"prive_opname"},{"id":7,"datum":"2026-01-27","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":8,"datum":"2026-01-24","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":9,"datum":"2026-01-24","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":10,"datum":"2026-01-24","gb":"7000","bedrag":10.01,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":11,"datum":"2026-01-23","gb":"7000","bedrag":10.78,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":12,"datum":"2026-01-22","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":13,"datum":"2026-01-22","gb":"7000","bedrag":11.88,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":14,"datum":"2026-01-22","gb":"4810","bedrag":1.8,"naam":"Marktplaats","omschr":"","rek":"1010","type":"uitgave"},{"id":15,"datum":"2026-01-21","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":16,"datum":"2026-01-21","gb":"7000","bedrag":11.78,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":17,"datum":"2026-01-18","gb":"7000","bedrag":26.57,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":18,"datum":"2026-01-18","gb":"7000","bedrag":10.19,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":19,"datum":"2026-01-17","gb":"601","bedrag":17.15,"naam":"JD0001Gamma Waalwijk","omschr":"","rek":"1010","type":"prive_opname"},{"id":20,"datum":"2026-01-17","gb":"601","bedrag":24.35,"naam":"JD0001Gamma Waalwijk","omschr":"","rek":"1010","type":"prive_opname"},{"id":21,"datum":"2026-01-17","gb":"8000","bedrag":657.45,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":22,"datum":"2026-01-16","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":23,"datum":"2026-01-14","gb":"4810","bedrag":1.8,"naam":"Marktplaats","omschr":"","rek":"1010","type":"uitgave"},{"id":24,"datum":"2026-01-06","gb":"4810","bedrag":14.07,"naam":"Marktplaats","omschr":"","rek":"1010","type":"uitgave"},{"id":25,"datum":"2026-01-03","gb":"4350","bedrag":10.92,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":26,"datum":"2026-01-02","gb":"7000","bedrag":16.78,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":27,"datum":"2026-01-02","gb":"8010","bedrag":222.63,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":28,"datum":"2026-02-02","gb":"8010","bedrag":107.42,"naam":"Bol.com","omschr":"","rek":"1010","type":"inkomst"},{"id":29,"datum":"2026-02-17","gb":"4760","bedrag":10.0,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":30,"datum":"2026-02-03","gb":"4350","bedrag":10.14,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":31,"datum":"2026-02-03","gb":"4815","bedrag":24.6,"naam":"Shopify International Limited","omschr":"","rek":"1010","type":"uitgave"},{"id":32,"datum":"2026-02-03","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":33,"datum":"2026-02-06","gb":"7010","bedrag":198.198,"naam":"HNVI (Inkoop)","omschr":"","rek":"1010","type":"uitgave"},{"id":34,"datum":"2026-02-06","gb":"4235","bedrag":56.628,"naam":"HNVI (inventaris)","omschr":"","rek":"1010","type":"uitgave"},{"id":35,"datum":"2026-02-06","gb":"601","bedrag":63.71,"naam":"HNVI (privé deel)","omschr":"","rek":"1010","type":"prive_opname"},{"id":36,"datum":"2026-02-10","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":37,"datum":"2026-02-12","gb":"4810","bedrag":1.8,"naam":"Marktplaats B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":38,"datum":"2026-02-12","gb":"7900","bedrag":6.35,"naam":"PostNL terugbetaling","omschr":"","rek":"1010","type":"inkomst"},{"id":39,"datum":"2026-02-14","gb":"7000","bedrag":10.09,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":40,"datum":"2026-02-14","gb":"8000","bedrag":592.14,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":41,"datum":"2026-02-14","gb":"7000","bedrag":11.28,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":42,"datum":"2026-02-15","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":43,"datum":"2026-02-16","gb":"7900","bedrag":5.85,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":44,"datum":"2026-02-17","gb":"7000","bedrag":11.58,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":45,"datum":"2026-02-19","gb":"601","bedrag":100.0,"naam":"Revolut overboeking","omschr":"","rek":"1010","type":"prive_opname"},{"id":46,"datum":"2026-02-20","gb":"4810","bedrag":1.8,"naam":"Marktplaats B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":47,"datum":"2026-02-20","gb":"7000","bedrag":14.31,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":48,"datum":"2026-02-24","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":49,"datum":"2026-02-24","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":50,"datum":"2026-02-26","gb":"4810","bedrag":7.33,"naam":"Marktplaats","omschr":"","rek":"1010","type":"uitgave"},{"id":51,"datum":"2026-02-27","gb":"4810","bedrag":0.16,"naam":"Google Ireland Limited","omschr":"","rek":"1010","type":"inkomst"},{"id":52,"datum":"2026-02-27","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":53,"datum":"2026-03-02","gb":"8010","bedrag":194.8,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":54,"datum":"2026-03-17","gb":"4760","bedrag":10.0,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":55,"datum":"2026-03-02","gb":"4350","bedrag":8.58,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":56,"datum":"2026-03-03","gb":"8000","bedrag":599.4,"naam":"Marktplaats / terugbetaling","omschr":"mogelijk retour klant","rek":"1010","type":"uitgave"},{"id":57,"datum":"2026-03-07","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":58,"datum":"2026-03-09","gb":"7000","bedrag":11.28,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":59,"datum":"2026-03-10","gb":"8000","bedrag":16.0,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":60,"datum":"2026-03-10","gb":"8000","bedrag":36.2,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":61,"datum":"2026-03-10","gb":"7900","bedrag":6.3,"naam":"DHL eCommerce","omschr":"","rek":"1010","type":"uitgave"},{"id":62,"datum":"2026-03-11","gb":"7900","bedrag":4.4,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":63,"datum":"2026-03-12","gb":"4810","bedrag":1.8,"naam":"Marktplaats B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":64,"datum":"2026-03-15","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":65,"datum":"2026-03-15","gb":"7000","bedrag":16.02,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":66,"datum":"2026-03-16","gb":"8000","bedrag":8.0,"naam":"T. Hanekamp","omschr":"","rek":"1010","type":"uitgave"},{"id":67,"datum":"2026-03-20","gb":"4810","bedrag":1.8,"naam":"Marktplaats B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":68,"datum":"2026-03-22","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":69,"datum":"2026-03-26","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":70,"datum":"2026-03-26","gb":"7000","bedrag":27.57,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":71,"datum":"2026-04-01","gb":"7900","bedrag":8.75,"naam":"SumUp *ESKA Fulfilmen","omschr":"","rek":"1010","type":"uitgave"},{"id":72,"datum":"2026-04-10","gb":"4760","bedrag":12.0,"naam":"Nikki Han (Canva)","omschr":"Canva kosten","rek":"1010","type":"uitgave"},{"id":73,"datum":"2026-04-01","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":74,"datum":"2026-04-17","gb":"4760","bedrag":10.0,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":75,"datum":"2026-04-01","gb":"7000","bedrag":27.57,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":76,"datum":"2026-04-02","gb":"4350","bedrag":6.63,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":77,"datum":"2026-04-02","gb":"4815","bedrag":284.82,"naam":"Shopify International Limited","omschr":"","rek":"1010","type":"uitgave"},{"id":78,"datum":"2026-04-02","gb":"600","bedrag":100.0,"naam":"C.L.D.J. Donders","omschr":"","rek":"1010","type":"prive_storting"},{"id":79,"datum":"2026-04-02","gb":"8010","bedrag":155.92,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":80,"datum":"2026-04-09","gb":"7900","bedrag":6.35,"naam":"PostNL terugbetaling","omschr":"","rek":"1010","type":"inkomst"},{"id":81,"datum":"2026-04-09","gb":"4810","bedrag":1.8,"naam":"Marktplaats B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":82,"datum":"2026-04-10","gb":"7900","bedrag":5.95,"naam":"DPD (Nederland) B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":83,"datum":"2026-04-11","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":84,"datum":"2026-04-11","gb":"7000","bedrag":18.04,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":85,"datum":"2026-04-12","gb":"7100","bedrag":53.25,"naam":"Verpakking Voordeel","omschr":"","rek":"1010","type":"uitgave"},{"id":86,"datum":"2026-04-17","gb":"8000","bedrag":30.0,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":87,"datum":"2026-04-21","gb":"7000","bedrag":10.19,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":88,"datum":"2026-04-21","gb":"7000","bedrag":20.59,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":89,"datum":"2026-04-22","gb":"7900","bedrag":9.5,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":90,"datum":"2026-04-23","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":91,"datum":"2026-04-23","gb":"7000","bedrag":20.38,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":92,"datum":"2026-04-26","gb":"7000","bedrag":20.58,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":93,"datum":"2026-04-27","gb":"600","bedrag":25.0,"naam":"Cas Donders","omschr":"","rek":"1010","type":"prive_storting"},{"id":94,"datum":"2026-04-27","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":95,"datum":"2026-04-27","gb":"600","bedrag":25.0,"naam":"Cas Donders","omschr":"","rek":"1010","type":"prive_storting"},{"id":96,"datum":"2026-04-27","gb":"7000","bedrag":29.67,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":97,"datum":"2026-04-28","gb":"7900","bedrag":5.95,"naam":"DPD terugbetaling","omschr":"","rek":"1010","type":"inkomst"},{"id":98,"datum":"2026-04-30","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":99,"datum":"2026-05-02","gb":"8000","bedrag":575.0,"naam":"Marktplaats / Online Payments","omschr":"","rek":"1010","type":"inkomst"},{"id":100,"datum":"2026-05-19","gb":"4760","bedrag":10.0,"naam":"Microsoft","omschr":"","rek":"1010","type":"uitgave"},{"id":101,"datum":"2026-05-04","gb":"8000","bedrag":33.3,"naam":"STRIPE","omschr":"","rek":"1010","type":"inkomst"},{"id":102,"datum":"2026-05-04","gb":"8010","bedrag":161.87,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":103,"datum":"2026-05-04","gb":"4350","bedrag":10.53,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":104,"datum":"2026-05-24","gb":"7000","bedrag":33.27,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":105,"datum":"2026-05-27","gb":"4815","bedrag":7.95,"naam":"Vimexx via Mollie","omschr":"","rek":"1010","type":"uitgave"},{"id":106,"datum":"2026-05-28","gb":"600","bedrag":150.0,"naam":"Cas Donders","omschr":"","rek":"1010","type":"prive_storting"},{"id":107,"datum":"2026-05-28","gb":"7010","bedrag":814.03,"naam":"HNVI","omschr":"","rek":"1010","type":"uitgave"},{"id":108,"datum":"2026-05-28","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":109,"datum":"2026-05-29","gb":"4810","bedrag":21.93,"naam":"Vistaprint B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":110,"datum":"2026-05-29","gb":"7000","bedrag":10.59,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":111,"datum":"2026-05-29","gb":"8000","bedrag":382.45,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":112,"datum":"2026-05-30","gb":"7900","bedrag":21.25,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":113,"datum":"2026-06-01","gb":"4290","bedrag":5.0,"naam":"Simyo","omschr":"","rek":"1010","type":"uitgave"},{"id":114,"datum":"2026-06-02","gb":"4350","bedrag":5.07,"naam":"Rabobank","omschr":"","rek":"1010","type":"uitgave"},{"id":115,"datum":"2026-06-02","gb":"7010","bedrag":14.16,"naam":"HNVI","omschr":"","rek":"1010","type":"uitgave"},{"id":116,"datum":"2026-06-02","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":117,"datum":"2026-06-02","gb":"8010","bedrag":26.13,"naam":"BOLCOM BV","omschr":"","rek":"1010","type":"inkomst"},{"id":118,"datum":"2026-06-02","gb":"8000","bedrag":145.0,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":119,"datum":"2026-06-03","gb":"7900","bedrag":6.35,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":120,"datum":"2026-06-04","gb":"8000","bedrag":26.71,"naam":"Online Payment Stichting","omschr":"","rek":"1010","type":"inkomst"},{"id":121,"datum":"2026-06-04","gb":"7900","bedrag":6.55,"naam":"Koninklijke PostNL B.V.","omschr":"","rek":"1010","type":"uitgave"},{"id":122,"datum":"2026-06-05","gb":"7000","bedrag":47.97,"naam":"Alipay EUROPE LTD S.A","omschr":"","rek":"1010","type":"uitgave"},{"id":123,"datum":"2026-01-01","gb":"7010","bedrag":169.88,"naam":"Wasmachine Miele V9545","omschr":"Let op: mogelijk geen 7010","rek":"1030","type":"uitgave"},{"id":124,"datum":"2026-01-07","gb":"4235","bedrag":303.5,"naam":"Bureaustoelen (Amazon)","omschr":"","rek":"1030","type":"uitgave"},{"id":125,"datum":"2026-04-22","gb":"7000","bedrag":9.09,"naam":"Aliexpress","omschr":"","rek":"1030","type":"uitgave"},{"id":126,"datum":"2026-04-24","gb":"4760","bedrag":21.78,"naam":"Claude","omschr":"","rek":"1030","type":"uitgave"},{"id":127,"datum":"2026-05-13","gb":"4760","bedrag":9.68,"naam":"Cloudconvert","omschr":"","rek":"1030","type":"uitgave"},{"id":128,"datum":"2026-05-24","gb":"4760","bedrag":21.78,"naam":"Claude","omschr":"","rek":"1030","type":"uitgave"},{"id":129,"datum":"2026-05-29","gb":"4810","bedrag":31.49,"naam":"Haribo snoep","omschr":"Let op: reclame?","rek":"1030","type":"uitgave"},{"id":130,"datum":"2026-06-01","gb":"4815","bedrag":12.98,"naam":"Shopify","omschr":"","rek":"1030","type":"uitgave"},{"id":131,"datum":"2026-06-03","gb":"4760","bedrag":10.39,"naam":"Lets Enhance","omschr":"","rek":"1030","type":"uitgave"}];
-
+ 
 const COVERS_INIT = [
   {id:1,artikel:"Kerstman",voorraad:1,inkoop:2,verkoop:1,omzet2026:1},
   {id:2,artikel:"Stitch",voorraad:3,inkoop:6,verkoop:3,omzet2026:2},
@@ -502,22 +513,22 @@ const COVERS_INIT = [
   {id:20,artikel:"Panda",voorraad:0,inkoop:0,verkoop:0,omzet2026:0},
   {id:21,artikel:"Light Fury",voorraad:0,inkoop:0,verkoop:0,omzet2026:0}
 ];
-
+ 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 function load(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
-
+ 
 let TX = load('xtenate_tx', TX_INIT);
 let COVERS = load('xtenate_covers', COVERS_INIT);
 let HNVI_LOTS = load('xtenate_hnvi', []);
 let nxtTx = load('xtenate_nxtTx', 200);
 let nxtCover = load('xtenate_nxtCover', 100);
 let nxtHnvi = load('xtenate_nxtHnvi', 10);
-
+ 
 function saveTxData() { save('xtenate_tx', TX); save('xtenate_nxtTx', nxtTx); }
 function saveCoversData() { save('xtenate_covers', COVERS); save('xtenate_nxtCover', nxtCover); }
 function saveHnviData() { save('xtenate_hnvi', HNVI_LOTS); save('xtenate_nxtHnvi', nxtHnvi); }
-
+ 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const fmt = n => '€\u202f' + Number(n).toLocaleString('nl-NL', {minimumFractionDigits:2, maximumFractionDigits:2});
 const ddmm = d => d.slice(8,10) + '-' + d.slice(5,7);
@@ -526,7 +537,7 @@ const isUitgave = t => t.type === 'uitgave';
 const isInkomst = t => t.type === 'inkomst';
 let charts = {};
 function dc(id) { if(charts[id]) { charts[id].destroy(); delete charts[id]; } }
-
+ 
 function rekBadge(rek) {
   return `<span class="badge ${REK_COLOR[rek]||'badge-gray'}">${REKNM[rek]||rek}</span>`;
 }
@@ -536,7 +547,7 @@ function typeBadge(type, bedrag) {
   if (type === 'prive_opname') return `<span style="color:#888">–${fmt(bedrag)}</span>`;
   return `<span class="neg">–${fmt(bedrag)}</span>`;
 }
-
+ 
 // ─── NAV ──────────────────────────────────────────────────────────────────────
 function nav(p, btn) {
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
@@ -546,7 +557,7 @@ function nav(p, btn) {
   const renders = {home:renderHome, bank:renderBank, grootboek:renderGrootboek, belasting:renderBelasting, covers:renderCovers, hnvi:renderHNVI};
   renders[p]();
 }
-
+ 
 // ─── HOME ──────────────────────────────────────────────────────────────────────
 function renderHome() {
   const omzet = TX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t) => s+t.bedrag, 0);
@@ -557,7 +568,7 @@ function renderHome() {
   const priveSt = TX.filter(t => t.type==='prive_storting').reduce((s,t) => s+t.bedrag, 0);
   const vrdCovers = COVERS.reduce((s,c) => s+c.voorraad, 0);
   const hnviInv = TX.filter(t => t.gb==='7010').reduce((s,t) => s+t.bedrag, 0);
-
+ 
   document.getElementById('home-metrics').innerHTML = `
     <div class="metric"><div class="lbl">Omzet 2026</div><div class="val pos">${fmt(omzet)}</div></div>
     <div class="metric"><div class="lbl">Kosten 2026</div><div class="val neg">${fmt(kosten)}</div></div>
@@ -567,7 +578,7 @@ function renderHome() {
     <div class="metric"><div class="lbl">Covers voorraad</div><div class="val">${vrdCovers} stuks</div></div>
     <div class="metric"><div class="lbl">HNVI inkoop</div><div class="val neg">${fmt(hnviInv)}</div></div>
     <div class="metric"><div class="lbl">Privé opnames</div><div class="val" style="color:#888">${fmt(priveOp)}</div></div>`;
-
+ 
   const topInc = [...TX].filter(t => isInkomst(t)).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
   const topExp = [...TX].filter(isUitgave).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
   document.getElementById('home-uitsch').innerHTML = [...topInc,...topExp].map(t => `
@@ -580,18 +591,18 @@ function renderHome() {
       <div class="uitsch-info"><div class="uitsch-naam">${t.naam}</div><div class="uitsch-meta">${ddmm(t.datum)} · ${GBNM[t.gb]||t.gb}</div></div>
       <div class="uitsch-bedrag ${isInkomst(t)?'pos':'neg'}">${isInkomst(t)?'+':'–'}${fmt(t.bedrag)}</div>
     </div>`).join('');
-
+ 
   const maanden = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
   const labels = maanden.map(m => MAANDEN[m]);
   const incD = maanden.map(m => TX.filter(t => isInkomst(t) && isOmzet(t.gb) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
   const expD = maanden.map(m => TX.filter(t => isUitgave(t) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
   const netD = maanden.map((_,i) => incD[i]-expD[i]);
-
+ 
   dc('c-ie');
   charts['c-ie'] = new Chart(document.getElementById('c-ie'), {type:'bar',data:{labels,datasets:[{label:'Omzet',data:incD,backgroundColor:'#1a7a4a'},{label:'Kosten',data:expD,backgroundColor:'#e8d5d2'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
   dc('c-net');
   charts['c-net'] = new Chart(document.getElementById('c-net'), {type:'line',data:{labels,datasets:[{label:'Netto',data:netD,borderColor:'#1a4fa0',backgroundColor:'rgba(26,79,160,0.07)',tension:.35,fill:true,pointRadius:4,pointBackgroundColor:'#1a4fa0'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
-
+ 
   const recent = [...TX].sort((a,b) => b.datum.localeCompare(a.datum)).slice(0,8);
   document.getElementById('home-recent').innerHTML = recent.map(t => `<tr>
     <td style="color:var(--text-muted)">${ddmm(t.datum)}</td>
@@ -601,7 +612,7 @@ function renderHome() {
     <td style="text-align:right">${typeBadge(t.type, t.bedrag)}</td>
   </tr>`).join('');
 }
-
+ 
 // ─── BANK ─────────────────────────────────────────────────────────────────────
 function renderBank() {
   const maanden = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
@@ -634,7 +645,7 @@ function renderBank() {
     <td style="text-align:right;padding-right:14px">${typeBadge(t.type, t.bedrag)}</td>
   </tr>`).join('');
 }
-
+ 
 // ─── GROOTBOEK ────────────────────────────────────────────────────────────────
 function renderGrootboek() {
   const maand = document.getElementById('f-maand-gb').value;
@@ -670,14 +681,14 @@ function renderGrootboek() {
     </div>`;
   }).join('') || '<div style="color:var(--text-muted);padding:1rem 0;font-size:13px">Geen boekingen gevonden.</div>';
 }
-
+ 
 // ─── BELASTING ────────────────────────────────────────────────────────────────
 function renderBelasting() {
   const omzet = TX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t)=>s+t.bedrag,0);
-
+ 
   // Alle overige kosten (niet 7010 = HNVI inkoop)
   const kostenOverig = TX.filter(t => isUitgave(t) && t.gb !== '7010').reduce((s,t)=>s+t.bedrag,0);
-
+ 
   // HNVI inkoop: alleen verkochte loten zijn aftrekbaar
   const hnviVerkocht = HNVI_LOTS.filter(i => i.status === 'verkocht').reduce((s,i)=>s+i.inkoop,0);
   const hnviVoorraad = HNVI_LOTS.filter(i => i.status === 'voorraad').reduce((s,i)=>s+i.inkoop,0);
@@ -685,10 +696,10 @@ function renderBelasting() {
   const hnviTotaalBank = TX.filter(t => isUitgave(t) && t.gb === '7010').reduce((s,t)=>s+t.bedrag,0);
   const hnviAftrekbaar = HNVI_LOTS.length > 0 ? hnviVerkocht : hnviTotaalBank;
   const hnviNietAftrekbaar = HNVI_LOTS.length > 0 ? hnviVoorraad : 0;
-
+ 
   const kostenAftrekbaar = kostenOverig + hnviAftrekbaar;
   const winst = omzet - kostenAftrekbaar;
-
+ 
   // Jaarprojectie op basis van huidige maanden
   const maandenMet = [...new Set(TX.filter(t=>isInkomst(t)&&isOmzet(t.gb)).map(t=>t.datum.slice(0,7)))].length || 1;
   const omzetPerMaand = omzet / maandenMet;
@@ -696,7 +707,7 @@ function renderBelasting() {
   const omzetJaar = Math.round(omzetPerMaand * 12);
   const kostenJaar = Math.round(kostenPerMaand * 12);
   const winstJaar = omzetJaar - kostenJaar;
-
+ 
   // IB berekening (huidig)
   const calcIB = (w) => {
     if (w <= 0) return w * 0.3697; // negatief = mogelijke teruggave
@@ -708,7 +719,7 @@ function renderBelasting() {
   const ibJaar = calcIB(winstJaar);
   const mkb = winst > 0 ? Math.round(winst * 0.142) : 0;
   const belastbaar = winst > 0 ? Math.max(0, winst - mkb) : 0;
-
+ 
   document.getElementById('bel-metrics').innerHTML = `
     <div class="metric"><div class="lbl">Bruto omzet</div><div class="val">${fmt(omzet)}</div></div>
     <div class="metric"><div class="lbl">Aftrekbare kosten</div><div class="val neg">${fmt(kostenAftrekbaar)}</div></div>
@@ -716,12 +727,12 @@ function renderBelasting() {
     <div class="metric"><div class="lbl">${ib<=0?'Geschatte teruggave':'Geschatte IB'}</div><div class="val ${ib<=0?'pos':'neg'}">${ib<=0?'+':''}${fmt(Math.abs(Math.round(ib)))}</div></div>
     <div class="metric"><div class="lbl">HNVI voorraadwaarde</div><div class="val" style="color:#888">${fmt(hnviNietAftrekbaar)}</div><div class="sub">${HNVI_LOTS.filter(i=>i.status==='voorraad').length} loten · nog niet aftrekbaar</div></div>
     <div class="metric"><div class="lbl">Projectie heel jaar</div><div class="val ${winstJaar>=0?'pos':'neg'}">${fmt(winstJaar)}</div><div class="sub">op basis van ${maandenMet} mnd</div></div>`;
-
+ 
   const teruggaveRegel = ib < 0 ? `
     <div style="background:var(--green-bg);border:1px solid rgba(26,122,74,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--green)">
       💡 Bij verlies kun je dit verrekenen met ander inkomen (bijv. loon). Geschatte teruggave: <strong>${fmt(Math.abs(Math.round(ib)))}</strong> — bespreek dit met je belastingadviseur.
     </div>` : '';
-
+ 
   const hnviWaarschuwing = hnviNietAftrekbaar > 0 ? `
     <div style="background:var(--amber-bg);border:1px solid rgba(122,79,0,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
       ⚠ ${fmt(hnviNietAftrekbaar)} HNVI inkoop is nog niet aftrekbaar (voorraad). Zodra je die loten verkoopt in de HNVI-tab wordt dit automatisch aangepast.
@@ -729,7 +740,7 @@ function renderBelasting() {
     <div style="background:var(--amber-bg);border:1px solid rgba(122,79,0,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
       ⚠ Voeg je HNVI-loten toe in de HNVI-tab zodat de belasting correct wordt berekend. Nu wordt alle 7010 inkoop als aftrekbaar beschouwd.
     </div>` : '');
-
+ 
   document.getElementById('bel-calc').innerHTML = `
     <div class="ib-row"><span>Bruto omzet</span><span>${fmt(omzet)}</span></div>
     <div class="ib-row"><span>Overige kosten & inkoop</span><span class="neg">– ${fmt(kostenOverig)}</span></div>
@@ -742,11 +753,11 @@ function renderBelasting() {
     <div class="ib-row"><span>Tarief schijf 1 (36,97%)</span><span></span></div>
     <div class="ib-total"><span>Geschatte inkomstenbelasting</span><span class="neg">${fmt(Math.round(ib))}</span></div>` : `
     <div class="ib-total"><span>${ib < 0 ? 'Geschatte teruggave (bij ander inkomen)' : 'Geen belasting verschuldigd'}</span><span class="${ib<0?'pos':''}">${ib<0?'+ '+fmt(Math.abs(Math.round(ib))):'€\u202f0,00'}</span></div>`}
-
+ 
     <div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted)">
       <strong>Projectie heel jaar</strong> (op basis van ${maandenMet} maanden): omzet ${fmt(omzetJaar)} · kosten ${fmt(kostenJaar)} · winst ${fmt(winstJaar)} · geschatte IB ${ibJaar<0?'teruggave '+fmt(Math.abs(Math.round(ibJaar))):fmt(Math.round(ibJaar))}
     </div>`;
-
+ 
   const omzData = [
     TX.filter(t=>isInkomst(t)&&t.gb==='8000').reduce((s,t)=>s+t.bedrag,0),
     TX.filter(t=>isInkomst(t)&&t.gb==='8010').reduce((s,t)=>s+t.bedrag,0),
@@ -757,7 +768,7 @@ function renderBelasting() {
   dc('c-bel');
   charts['c-bel'] = new Chart(document.getElementById('c-bel'), {type:'doughnut',data:{labels:omzLabels,datasets:[{data:omzData,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
   document.getElementById('bel-legend').innerHTML = omzLabels.map((n,i)=>`<span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:${colors[i]}"></span>${n} ${fmt(omzData[i])}</span>`).join('');
-
+ 
   const subkop = (tekst) => `<tr><td colspan="4" style="padding:10px 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">${tekst}</td></tr>`;
   const rij = (gb, bedrag, richting, label, kleur) => {
     const bg = kleur==='pos'?'var(--green-bg)':kleur==='neg'?'var(--red-bg)':'#f0f0f0';
@@ -769,25 +780,25 @@ function renderBelasting() {
       <td style="text-align:right" class="${kleur==='pos'?'pos':kleur==='neg'?'neg':''}">${richting==='plus'?'+ ':'– '}${fmt(Math.abs(bedrag))}</td>
     </tr>`;
   };
-
+ 
   const omzetGbs2 = [...new Set(TX.filter(isInkomst).map(t=>t.gb))].filter(isOmzet).sort();
   const omzetRows = omzetGbs2.map(gb => {
     const tot = TX.filter(t=>isInkomst(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'plus', 'altijd baten', 'pos');
   }).join('');
-
+ 
   const r4Gbs = [...new Set(TX.filter(isUitgave).map(t=>t.gb))].filter(g=>g.startsWith('4')).sort();
   const r4Rows = r4Gbs.map(gb => {
     const tot = TX.filter(t=>isUitgave(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'min', 'altijd aftrekbaar', 'neg');
   }).join('');
-
+ 
   const r7AltijdGbs = [...new Set(TX.filter(isUitgave).map(t=>t.gb))].filter(g=>['7000','7020','7100','7900'].includes(g)).sort();
   const r7AltijdRows = r7AltijdGbs.map(gb => {
     const tot = TX.filter(t=>isUitgave(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'min', 'altijd aftrekbaar', 'neg');
   }).join('');
-
+ 
   const hnviBankTot = TX.filter(t=>isUitgave(t)&&t.gb==='7010').reduce((s,t)=>s+t.bedrag,0);
   const hnviVktTot2 = HNVI_LOTS.filter(i=>i.status==='verkocht').reduce((s,i)=>s+i.inkoop,0);
   const hnviVrdTot2 = HNVI_LOTS.filter(i=>i.status==='voorraad').reduce((s,i)=>s+i.inkoop,0);
@@ -796,14 +807,14 @@ function renderBelasting() {
     ? rij('7010', hnviVktTot2, 'min', 'aftrekbaar — verkocht', 'neg') +
       (hnviVrdTot2 > 0 ? rij('7010', hnviVrdTot2, 'min', 'niet aftrekbaar — voorraad', '') : '')
     : rij('7010', hnviBankTot, 'min', 'voeg loten toe in HNVI-tab', '');
-
+ 
   document.getElementById("bel-kosten").innerHTML =
     subkop('Baten') + omzetRows +
     subkop('Rubriek 4 — altijd aftrekbaar') + r4Rows +
     subkop('Inkoop — altijd aftrekbaar') + r7AltijdRows +
     subkop('Inkoop HNVI (7010) — gekoppeld aan HNVI-tab') + r7010Rows;
 }
-
+ 
 // ─── COVERS ───────────────────────────────────────────────────────────────────
 function renderCovers() {
   const st = document.getElementById('f-covers-status').value;
@@ -827,7 +838,7 @@ function renderCovers() {
     <td><span class="sell-link" onclick="openCoverEdit(${c.id})">Bewerk</span></td>
   </tr>`).join('');
 }
-
+ 
 // ─── HNVI ─────────────────────────────────────────────────────────────────────
 let hnviSellId = null;
 function renderHNVI() {
@@ -857,7 +868,7 @@ function renderHNVI() {
     </tr>`;
   }).join('') : '<tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--text-muted)">Nog geen loten toegevoegd. Klik op "+ Lot toevoegen".</td></tr>';
 }
-
+ 
 // ─── MODALS TX ────────────────────────────────────────────────────────────────
 let editTxId = null;
 function openTxModal() {
@@ -888,7 +899,7 @@ function saveTx() {
   closeTx();
   renderBank();
 }
-
+ 
 // ─── MODALS COVER ─────────────────────────────────────────────────────────────
 let editCoverId = null;
 function openCoverModal() {
@@ -924,7 +935,7 @@ function saveCover() {
   closeCoverModal();
   renderCovers();
 }
-
+ 
 // ─── MODALS HNVI ──────────────────────────────────────────────────────────────
 function openHNVIModal() {
   hnviSellId = null;
@@ -960,12 +971,186 @@ function saveHNVI() {
   closeHNVIModal();
   renderHNVI();
 }
-
+ 
+ 
+// ─── IMPORT EXCEL ─────────────────────────────────────────────────────────────
+function importExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  document.getElementById('import-title').textContent = 'Bezig met importeren...';
+  document.getElementById('import-body').innerHTML = 'Excel bestand lezen...';
+  document.getElementById('import-actions').style.display = 'none';
+  document.getElementById('modal-import').classList.add('open');
+ 
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array', cellDates:true});
+      let log = [];
+      let newTx = [];
+      let newCovers = [];
+      let tid = 500;
+ 
+      function excelDate(val) {
+        if (!val) return null;
+        if (val instanceof Date) return val.toISOString().split('T')[0];
+        if (typeof val === 'number') {
+          const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+          return d.toISOString().split('T')[0];
+        }
+        if (typeof val === 'string' && val.match(/\d{4}-\d{2}-\d{2}/)) return val.slice(0,10);
+        if (typeof val === 'string' && val.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
+          const [m,d,y] = val.split('/');
+          return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+        }
+        return null;
+      }
+ 
+      const OMZET_GB = ['8000','8010','8020'];
+      const bankSheets = ['Bank 2026-01','Bank 2026-02','Bank 2026-03','Bank 2026-04','Bank 2026-05','Bank 2026-06',
+                          'Bank 2026-07','Bank 2026-08','Bank 2026-09','Bank 2026-10','Bank 2026-11','Bank 2026-12'];
+ 
+      // Bank tabs
+      let bankCount = 0;
+      bankSheets.forEach(sheetName => {
+        if (!wb.SheetNames.includes(sheetName)) return;
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        rows.slice(1).forEach(row => {
+          [0, 8].forEach(offset => {
+            const datum = excelDate(row[offset+1]);
+            const gb = row[offset+2];
+            const bedrag = row[offset+3];
+            const naam = row[offset+5];
+            if (!datum || bedrag === null || bedrag === undefined || gb === null || String(gb) === 'Onbekend') return;
+            if (typeof bedrag !== 'number') return;
+            const gbStr = String(Math.round(parseFloat(gb)));
+            if (gbStr === 'NaN') return;
+            const isPrive = ['600','601'].includes(gbStr);
+            const isInk = OMZET_GB.includes(gbStr);
+            let type;
+            if (isPrive) type = bedrag > 0 ? 'prive_storting' : 'prive_opname';
+            else if (isInk && bedrag > 0) type = 'inkomst';
+            else if (bedrag > 0 && !isPrive) type = 'inkomst';
+            else type = 'uitgave';
+            newTx.push({id:tid++, datum, gb:gbStr, bedrag:Math.abs(bedrag),
+              naam: naam ? String(naam) : '', omschr:'', rek:'1010', type});
+            bankCount++;
+          });
+        });
+      });
+ 
+      // Creditkaart Prive
+      let ccCount = 0;
+      if (wb.SheetNames.includes('CreditkaartPrive')) {
+        const ws = wb.Sheets['CreditkaartPrive'];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        rows.slice(2).forEach(row => {
+          const datum = excelDate(row[7]);
+          const gb = row[8];
+          const bedrag = row[9];
+          const omschr = row[10];
+          if (!datum || bedrag === null || bedrag === undefined) return;
+          if (typeof bedrag !== 'number') return;
+          const gbStr = gb ? String(Math.round(parseFloat(gb))) : '';
+          newTx.push({id:tid++, datum, gb:gbStr, bedrag:Math.abs(bedrag),
+            naam: omschr ? String(omschr) : 'Creditkaart Privé', omschr: omschr ? String(omschr) : '', rek:'1030', type:'uitgave'});
+          ccCount++;
+        });
+      }
+ 
+      // Voorraad & Mutaties (Funny Covers)
+      let coverCount = 0;
+      if (wb.SheetNames.includes('Voorraad & Mutaties')) {
+        const ws = wb.Sheets['Voorraad & Mutaties'];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        let cid = 200;
+        rows.slice(2).forEach(row => {
+          const artikel = row[0];
+          const voorraad = row[2];
+          if (!artikel || typeof artikel !== 'string') return;
+          if (String(artikel).startsWith('TOTAAL')) return;
+          const inkoop = row[7] || 0;
+          const verkoop = row[8] || 0;
+          const omzet2026 = row[15] || 0;
+          newCovers.push({id:cid++, artikel:String(artikel),
+            voorraad: typeof voorraad === 'number' ? Math.round(voorraad) : 0,
+            inkoop: typeof inkoop === 'number' ? Math.round(inkoop) : 0,
+            verkoop: typeof verkoop === 'number' ? Math.round(verkoop) : 0,
+            omzet2026: typeof omzet2026 === 'number' ? Math.round(omzet2026) : 0});
+          coverCount++;
+        });
+      }
+ 
+      // Sla op
+      TX = newTx;
+      nxtTx = tid;
+      if (newCovers.length > 0) { COVERS = newCovers; nxtCover = 300; }
+      saveTxData();
+      saveCoversData();
+ 
+      document.getElementById('import-title').textContent = 'Import geslaagd!';
+      document.getElementById('import-body').innerHTML =
+        `✅ <strong>${bankCount}</strong> banktransacties ingelezen<br>` +
+        `✅ <strong>${ccCount}</strong> creditkaart boekingen ingelezen<br>` +
+        (newCovers.length > 0 ? `✅ <strong>${coverCount}</strong> covers artikelen ingelezen<br>` : '') +
+        `<br>Je data is opgeslagen. HNVI-loten blijven bewaard.`;
+      document.getElementById('import-actions').style.display = 'flex';
+ 
+      renderHome();
+    } catch(err) {
+      document.getElementById('import-title').textContent = 'Fout bij importeren';
+      document.getElementById('import-body').innerHTML = 'Er ging iets mis: ' + err.message + '<br><br>Controleer of je het juiste Excel bestand hebt geselecteerd.';
+      document.getElementById('import-actions').style.display = 'flex';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+ 
+function resetData() {
+  document.getElementById('modal-reset').classList.add('open');
+}
+ 
+function doReset() {
+  TX = [];
+  COVERS = [];
+  HNVI_LOTS = [];
+  nxtTx = 200; nxtCover = 100; nxtHnvi = 10;
+  saveTxData(); saveCoversData(); saveHnviData();
+  document.getElementById('modal-reset').classList.remove('open');
+  renderHome();
+}
+ 
 // close modals on overlay click
 document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); }));
-
+ 
 // init
 renderHome();
 </script>
+ 
+<!-- MODAL: IMPORT STATUS -->
+<div class="modal-overlay" id="modal-import">
+<div class="modal">
+  <h3 id="import-title">Importeren...</h3>
+  <div id="import-body" style="font-size:13px;line-height:1.8;color:var(--text-muted)"></div>
+  <div class="modal-actions" id="import-actions" style="display:none">
+    <button class="btn btn-primary" onclick="document.getElementById('modal-import').classList.remove('open')">Sluiten</button>
+  </div>
+</div>
+</div>
+ 
+<!-- MODAL: RESET BEVESTIGING -->
+<div class="modal-overlay" id="modal-reset">
+<div class="modal">
+  <h3>Alles wissen?</h3>
+  <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">Dit verwijdert alle transacties, covers en HNVI-loten uit de app. Je kunt daarna opnieuw importeren vanuit je Excel.</p>
+  <div class="modal-actions">
+    <button class="btn" onclick="document.getElementById('modal-reset').classList.remove('open')">Annuleren</button>
+    <button class="btn btn-primary" style="background:var(--red);border-color:var(--red)" onclick="doReset()">Ja, wis alles</button>
+  </div>
+</div>
+</div>
 </body>
 </html>
