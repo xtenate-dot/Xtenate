@@ -1038,11 +1038,12 @@ function renderHNVI() {
       <td style="color:var(--text-muted)">${ddmm(i.datum)}</td>
       <td class="td-trunc">${i.omschr}${i.noot?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${i.noot}</div>`:''}</td>
       <td style="text-align:right">${fmt(i.inkoop)}</td>
-      <td style="text-align:right">${i.verkoop!=null?fmt(i.verkoop):'—'}</td>
-      <td style="text-align:right">${w!=null?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
+      <td style="text-align:right">${i.verkoop!=null&&i.verkoop>0?fmt(i.verkoop):'—'}</td>
+      <td style="text-align:right">${w!=null&&i.verkoop>0?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
       <td><span class="${i.status==='verkocht'?'stock-ok':'stock-uit'}">${i.status}</span></td>
       <td style="white-space:nowrap">
         <span class="sell-link" onclick="openHNVISell(${i.id})">${i.status==='voorraad'?'Verkoop':'Wijzig'}</span>
+        ${i.status==='verkocht'?`<span class="sell-link" style="color:var(--text-muted)" onclick="wisHNVIVerkoop(${i.id})">Wis</span>`:''}
       </td>
     </tr>`;
   }).join('') : '<tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--text-muted)">Nog geen loten toegevoegd. Klik op "+ Lot toevoegen".</td></tr>';
@@ -1164,7 +1165,8 @@ function saveHNVI() {
   if (hnviSellId) {
     const vk = parseFloat(document.getElementById('hn-vk').value)||0;
     const noot = document.getElementById('hn-noot').value;
-    HNVI_LOTS = HNVI_LOTS.map(i => i.id===hnviSellId ? {...i, verkoop: vk, status:'verkocht', noot} : i);
+    const nieuweStatus = vk > 0 ? 'verkocht' : 'voorraad';
+    HNVI_LOTS = HNVI_LOTS.map(i => i.id===hnviSellId ? {...i, verkoop: vk > 0 ? vk : null, status:nieuweStatus, noot} : i);
   } else {
     const newId = nxtHnvi++;
     hnviLaatsteDatum = document.getElementById('hn-d').value;
@@ -1368,6 +1370,13 @@ function saveApiKey() {
 }
  
 // ─── HNVI VERWIJDEREN ─────────────────────────────────────────────────────────
+function wisHNVIVerkoop(id) {
+  if (!confirm('Verkoopbedrag verwijderen en lot terug op voorraad zetten?')) return;
+  HNVI_LOTS = HNVI_LOTS.map(i => i.id===id ? {...i, verkoop:null, status:'voorraad'} : i);
+  saveHnviData();
+  renderHNVI();
+}
+ 
 function verwijderHNVIItem(key) {
   if (!confirm('Dit lot verwijderen?')) return;
   HNVI_LOTS = HNVI_LOTS.filter(i => String(i._key||i.id) !== String(key));
@@ -1525,8 +1534,11 @@ function bevestigHNVIImport() {
   hnviImportItems = [];
 }
  
-// close modals on overlay click
-document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); }));
+// close modals on overlay click (niet voor HNVI modal)
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  if (el.id === 'modal-hnvi') return; // HNVI modal sluit niet bij klik buiten
+  el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
+});
  
 // init
 renderHome();
