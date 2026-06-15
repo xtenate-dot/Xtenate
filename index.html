@@ -1174,7 +1174,16 @@ function saveHNVI() {
     const vk = parseFloat(document.getElementById('hn-vk').value)||0;
     const noot = document.getElementById('hn-noot').value;
     const nieuweStatus = vk > 0 ? 'verkocht' : 'voorraad';
-    HNVI_LOTS = HNVI_LOTS.map(i => i.id===hnviSellId ? {...i, verkoop: vk > 0 ? vk : null, status:nieuweStatus, noot} : i);
+    const nieuweInkoop = parseFloat(document.getElementById('hn-ik').value)||0;
+    HNVI_LOTS = HNVI_LOTS.map(i => i.id===hnviSellId ? {
+      ...i,
+      datum: document.getElementById('hn-d').value,
+      omschr: document.getElementById('hn-o').value,
+      inkoop: nieuweInkoop,
+      verkoop: vk > 0 ? vk : null,
+      status: nieuweStatus,
+      noot
+    } : i);
   } else {
     const newId = nxtHnvi++;
     hnviLaatsteDatum = document.getElementById('hn-d').value;
