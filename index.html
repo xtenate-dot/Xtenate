@@ -364,6 +364,14 @@ select:focus, input:focus { border-color: #888; }
   <div class="page-title">HNVI / Xtenate — voorraad</div>
   <div class="metrics" id="hnvi-metrics"></div>
   <div class="toolbar">
+    <select id="f-hnvi-jaar" onchange="renderHNVI()">
+      <option value="">Alle jaren</option>
+      <option value="2022">2022</option>
+      <option value="2023">2023</option>
+      <option value="2024">2024</option>
+      <option value="2025">2025</option>
+      <option value="2026">2026</option>
+    </select>
     <select id="f-hnvi-status" onchange="renderHNVI()">
       <option value="">Alle loten</option>
       <option value="voorraad">In voorraad</option>
@@ -946,19 +954,31 @@ function renderCovers() {
 let hnviSellId = null;
 function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
-  const list = HNVI_LOTS.filter(i => !st || i.status===st).sort((a,b)=>b.datum.localeCompare(a.datum));
+  const jaar = document.getElementById('f-hnvi-jaar') ? document.getElementById('f-hnvi-jaar').value : '';
+  const list = HNVI_LOTS.filter(i => {
+    if (st && i.status !== st) return false;
+    if (jaar && !i.datum.startsWith(jaar)) return false;
+    return true;
+  }).sort((a,b)=>b.datum.localeCompare(a.datum));
+ 
   const vrd = HNVI_LOTS.filter(i=>i.status==='voorraad');
-  const vkt = HNVI_LOTS.filter(i=>i.status==='verkocht');
-  const winst = vkt.reduce((s,i)=>s+(i.verkoop-i.inkoop),0);
-  const avg = vkt.length ? Math.round(vkt.reduce((s,i)=>s+(i.verkoop-i.inkoop)/i.inkoop*100,0)/vkt.length) : 0;
-  const hnviInkoop = TX.filter(t=>t.gb==='7010').reduce((s,t)=>s+t.bedrag,0);
-  const totVerkoop = vkt.reduce((s,i)=>s+(i.verkoop||0),0);
+ 
+  // Gefilterd op jaar voor inkoop/verkoop totalen
+  const gefilterdOpJaar = jaar ? HNVI_LOTS.filter(i=>i.datum.startsWith(jaar)) : HNVI_LOTS;
+  const totInkoop = gefilterdOpJaar.reduce((s,i)=>s+(Number(i.inkoop)||0),0);
+  const vktJaar = gefilterdOpJaar.filter(i=>i.status==='verkocht');
+  const totVerkoop = vktJaar.reduce((s,i)=>s+(Number(i.verkoop)||0),0);
+  const winst = vktJaar.reduce((s,i)=>s+((Number(i.verkoop)||0)-(Number(i.inkoop)||0)),0);
+ 
+  // Gemiddelde marge over alle verkochte loten (gefilterd)
+  const avg = vktJaar.length ? Math.round(vktJaar.reduce((s,i)=>s+((Number(i.verkoop)||0)-(Number(i.inkoop)||0))/(Number(i.inkoop)||1)*100,0)/vktJaar.length) : 0;
+  const periodeLabel = jaar ? jaar : 'alle jaren';
   document.getElementById('hnvi-metrics').innerHTML = `
-    <div class="metric"><div class="lbl">In voorraad</div><div class="val">${vrd.length} loten</div><div class="sub">${fmt(vrd.reduce((s,i)=>s+i.inkoop,0))} ingekocht</div></div>
-    <div class="metric"><div class="lbl">Verkoopwaarde</div><div class="val pos">${fmt(totVerkoop)}</div><div class="sub">${vkt.length} verkochte loten</div></div>
-    <div class="metric"><div class="lbl">Gerealiseerde winst</div><div class="val pos">${fmt(winst)}</div></div>
-    <div class="metric"><div class="lbl">Gem. marge</div><div class="val ${avg>=0?'pos':'neg'}">${avg}%</div></div>
-    <div class="metric"><div class="lbl">HNVI inkoop 2026</div><div class="val neg">${fmt(hnviInkoop)}</div><div class="sub">uit bankboekingen</div></div>`;
+    <div class="metric"><div class="lbl">In voorraad</div><div class="val">${vrd.length} loten</div></div>
+    <div class="metric"><div class="lbl">Totaal inkoop</div><div class="val neg">${fmt(totInkoop)}</div><div class="sub">${periodeLabel}</div></div>
+    <div class="metric"><div class="lbl">Totaal verkoop</div><div class="val pos">${fmt(totVerkoop)}</div><div class="sub">${vktJaar.length} loten · ${periodeLabel}</div></div>
+    <div class="metric"><div class="lbl">Winst / verlies</div><div class="val ${winst>=0?'pos':'neg'}">${winst>=0?'+':''}${fmt(winst)}</div></div>
+    <div class="metric"><div class="lbl">Gem. marge</div><div class="val ${avg>=0?'pos':'neg'}">${avg}%</div></div>`;
  
   // Reset checkboxes
   const deleteBtn = document.getElementById('hnvi-delete-btn');
@@ -978,8 +998,7 @@ function renderHNVI() {
       <td style="text-align:right">${w!=null?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
       <td><span class="${i.status==='verkocht'?'stock-ok':'stock-uit'}">${i.status}</span></td>
       <td style="white-space:nowrap">
-        ${i.status==='voorraad'?`<span class="sell-link" onclick="openHNVISell(${i.id})">Verkoop</span> `:''}
-        <span class="sell-link" style="color:var(--red)" onclick="verwijderHNVIItem('${i._key||i.id}')">✕</span>
+        ${i.status==='voorraad'?`<span class="sell-link" onclick="openHNVISell(${i.id})">Verkoop</span>`:''}
       </td>
     </tr>`;
   }).join('') : '<tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--text-muted)">Nog geen loten toegevoegd. Klik op "+ Lot toevoegen".</td></tr>';
