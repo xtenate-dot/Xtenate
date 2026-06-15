@@ -157,7 +157,14 @@ select:focus, input:focus { border-color: #888; }
 <nav class="sidebar">
   <div class="logo">
     <div class="logo-name">Xtenate</div>
-    <div class="logo-sub">Administratie 2026</div>
+    <select id="jaar-selector" onchange="wisselJaar()" style="font-size:11px;padding:3px 6px;margin-top:4px;width:100%;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text-muted)">
+      <option value="all">Alle jaren</option>
+      <option value="2026" selected>2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+      <option value="2022">2022</option>
+    </select>
   </div>
   <div class="nav-section">Overzicht</div>
   <div class="nav-item active" onclick="nav('home',this)">
@@ -315,10 +322,19 @@ select:focus, input:focus { border-color: #888; }
 <!-- BELASTING -->
 <div id="p-belasting" class="page">
   <div class="page-title">Belasting</div>
+  <div class="toolbar">
+    <select id="f-jaar-bel" onchange="renderBelasting()">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+      <option value="2022">2022</option>
+    </select>
+  </div>
   <div class="alert alert-warn">⚠ Indicatie op basis van ingevoerde data. Raadpleeg een belastingadviseur voor definitieve aangifte.</div>
   <div class="metrics" id="bel-metrics"></div>
   <div class="grid2">
-    <div class="card"><div class="card-title">Berekening box 1 — indicatie 2026</div><div id="bel-calc"></div></div>
+    <div class="card"><div class="card-title" id="bel-card-title">Berekening box 1 — indicatie 2026</div><div id="bel-calc"></div></div>
     <div class="card"><div class="card-title">Omzet per kanaal</div>
       <div style="position:relative;height:170px"><canvas id="c-bel" role="img" aria-label="Omzet per kanaal"></canvas></div>
       <div id="bel-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:11px;color:var(--text-muted)"></div>
@@ -520,6 +536,7 @@ select:focus, input:focus { border-color: #888; }
     <div class="form-group"><label>Inkoopprijs incl. <span style="font-size:10px;color:var(--text-muted)">(×1,17 ×1,21)</span></label><input type="number" id="hn-ik" step="0.01" placeholder="automatisch" readonly style="background:var(--bg)"></div>
     <div class="form-group full"><label>Omschrijving</label><input type="text" id="hn-o" placeholder="bijv. HNVI lot 482 — sieradenset"></div>
     <div class="form-group"><label>Datum</label><input type="date" id="hn-d"></div>
+    <div class="form-group full"><label>Notitie <span style="font-size:10px;color:var(--text-muted)">(optioneel)</span></label><input type="text" id="hn-noot" placeholder="bijv. defect, ophalen dinsdag..."></div>
     <div class="form-group full" id="hn-vk-wrap" style="display:none"><label>Verkoopprijs (€)</label><input type="number" id="hn-vk" step="0.01" placeholder="0,00"></div>
   </div>
   <div class="modal-actions">
@@ -620,28 +637,44 @@ function nav(p, btn) {
 }
  
 // ─── HOME ──────────────────────────────────────────────────────────────────────
+let huidigJaar = '2026';
+ 
+function wisselJaar() {
+  huidigJaar = document.getElementById('jaar-selector').value;
+  renderHome();
+}
+ 
+function getHomeTX() {
+  if (huidigJaar === 'all') return [...HIST_TX, ...TX];
+  if (huidigJaar === '2026') return TX;
+  return HIST_TX.filter(t => t.datum.startsWith(huidigJaar));
+}
+ 
 function renderHome() {
-  const omzet = TX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t) => s+t.bedrag, 0);
-  const kosten = TX.filter(isUitgave).reduce((s,t) => s+t.bedrag, 0);
-  const omzXt = TX.filter(t => isInkomst(t) && t.gb==='8000').reduce((s,t) => s+t.bedrag, 0);
-  const omzBol = TX.filter(t => isInkomst(t) && t.gb==='8010').reduce((s,t) => s+t.bedrag, 0);
-  const priveOp = TX.filter(t => t.type==='prive_opname').reduce((s,t) => s+t.bedrag, 0);
-  const priveSt = TX.filter(t => t.type==='prive_storting').reduce((s,t) => s+t.bedrag, 0);
+  const homeTX = getHomeTX();
+  const omzet = homeTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t) => s+t.bedrag, 0);
+  const kosten = homeTX.filter(isUitgave).reduce((s,t) => s+t.bedrag, 0);
+  const omzXt = homeTX.filter(t => isInkomst(t) && t.gb==='8000').reduce((s,t) => s+t.bedrag, 0);
+  const omzBol = homeTX.filter(t => isInkomst(t) && t.gb==='8010').reduce((s,t) => s+t.bedrag, 0);
+  const omzHC = homeTX.filter(t => isInkomst(t) && t.gb==='8020').reduce((s,t) => s+t.bedrag, 0);
+  const priveOp = homeTX.filter(t => t.type==='prive_opname').reduce((s,t) => s+t.bedrag, 0);
+  const priveSt = homeTX.filter(t => t.type==='prive_storting').reduce((s,t) => s+t.bedrag, 0);
   const vrdCovers = COVERS.reduce((s,c) => s+c.voorraad, 0);
-  const hnviInv = TX.filter(t => t.gb==='7010').reduce((s,t) => s+t.bedrag, 0);
+  const hnviInv = homeTX.filter(t => t.gb==='7010').reduce((s,t) => s+t.bedrag, 0);
  
   document.getElementById('home-metrics').innerHTML = `
-    <div class="metric"><div class="lbl">Omzet 2026</div><div class="val pos">${fmt(omzet)}</div></div>
-    <div class="metric"><div class="lbl">Kosten 2026</div><div class="val neg">${fmt(kosten)}</div></div>
+    <div class="metric"><div class="lbl">Omzet ${huidigJaar==='all'?'alle jaren':huidigJaar}</div><div class="val pos">${fmt(omzet)}</div></div>
+    <div class="metric"><div class="lbl">Kosten ${huidigJaar==='all'?'alle jaren':huidigJaar}</div><div class="val neg">${fmt(kosten)}</div></div>
     <div class="metric"><div class="lbl">Netto resultaat</div><div class="val ${omzet-kosten>=0?'pos':'neg'}">${fmt(omzet-kosten)}</div></div>
     <div class="metric"><div class="lbl">Xtenate omzet</div><div class="val">${fmt(omzXt)}</div></div>
     <div class="metric"><div class="lbl">Bol.com omzet</div><div class="val">${fmt(omzBol)}</div></div>
+    <div class="metric"><div class="lbl">Helmetstore omzet</div><div class="val">${fmt(omzHC)}</div></div>
     <div class="metric"><div class="lbl">Covers voorraad</div><div class="val">${vrdCovers} stuks</div></div>
     <div class="metric"><div class="lbl">HNVI inkoop</div><div class="val neg">${fmt(hnviInv)}</div></div>
     <div class="metric"><div class="lbl">Privé opnames</div><div class="val" style="color:#888">${fmt(priveOp)}</div></div>`;
  
-  const topInc = [...TX].filter(t => isInkomst(t)).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
-  const topExp = [...TX].filter(isUitgave).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
+  const topInc = [...homeTX].filter(t => isInkomst(t)).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
+  const topExp = [...homeTX].filter(isUitgave).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
   document.getElementById('home-uitsch').innerHTML = [...topInc,...topExp].map(t => `
     <div class="uitsch-item">
       <div class="uitsch-icon" style="background:${isInkomst(t)?'var(--green-bg)':'var(--red-bg)'}">
@@ -653,10 +686,12 @@ function renderHome() {
       <div class="uitsch-bedrag ${isInkomst(t)?'pos':'neg'}">${isInkomst(t)?'+':'–'}${fmt(t.bedrag)}</div>
     </div>`).join('');
  
-  const maanden = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
-  const labels = maanden.map(m => MAANDEN[m]);
-  const incD = maanden.map(m => TX.filter(t => isInkomst(t) && isOmzet(t.gb) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
-  const expD = maanden.map(m => TX.filter(t => isUitgave(t) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
+  const alleM = [...new Set(homeTX.map(t=>t.datum.slice(0,7)))].sort();
+  const maanden = alleM;
+  const mnmsFull = {'2022-01':'jan 22','2022-02':'feb 22','2022-03':'mrt 22','2022-04':'apr 22','2022-05':'mei 22','2022-06':'jun 22','2022-07':'jul 22','2022-08':'aug 22','2022-09':'sep 22','2022-10':'okt 22','2022-11':'nov 22','2022-12':'dec 22','2023-01':'jan 23','2023-02':'feb 23','2023-03':'mrt 23','2023-04':'apr 23','2023-05':'mei 23','2023-06':'jun 23','2023-07':'jul 23','2023-08':'aug 23','2023-09':'sep 23','2023-10':'okt 23','2023-11':'nov 23','2023-12':'dec 23','2024-01':'jan 24','2024-02':'feb 24','2024-03':'mrt 24','2024-04':'apr 24','2024-05':'mei 24','2024-06':'jun 24','2024-07':'jul 24','2024-08':'aug 24','2024-09':'sep 24','2024-10':'okt 24','2024-11':'nov 24','2024-12':'dec 24','2025-01':'jan 25','2025-02':'feb 25','2025-03':'mrt 25','2025-04':'apr 25','2025-05':'mei 25','2025-06':'jun 25','2025-07':'jul 25','2025-08':'aug 25','2025-09':'sep 25','2025-10':'okt 25','2025-11':'nov 25','2025-12':'dec 25','2026-01':'jan 26','2026-02':'feb 26','2026-03':'mrt 26','2026-04':'apr 26','2026-05':'mei 26','2026-06':'jun 26'};
+  const labels = maanden.map(m => mnmsFull[m] || m);
+  const incD = maanden.map(m => homeTX.filter(t => isInkomst(t) && isOmzet(t.gb) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
+  const expD = maanden.map(m => homeTX.filter(t => isUitgave(t) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
   const netD = maanden.map((_,i) => incD[i]-expD[i]);
  
   dc('c-ie');
@@ -664,7 +699,7 @@ function renderHome() {
   dc('c-net');
   charts['c-net'] = new Chart(document.getElementById('c-net'), {type:'line',data:{labels,datasets:[{label:'Netto',data:netD,borderColor:'#FFB347',backgroundColor:'rgba(255,179,71,0.1)',tension:.35,fill:true,pointRadius:4,pointBackgroundColor:'#FFB347'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
  
-  const recent = [...TX].sort((a,b) => b.datum.localeCompare(a.datum)).slice(0,8);
+  const recent = [...homeTX].sort((a,b) => b.datum.localeCompare(a.datum)).slice(0,8);
   document.getElementById('home-recent').innerHTML = recent.map(t => `<tr>
     <td style="color:var(--text-muted)">${ddmm(t.datum)}</td>
     <td class="td-trunc">${t.naam}</td>
@@ -793,24 +828,34 @@ function renderGrootboek() {
  
 // ─── BELASTING ────────────────────────────────────────────────────────────────
 function renderBelasting() {
-  const omzet = TX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t)=>s+t.bedrag,0);
+  const jaar = document.getElementById('f-jaar-bel') ? document.getElementById('f-jaar-bel').value : '2026';
+  const belTX = jaar === '2026' ? TX : HIST_TX.filter(t => t.datum.startsWith(jaar));
+ 
+  // Update card title
+  const ct = document.getElementById('bel-card-title');
+  if (ct) ct.textContent = `Berekening box 1 — indicatie ${jaar}`;
+ 
+  const omzet = belTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t)=>s+t.bedrag,0);
  
   // Alle overige kosten (niet 7010 = HNVI inkoop)
-  const kostenOverig = TX.filter(t => isUitgave(t) && t.gb !== '7010').reduce((s,t)=>s+t.bedrag,0);
+  const kostenOverig = belTX.filter(t => isUitgave(t) && t.gb !== '7010').reduce((s,t)=>s+t.bedrag,0);
  
-  // HNVI inkoop: alleen verkochte loten zijn aftrekbaar
-  const hnviVerkocht = HNVI_LOTS.filter(i => i.status === 'verkocht').reduce((s,i)=>s+i.inkoop,0);
-  const hnviVoorraad = HNVI_LOTS.filter(i => i.status === 'voorraad').reduce((s,i)=>s+i.inkoop,0);
-  // Totale 7010 in bank (als HNVI_LOTS leeg, val back op alle 7010)
-  const hnviTotaalBank = TX.filter(t => isUitgave(t) && t.gb === '7010').reduce((s,t)=>s+t.bedrag,0);
-  const hnviAftrekbaar = HNVI_LOTS.length > 0 ? hnviVerkocht : hnviTotaalBank;
-  const hnviNietAftrekbaar = HNVI_LOTS.length > 0 ? hnviVoorraad : 0;
+  // HNVI inkoop: filter op jaar van het lot (via datum)
+  const hnviJaar = HNVI_LOTS.filter(i => i.datum && i.datum.startsWith(jaar));
+  const hnviVerkocht = hnviJaar.filter(i => i.status === 'verkocht').reduce((s,i)=>s+(Number(i.inkoop)||0),0);
+  const hnviVoorraad = hnviJaar.filter(i => i.status === 'voorraad').reduce((s,i)=>s+(Number(i.inkoop)||0),0);
+  const hnviVoorraadAantal = hnviJaar.filter(i => i.status === 'voorraad').length;
+  // Totale 7010 in bank (fallback als geen loten voor dit jaar)
+  const hnviTotaalBank = belTX.filter(t => isUitgave(t) && t.gb === '7010').reduce((s,t)=>s+(Number(t.bedrag)||0),0);
+  const hnviAftrekbaar = hnviJaar.length > 0 ? hnviVerkocht : hnviTotaalBank;
+  // Voorraad van dit jaar = nog niet aftrekbaar
+  const hnviNietAftrekbaar = hnviVoorraad;
  
   const kostenAftrekbaar = kostenOverig + hnviAftrekbaar;
   const winst = omzet - kostenAftrekbaar;
  
   // Jaarprojectie op basis van huidige maanden
-  const maandenMet = [...new Set(TX.filter(t=>isInkomst(t)&&isOmzet(t.gb)).map(t=>t.datum.slice(0,7)))].length || 1;
+  const maandenMet = [...new Set(belTX.filter(t=>isInkomst(t)&&isOmzet(t.gb)).map(t=>t.datum.slice(0,7)))].length || 1;
   const omzetPerMaand = omzet / maandenMet;
   const kostenPerMaand = kostenAftrekbaar / maandenMet;
   const omzetJaar = Math.round(omzetPerMaand * 12);
@@ -834,7 +879,7 @@ function renderBelasting() {
     <div class="metric"><div class="lbl">Aftrekbare kosten</div><div class="val neg">${fmt(kostenAftrekbaar)}</div></div>
     <div class="metric"><div class="lbl">Winst / verlies</div><div class="val ${winst>=0?'pos':'neg'}">${fmt(winst)}</div></div>
     <div class="metric"><div class="lbl">${ib<=0?'Geschatte teruggave':'Geschatte IB'}</div><div class="val ${ib<=0?'pos':'neg'}">${ib<=0?'+':''}${fmt(Math.abs(Math.round(ib)))}</div></div>
-    <div class="metric"><div class="lbl">HNVI voorraadwaarde</div><div class="val" style="color:#888">${fmt(hnviNietAftrekbaar)}</div><div class="sub">${HNVI_LOTS.filter(i=>i.status==='voorraad').length} loten · nog niet aftrekbaar</div></div>
+    <div class="metric"><div class="lbl">HNVI voorraad (niet aftrekbaar)</div><div class="val" style="color:#888">${fmt(hnviNietAftrekbaar)}</div><div class="sub">${hnviVoorraadAantal} loten nog in voorraad</div></div>
     <div class="metric"><div class="lbl">Projectie heel jaar</div><div class="val ${winstJaar>=0?'pos':'neg'}">${fmt(winstJaar)}</div><div class="sub">op basis van ${maandenMet} mnd</div></div>`;
  
   const teruggaveRegel = ib < 0 ? `
@@ -868,9 +913,9 @@ function renderBelasting() {
     </div>`;
  
   const omzData = [
-    TX.filter(t=>isInkomst(t)&&t.gb==='8000').reduce((s,t)=>s+t.bedrag,0),
-    TX.filter(t=>isInkomst(t)&&t.gb==='8010').reduce((s,t)=>s+t.bedrag,0),
-    TX.filter(t=>isInkomst(t)&&t.gb==='8020').reduce((s,t)=>s+t.bedrag,0),
+    belTX.filter(t=>isInkomst(t)&&t.gb==='8000').reduce((s,t)=>s+t.bedrag,0),
+    belTX.filter(t=>isInkomst(t)&&t.gb==='8010').reduce((s,t)=>s+t.bedrag,0),
+    belTX.filter(t=>isInkomst(t)&&t.gb==='8020').reduce((s,t)=>s+t.bedrag,0),
   ];
   const omzLabels = ['Xtenate (8000)','Bol.com covers (8010)','Helmetstore (8020)'];
   const colors = ['#7C4DFF','#FF6B9D','#FFB347'];
@@ -991,13 +1036,13 @@ function renderHNVI() {
     return `<tr>
       <td style="padding-left:14px"><input type="checkbox" class="hnvi-check" data-key="${i._key||i.id}" onchange="updateHNVIDeleteBtn()"></td>
       <td style="color:var(--text-muted)">${ddmm(i.datum)}</td>
-      <td class="td-trunc">${i.omschr}</td>
+      <td class="td-trunc">${i.omschr}${i.noot?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${i.noot}</div>`:''}</td>
       <td style="text-align:right">${fmt(i.inkoop)}</td>
       <td style="text-align:right">${i.verkoop!=null?fmt(i.verkoop):'—'}</td>
       <td style="text-align:right">${w!=null?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
       <td><span class="${i.status==='verkocht'?'stock-ok':'stock-uit'}">${i.status}</span></td>
       <td style="white-space:nowrap">
-        ${i.status==='voorraad'?`<span class="sell-link" onclick="openHNVISell(${i.id})">Verkoop</span>`:''}
+        <span class="sell-link" onclick="openHNVISell(${i.id})">${i.status==='voorraad'?'Verkoop':'Wijzig'}</span>
       </td>
     </tr>`;
   }).join('') : '<tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--text-muted)">Nog geen loten toegevoegd. Klik op "+ Lot toevoegen".</td></tr>';
@@ -1085,14 +1130,17 @@ function berekenHNVIInkoop() {
   }
 }
  
+let hnviLaatsteDatum = new Date().toISOString().split('T')[0];
+ 
 function openHNVIModal() {
   hnviSellId = null;
   document.getElementById('hnvi-modal-title').textContent = 'Lot toevoegen';
   document.getElementById('hn-save-btn').textContent = 'Opslaan';
-  document.getElementById('hn-d').value = new Date().toISOString().split('T')[0];
+  document.getElementById('hn-d').value = hnviLaatsteDatum;
   document.getElementById('hn-bod').value = '';
   document.getElementById('hn-ik').value = '';
   document.getElementById('hn-o').value = '';
+  document.getElementById('hn-noot').value = '';
   document.getElementById('hn-vk').value = '';
   document.getElementById('hn-vk-wrap').style.display = 'none';
   document.getElementById('modal-hnvi').classList.add('open');
@@ -1100,22 +1148,27 @@ function openHNVIModal() {
 function openHNVISell(id) {
   hnviSellId = id;
   const i = HNVI_LOTS.find(x=>x.id===id);
-  document.getElementById('hnvi-modal-title').textContent = 'Verkoop registreren';
-  document.getElementById('hn-save-btn').textContent = 'Verkoop opslaan';
+  document.getElementById('hnvi-modal-title').textContent = i.status==='verkocht' ? 'Verkoop wijzigen' : 'Verkoop registreren';
+  document.getElementById('hn-save-btn').textContent = 'Opslaan';
   document.getElementById('hn-d').value = i.datum;
+  document.getElementById('hn-bod').value = '';
   document.getElementById('hn-ik').value = i.inkoop;
   document.getElementById('hn-o').value = i.omschr;
-  document.getElementById('hn-vk').value = '';
+  document.getElementById('hn-noot').value = i.noot || '';
+  document.getElementById('hn-vk').value = i.verkoop || '';
   document.getElementById('hn-vk-wrap').style.display = '';
   document.getElementById('modal-hnvi').classList.add('open');
 }
 function closeHNVIModal() { document.getElementById('modal-hnvi').classList.remove('open'); }
 function saveHNVI() {
   if (hnviSellId) {
-    HNVI_LOTS = HNVI_LOTS.map(i => i.id===hnviSellId ? {...i, verkoop: parseFloat(document.getElementById('hn-vk').value)||0, status:'verkocht'} : i);
+    const vk = parseFloat(document.getElementById('hn-vk').value)||0;
+    const noot = document.getElementById('hn-noot').value;
+    HNVI_LOTS = HNVI_LOTS.map(i => i.id===hnviSellId ? {...i, verkoop: vk, status:'verkocht', noot} : i);
   } else {
     const newId = nxtHnvi++;
-    HNVI_LOTS.push({id:newId, _key:String(newId), datum:document.getElementById('hn-d').value, omschr:document.getElementById('hn-o').value, inkoop:parseFloat(document.getElementById('hn-ik').value)||0, verkoop:null, status:'voorraad'});
+    hnviLaatsteDatum = document.getElementById('hn-d').value;
+    HNVI_LOTS.push({id:newId, _key:String(newId), datum:hnviLaatsteDatum, omschr:document.getElementById('hn-o').value, inkoop:parseFloat(document.getElementById('hn-ik').value)||0, verkoop:null, status:'voorraad', noot:document.getElementById('hn-noot').value});
   }
   saveHnviData();
   closeHNVIModal();
