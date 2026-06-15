@@ -378,9 +378,7 @@ select:focus, input:focus { border-color: #888; }
       <option value="verkocht">Verkocht</option>
     </select>
     <button class="btn" id="hnvi-delete-btn" onclick="verwijderGeselecteerdeHNVI()" style="display:none;color:var(--red);border-color:var(--red)">🗑 Verwijder selectie</button>
-    <button class="btn btn-ml" onclick="document.getElementById('hnvi-pdf-input').click()">📄 Importeer HNVI factuur</button>
-    <input type="file" id="hnvi-pdf-input" accept=".pdf" multiple style="display:none" onchange="importHNVIFactuur(this)">
-    <button class="btn btn-primary" onclick="openHNVIModal()">+ Lot toevoegen</button>
+    <button class="btn btn-primary btn-ml" onclick="openHNVIModal()">+ Lot toevoegen</button>
   </div>
   <div class="card" style="padding:0">
     <div class="table-wrap"><table>
@@ -518,9 +516,10 @@ select:focus, input:focus { border-color: #888; }
 <div class="modal">
   <h3 id="hnvi-modal-title">Lot toevoegen</h3>
   <div class="form-grid">
-    <div class="form-group"><label>Datum</label><input type="date" id="hn-d"></div>
-    <div class="form-group"><label>Inkoopprijs (€)</label><input type="number" id="hn-ik" step="0.01" placeholder="0,00"></div>
+    <div class="form-group"><label>Bod excl. (€)</label><input type="number" id="hn-bod" step="0.01" placeholder="0,00" oninput="berekenHNVIInkoop()"></div>
+    <div class="form-group"><label>Inkoopprijs incl. <span style="font-size:10px;color:var(--text-muted)">(×1,17 ×1,21)</span></label><input type="number" id="hn-ik" step="0.01" placeholder="automatisch" readonly style="background:var(--bg)"></div>
     <div class="form-group full"><label>Omschrijving</label><input type="text" id="hn-o" placeholder="bijv. HNVI lot 482 — sieradenset"></div>
+    <div class="form-group"><label>Datum</label><input type="date" id="hn-d"></div>
     <div class="form-group full" id="hn-vk-wrap" style="display:none"><label>Verkoopprijs (€)</label><input type="number" id="hn-vk" step="0.01" placeholder="0,00"></div>
   </div>
   <div class="modal-actions">
@@ -1076,11 +1075,22 @@ function saveCover() {
 }
  
 // ─── MODALS HNVI ──────────────────────────────────────────────────────────────
+function berekenHNVIInkoop() {
+  const bod = parseFloat(document.getElementById('hn-bod').value) || 0;
+  if (bod > 0) {
+    const inkoop = Math.round(bod * 1.17 * 1.21 * 100) / 100;
+    document.getElementById('hn-ik').value = inkoop.toFixed(2);
+  } else {
+    document.getElementById('hn-ik').value = '';
+  }
+}
+ 
 function openHNVIModal() {
   hnviSellId = null;
   document.getElementById('hnvi-modal-title').textContent = 'Lot toevoegen';
   document.getElementById('hn-save-btn').textContent = 'Opslaan';
   document.getElementById('hn-d').value = new Date().toISOString().split('T')[0];
+  document.getElementById('hn-bod').value = '';
   document.getElementById('hn-ik').value = '';
   document.getElementById('hn-o').value = '';
   document.getElementById('hn-vk').value = '';
