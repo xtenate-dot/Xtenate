@@ -829,11 +829,11 @@ function renderBank() {
   const priveSaldo = priveSt - priveOp;
 
   document.getElementById('bank-metrics').innerHTML = `
+    <div class="metric"><div class="lbl">Privé gestort</div><div class="val pos">${fmt(priveSt)}</div><div class="sub">${list.filter(t=>t.type==='prive_storting').length} keer</div></div>
+    <div class="metric"><div class="lbl">Privé opgenomen</div><div class="val neg">${fmt(priveOp)}</div><div class="sub">${list.filter(t=>t.type==='prive_opname').length} keer</div></div>
     <div class="metric"><div class="lbl">Inkomsten periode</div><div class="val pos">${fmt(inc)}</div><div class="sub">${list.filter(t=>t.type==='inkomst').length} transacties</div></div>
     <div class="metric"><div class="lbl">Uitgaven periode</div><div class="val neg">${fmt(exp)}</div><div class="sub">${list.filter(t=>t.type==='uitgave').length} transacties</div></div>
     <div class="metric"><div class="lbl">Winst / verlies</div><div class="val ${winstverlies>=0?'pos':'neg'}">${winstverlies>=0?'+':''}${fmt(winstverlies)}</div><div class="sub">zakelijk netto</div></div>
-    <div class="metric"><div class="lbl">Privé gestort (ontvangen)</div><div class="val pos">${fmt(priveSt)}</div><div class="sub">${list.filter(t=>t.type==='prive_storting').length} keer</div></div>
-    <div class="metric"><div class="lbl">Privé opgenomen</div><div class="val neg">${fmt(priveOp)}</div><div class="sub">${list.filter(t=>t.type==='prive_opname').length} keer</div></div>
     <div class="metric"><div class="lbl">${saldoLabel}</div><div class="val ${periodeSaldo!=null?(periodeSaldo>=0?'pos':'neg'):''}" style="${periodeSaldo==null?'color:#ccc':''}">${periodeSaldo!=null?fmt(Math.round(periodeSaldo*100)/100):'—'}</div><div class="sub">eindbalans rekening</div></div>
     <div class="metric"><div class="lbl">${vorigLabel}</div><div class="val" style="${vorigSaldo!=null?'color:#888':'color:#ccc'}">${vorigSaldo!=null?fmt(Math.round(vorigSaldo*100)/100):'—'}</div><div class="sub">vorige periode</div></div>`;
   document.getElementById('bank-body').innerHTML = list.map(t => `<tr>
@@ -1324,12 +1324,13 @@ function importExcel(input) {
           const gb = row[8];
           const bedrag = row[9];
           const omschr = row[10];
-          if (!datum || bedrag === null || bedrag === undefined) return;
-          if (typeof bedrag !== 'number') return;
           if (!datum) return;
+          if (typeof bedrag !== 'number') return;
           const gbStr = gb ? String(Math.round(parseFloat(gb))) : '';
+          const isPrive = ['600','601'].includes(gbStr);
+          const ccType = isPrive ? (bedrag > 0 ? 'prive_storting' : 'prive_opname') : 'uitgave';
           newTx.push({id:tid++, datum, gb:gbStr, bedrag:Math.abs(bedrag),
-            naam: omschr ? String(omschr) : 'Creditkaart Privé', omschr: omschr ? String(omschr) : '', rek:'1030', type:'uitgave'});
+            naam: omschr ? String(omschr) : 'Creditkaart Privé', omschr: omschr ? String(omschr) : '', rek:'1030', type:ccType});
           ccCount++;
         });
       }
