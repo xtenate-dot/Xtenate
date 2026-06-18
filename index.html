@@ -1313,8 +1313,9 @@ function importExcel(input) {
 
       // Creditkaart Prive
       let ccCount = 0;
-      if (wb.SheetNames.includes('CreditkaartPrive')) {
-        const ws = wb.Sheets['CreditkaartPrive'];
+      const ccSheetName = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g, '').includes('creditkaartprive'));
+      if (ccSheetName) {
+        const ws = wb.Sheets[ccSheetName];
         const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
         rows.slice(2).forEach(row => {
           const datum = excelDate(row[7]);
