@@ -196,6 +196,10 @@ select:focus, input:focus { border-color: #888; }
     HNVI / Xtenate
   </div>
   <div class="nav-section">Beheer</div>
+  <div class="nav-item" onclick="openSyncModal()" style="color:var(--green)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+    Cloud sync
+  </div>
   <div class="nav-item" onclick="document.getElementById('import-file').click()" style="color:var(--blue)">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     Importeer Excel
@@ -416,6 +420,28 @@ select:focus, input:focus { border-color: #888; }
 </div>
 
 </main>
+</div>
+
+<!-- MODAL: CLOUD SYNC -->
+<div class="modal-overlay" id="modal-sync">
+<div class="modal" style="width:460px">
+  <h3>Cloud sync instellen</h3>
+  <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:1rem">Synchroniseer je gegevens tussen apparaten via een Google Sheet. Zie het meegeleverde "AppsScript-Code.gs" bestand voor de installatie-instructies.</p>
+  <div class="form-group" style="margin-bottom:1rem">
+    <label style="font-size:11px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:4px">Web app URL (eindigt op /exec)</label>
+    <input type="text" id="sync-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;font-size:12px;padding:6px 10px">
+  </div>
+  <div id="sync-status" style="font-size:12px;color:var(--text-muted);margin-bottom:1rem"></div>
+  <div style="display:flex;gap:8px;margin-bottom:.5rem">
+    <button class="btn" onclick="syncUpload()" style="flex:1">⬆ Upload naar cloud</button>
+    <button class="btn" onclick="syncDownload()" style="flex:1">⬇ Download van cloud</button>
+  </div>
+  <div style="font-size:11px;color:var(--text-hint)">Upload stuurt jouw lokale data naar de cloud (overschrijft cloud data). Download haalt cloud data op (overschrijft lokale data).</div>
+  <div class="modal-actions">
+    <button class="btn" onclick="document.getElementById('modal-sync').classList.remove('open')">Sluiten</button>
+    <button class="btn btn-primary" onclick="saveSyncUrl()">URL opslaan</button>
+  </div>
+</div>
 </div>
 
 <!-- MODAL: API KEY -->
@@ -1373,6 +1399,76 @@ function doReset() {
   saveTxData(); saveCoversData(); saveHnviData();
   document.getElementById('modal-reset').classList.remove('open');
   renderHome();
+}
+
+// ─── CLOUD SYNC ───────────────────────────────────────────────────────────────
+function openSyncModal() {
+  const url = localStorage.getItem('xtenate_sync_url') || '';
+  document.getElementById('sync-url-input').value = url;
+  document.getElementById('sync-status').textContent = url ? 'Sync URL is ingesteld.' : 'Nog geen sync URL ingesteld.';
+  document.getElementById('modal-sync').classList.add('open');
+}
+
+function saveSyncUrl() {
+  const url = document.getElementById('sync-url-input').value.trim();
+  if (url) {
+    localStorage.setItem('xtenate_sync_url', url);
+    document.getElementById('sync-status').textContent = 'Opgeslagen!';
+  } else {
+    localStorage.removeItem('xtenate_sync_url');
+  }
+}
+
+function getSyncUrl() {
+  return localStorage.getItem('xtenate_sync_url');
+}
+
+async function syncUpload() {
+  const url = getSyncUrl();
+  if (!url) { document.getElementById('sync-status').textContent = 'Stel eerst een sync URL in.'; return; }
+  document.getElementById('sync-status').textContent = 'Uploaden...';
+  try {
+    const payload = {
+      TX: TX,
+      Covers: COVERS,
+      HnviLots: HNVI_LOTS,
+      Inkoop: typeof INKOOP !== 'undefined' ? INKOOP : [],
+      MaandSaldos: MAAND_SALDOS,
+      _device: navigator.userAgent.includes('Mobile') ? 'telefoon' : 'computer'
+    };
+    const response = await fetch(url + '?action=save', {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+    document.getElementById('sync-status').textContent = '✅ Geüpload! ' + new Date().toLocaleTimeString('nl-NL');
+  } catch (err) {
+    document.getElementById('sync-status').textContent = '❌ Fout: ' + err.message;
+  }
+}
+
+async function syncDownload() {
+  const url = getSyncUrl();
+  if (!url) { document.getElementById('sync-status').textContent = 'Stel eerst een sync URL in.'; return; }
+  if (!confirm('Dit overschrijft je lokale data met de cloud data. Doorgaan?')) return;
+  document.getElementById('sync-status').textContent = 'Downloaden...';
+  try {
+    const response = await fetch(url + '?action=load');
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+
+    if (data.TX && data.TX.length) { TX = data.TX; saveTxData(); }
+    if (data.Covers && data.Covers.length) { COVERS = data.Covers; saveCoversData(); }
+    if (data.HnviLots) { HNVI_LOTS = data.HnviLots; saveHnviData(); }
+    if (data.MaandSaldos) { Object.assign(MAAND_SALDOS, data.MaandSaldos); }
+
+    document.getElementById('sync-status').textContent = '✅ Gedownload! ' + new Date().toLocaleTimeString('nl-NL');
+    renderHome();
+  } catch (err) {
+    document.getElementById('sync-status').textContent = '❌ Fout: ' + err.message;
+  }
 }
 
 // ─── API KEY ──────────────────────────────────────────────────────────────────
