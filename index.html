@@ -1304,6 +1304,7 @@ function importExcel(input) {
           const omschr = row[10];
           if (!datum || bedrag === null || bedrag === undefined) return;
           if (typeof bedrag !== 'number') return;
+          if (!datum.startsWith('2026')) return; // alleen 2026 data in dit bestand
           const gbStr = gb ? String(Math.round(parseFloat(gb))) : '';
           newTx.push({id:tid++, datum, gb:gbStr, bedrag:Math.abs(bedrag),
             naam: omschr ? String(omschr) : 'Creditkaart Privé', omschr: omschr ? String(omschr) : '', rek:'1030', type:'uitgave'});
@@ -1388,7 +1389,8 @@ function importExcel(input) {
 }
 
 function resetData() {
-  document.getElementById('modal-reset').classList.add('open');
+  if (!confirm('Weet je zeker dat je ALLES wilt wissen? Dit verwijdert alle transacties, covers en HNVI-loten. Dit kan niet ongedaan gemaakt worden.')) return;
+  doReset();
 }
 
 function doReset() {
@@ -1397,8 +1399,8 @@ function doReset() {
   HNVI_LOTS = [];
   nxtTx = 200; nxtCover = 100; nxtHnvi = 10;
   saveTxData(); saveCoversData(); saveHnviData();
-  document.getElementById('modal-reset').classList.remove('open');
   renderHome();
+  alert('Alles is gewist. Je kunt nu opnieuw importeren.');
 }
 
 // ─── CLOUD SYNC ───────────────────────────────────────────────────────────────
