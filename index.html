@@ -725,7 +725,8 @@ function renderHome() {
     <div class="metric"><div class="lbl">Helmetstore omzet</div><div class="val">${fmt(omzHC)}</div></div>
     <div class="metric"><div class="lbl">Covers voorraad</div><div class="val">${vrdCovers} stuks</div></div>
     <div class="metric"><div class="lbl">HNVI inkoop</div><div class="val neg">${fmt(hnviInv)}</div></div>
-    <div class="metric"><div class="lbl">Privé opnames</div><div class="val" style="color:#888">${fmt(priveOp)}</div></div>`;
+    <div class="metric"><div class="lbl">Privé opnames</div><div class="val" style="color:#888">${fmt(priveOp)}</div></div>
+    <div class="metric"><div class="lbl">Privé stortingen</div><div class="val" style="color:#888">${fmt(priveSt)}</div></div>`;
 
   const topInc = [...homeTX].filter(t => isInkomst(t)).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
   const topExp = [...homeTX].filter(isUitgave).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
@@ -831,7 +832,8 @@ function renderBank() {
     <div class="metric"><div class="lbl">Inkomsten periode</div><div class="val pos">${fmt(inc)}</div><div class="sub">${list.filter(t=>t.type==='inkomst').length} transacties</div></div>
     <div class="metric"><div class="lbl">Uitgaven periode</div><div class="val neg">${fmt(exp)}</div><div class="sub">${list.filter(t=>t.type==='uitgave').length} transacties</div></div>
     <div class="metric"><div class="lbl">Winst / verlies</div><div class="val ${winstverlies>=0?'pos':'neg'}">${winstverlies>=0?'+':''}${fmt(winstverlies)}</div><div class="sub">zakelijk netto</div></div>
-    <div class="metric"><div class="lbl">Privé bewegingen</div><div class="val ${priveSaldo>=0?'pos':'neg'}">${priveSaldo>=0?'+':''}${fmt(priveSaldo)}</div><div class="sub">${fmt(priveSt)} in · ${fmt(priveOp)} uit</div></div>
+    <div class="metric"><div class="lbl">Privé gestort (ontvangen)</div><div class="val pos">${fmt(priveSt)}</div><div class="sub">${list.filter(t=>t.type==='prive_storting').length} keer</div></div>
+    <div class="metric"><div class="lbl">Privé opgenomen</div><div class="val neg">${fmt(priveOp)}</div><div class="sub">${list.filter(t=>t.type==='prive_opname').length} keer</div></div>
     <div class="metric"><div class="lbl">${saldoLabel}</div><div class="val ${periodeSaldo!=null?(periodeSaldo>=0?'pos':'neg'):''}" style="${periodeSaldo==null?'color:#ccc':''}">${periodeSaldo!=null?fmt(Math.round(periodeSaldo*100)/100):'—'}</div><div class="sub">eindbalans rekening</div></div>
     <div class="metric"><div class="lbl">${vorigLabel}</div><div class="val" style="${vorigSaldo!=null?'color:#888':'color:#ccc'}">${vorigSaldo!=null?fmt(Math.round(vorigSaldo*100)/100):'—'}</div><div class="sub">vorige periode</div></div>`;
   document.getElementById('bank-body').innerHTML = list.map(t => `<tr>
