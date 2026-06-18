@@ -1323,7 +1323,7 @@ function importExcel(input) {
           const omschr = row[10];
           if (!datum || bedrag === null || bedrag === undefined) return;
           if (typeof bedrag !== 'number') return;
-          if (!datum.startsWith('2026')) return; // alleen 2026 data in dit bestand
+          if (!datum) return;
           const gbStr = gb ? String(Math.round(parseFloat(gb))) : '';
           newTx.push({id:tid++, datum, gb:gbStr, bedrag:Math.abs(bedrag),
             naam: omschr ? String(omschr) : 'Creditkaart Privé', omschr: omschr ? String(omschr) : '', rek:'1030', type:'uitgave'});
