@@ -1259,8 +1259,11 @@ function importExcel(input) {
       }
 
       const OMZET_GB = ['8000','8010','8020'];
-      const bankSheets = ['Bank 2026-01','Bank 2026-02','Bank 2026-03','Bank 2026-04','Bank 2026-05','Bank 2026-06',
-                          'Bank 2026-07','Bank 2026-08','Bank 2026-09','Bank 2026-10','Bank 2026-11','Bank 2026-12'];
+      // Herken automatisch alle "Bank JJJJ-MM" tabs, welk jaar dan ook
+      const bankSheets = wb.SheetNames.filter(n => /^Bank \d{4}-\d{2}$/.test(n));
+
+      // Bepaal welk jaar (of jaren) dit bestand bevat, voor de importmelding
+      const gevondenJaren = [...new Set(bankSheets.map(n => n.slice(5,9)))].sort();
 
       // Bank tabs
       let bankCount = 0;
@@ -1353,24 +1356,39 @@ function importExcel(input) {
       // Valideer: alleen opslaan als er transacties zijn
       if (newTx.length === 0) {
         document.getElementById('import-title').textContent = 'Niets gevonden';
-        document.getElementById('import-body').innerHTML = '⚠️ Er zijn geen transacties gevonden in dit bestand.<br>Controleer of je het juiste Excel bestand hebt geselecteerd (Administratie_2026.xlsx).';
+        document.getElementById('import-body').innerHTML = '⚠️ Er zijn geen transacties gevonden in dit bestand.<br>Controleer of je het juiste Excel bestand hebt geselecteerd (bijv. Administratie_2026.xlsx).';
         document.getElementById('import-actions').style.display = 'flex';
         return;
       }
 
-      // Sla op
-      TX = newTx;
-      nxtTx = tid;
-      if (newCovers.length > 0) { COVERS = newCovers; nxtCover = 300; }
-      // Update MAAND_SALDOS met nieuwe saldos (overschrijf alleen 2026)
-      Object.keys(MAAND_SALDOS).filter(m=>m.startsWith('2026')).forEach(m=>delete MAAND_SALDOS[m]);
-      Object.assign(MAAND_SALDOS, newSaldos);
-      saveTxData();
-      saveCoversData();
+      const is2026 = gevondenJaren.includes('2026');
+      const jaarLabel = gevondenJaren.join(', ') || 'onbekend jaar';
+
+      if (is2026) {
+        // Sla op als huidige (2026) data
+        TX = newTx;
+        nxtTx = tid;
+        if (newCovers.length > 0) { COVERS = newCovers; nxtCover = 300; }
+        Object.keys(MAAND_SALDOS).filter(m=>m.startsWith('2026')).forEach(m=>delete MAAND_SALDOS[m]);
+        Object.assign(MAAND_SALDOS, newSaldos);
+        saveTxData();
+        saveCoversData();
+      } else {
+        // Sla op als historische data: vervang alleen de jaren die in dit bestand voorkomen
+        HIST_TX = HIST_TX.filter(t => !gevondenJaren.some(j => t.datum.startsWith(j)));
+        HIST_TX = [...HIST_TX, ...newTx.map(t => ({...t, id: 'h' + jaarLabel.replace(/, /g,'_') + '_' + t.id}))];
+        gevondenJaren.forEach(j => {
+          Object.keys(MAAND_SALDOS).filter(m=>m.startsWith(j)).forEach(m=>delete MAAND_SALDOS[m]);
+        });
+        Object.assign(MAAND_SALDOS, newSaldos);
+        save('xtenate_hist_tx_override', HIST_TX);
+        save('xtenate_maand_saldos_override', MAAND_SALDOS);
+      }
 
       const saldoCount = Object.keys(newSaldos).length;
       document.getElementById('import-title').textContent = 'Import geslaagd!';
       document.getElementById('import-body').innerHTML =
+        `📅 Jaar: <strong>${jaarLabel}</strong><br>` +
         `✅ <strong>${bankCount}</strong> banktransacties ingelezen<br>` +
         `✅ <strong>${ccCount}</strong> creditkaart boekingen ingelezen<br>` +
         (saldoCount > 0 ? `✅ <strong>${saldoCount}</strong> maandsaldos ingelezen<br>` : '') +
