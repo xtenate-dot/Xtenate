@@ -593,6 +593,24 @@ const GBNM = {
   '8000':'Omzet Xtenate','8010':'Omzet Bol.com','8020':'Omzet Helmetstore'
 };
 const REKNM = {'1009':'Revolut','1010':'Rabobank','1020':'Paypal','1030':'Creditkaart','1090':'Kruisposten'};
+
+// Herkent een IBAN-patroon (2 letters landcode + 2 cijfers + 4 letters/cijfers bankcode + cijfers)
+function isIban(str) {
+  return typeof str === 'string' && /^[A-Z]{2}\d{2}[A-Z0-9]{4,}\d*$/.test(str.trim());
+}
+
+// Geeft een leesbare naam van de tegenpartij, ook als 'naam' eigenlijk een IBAN is
+function weergaveNaam(t) {
+  if (!isIban(t.naam)) return t.naam || '';
+  // naam is een IBAN: probeer een echte naam te vinden in omschr (vaak "IBAN:NAAM:rest")
+  if (t.omschr) {
+    const delen = t.omschr.split(':');
+    if (delen.length >= 2 && delen[1].trim()) return delen[1].trim();
+    // geen dubbele punt structuur: gebruik omschr zelf als die geen lange code is
+    if (t.omschr.length < 60 && !/\d{6,}/.test(t.omschr)) return t.omschr;
+  }
+  return t.naam; // laatste redmiddel: toch de IBAN
+}
 const REK_COLOR = {'1010':'badge-blue','1009':'badge-purple','1030':'badge-amber','1020':'badge-green','1090':'badge-gray'};
 const MAANDEN = {'2026-01':'jan','2026-02':'feb','2026-03':'mrt','2026-04':'apr','2026-05':'mei','2026-06':'jun'};
 const PRIJS_COVER = 31.95;
@@ -718,7 +736,7 @@ function renderHome() {
           ${isInkomst(t)?'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>':'<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>'}
         </svg>
       </div>
-      <div class="uitsch-info"><div class="uitsch-naam">${t.naam}</div><div class="uitsch-meta">${ddmm(t.datum)} · ${GBNM[t.gb]||t.gb}</div></div>
+      <div class="uitsch-info"><div class="uitsch-naam">${weergaveNaam(t)}</div><div class="uitsch-meta">${ddmm(t.datum)} · ${GBNM[t.gb]||t.gb}</div></div>
       <div class="uitsch-bedrag ${isInkomst(t)?'pos':'neg'}">${isInkomst(t)?'+':'–'}${fmt(t.bedrag)}</div>
     </div>`).join('');
 
@@ -738,8 +756,7 @@ function renderHome() {
   const recent = [...homeTX].sort((a,b) => b.datum.localeCompare(a.datum)).slice(0,8);
   document.getElementById('home-recent').innerHTML = recent.map(t => `<tr>
     <td style="color:var(--text-muted)">${ddmm(t.datum)}</td>
-    <td class="td-trunc">${t.naam}</td>
-    <td style="font-size:11px;color:var(--text-muted)">${t.gb} ${GBNM[t.gb]||''}</td>
+    <td class="td-trunc">${weergaveNaam(t)}</td>
     <td>${rekBadge(t.rek)}</td>
     <td style="text-align:right">${typeBadge(t.type, t.bedrag)}</td>
   </tr>`).join('');
@@ -819,7 +836,7 @@ function renderBank() {
     <div class="metric"><div class="lbl">${vorigLabel}</div><div class="val" style="${vorigSaldo!=null?'color:#888':'color:#ccc'}">${vorigSaldo!=null?fmt(Math.round(vorigSaldo*100)/100):'—'}</div><div class="sub">vorige periode</div></div>`;
   document.getElementById('bank-body').innerHTML = list.map(t => `<tr>
     <td style="color:var(--text-muted);padding-left:14px">${ddmm(t.datum)}</td>
-    <td class="td-trunc">${t.naam}${t.omschr&&t.omschr!==t.naam?` <span style="color:var(--text-hint);font-size:10px">· ${t.omschr}</span>`:''}</td>
+    <td class="td-trunc">${weergaveNaam(t)}${t.omschr&&t.omschr!==t.naam?` <span style="color:var(--text-hint);font-size:10px">· ${t.omschr}</span>`:''}</td>
     <td style="font-size:11px;color:var(--text-muted)">${t.gb} ${GBNM[t.gb]||''}</td>
     <td>${rekBadge(t.rek)}</td>
     <td style="text-align:right;padding-right:14px">${typeBadge(t.type, t.bedrag)}</td>
@@ -854,8 +871,7 @@ function renderGrootboek() {
       <table><thead><tr><th style="width:72px">Datum</th><th>Naam</th><th style="width:76px">Rekening</th><th style="width:90px;text-align:right">Bedrag</th></tr></thead>
       <tbody>${rows.map(t=>`<tr>
         <td style="color:var(--text-muted)">${ddmm(t.datum)}</td>
-        <td class="td-trunc">${t.naam}</td>
-        <td>${rekBadge(t.rek)}</td>
+        <td class="td-trunc">${weergaveNaam(t)}</td>
         <td style="text-align:right">${typeBadge(t.type,t.bedrag)}</td>
       </tr>`).join('')}</tbody></table>
     </div>`;
