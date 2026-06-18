@@ -1332,6 +1332,13 @@ function importExcel(input) {
           newTx.push({id:tid++, datum, gb:gbStr, bedrag:Math.abs(bedrag),
             naam: omschr ? String(omschr) : 'Creditkaart Privé', omschr: omschr ? String(omschr) : '', rek:'1030', type:ccType});
           ccCount++;
+          // Creditkaart-uitgaven worden door de gebruiker zelf voorgeschoten vanuit privé:
+          // automatisch een gekoppelde privé-storting aanmaken voor hetzelfde bedrag.
+          if (!isPrive) {
+            newTx.push({id:tid++, datum, gb:'600', bedrag:Math.abs(bedrag),
+              naam: 'Privé storting (CC: ' + (omschr ? String(omschr) : 'creditkaart') + ')',
+              omschr: '', rek:'1030', type:'prive_storting'});
+          }
         });
       }
 
