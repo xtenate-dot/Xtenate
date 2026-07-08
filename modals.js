@@ -303,7 +303,7 @@ export async function syncDownload() {
     const data = await response.json();
     if (data.error) throw new Error(data.error);
 
-    if (data.state.TX && data.state.TX.length) { state.TX = data.state.TX; saveTxData(); }
+    if (data.TX && data.TX.length) { state.TX = data.TX; saveTxData(); }
     if (data.Covers && data.Covers.length) { state.COVERS = data.Covers; saveCoversData(); }
     if (data.HnviLots) { state.HNVI_LOTS = data.HnviLots; saveHnviData(); }
     if (data.MaandSaldos) { Object.assign(MAAND_SALDOS, data.MaandSaldos); }

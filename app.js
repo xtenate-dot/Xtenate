@@ -5,7 +5,7 @@
 
 import { nav } from './ui.js';
 import { wisselJaar, renderHome } from './dashboard.js';
-import { renderBank, openTxModal, closeTx, saveTx } from './bank.js';
+import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek } from './bank.js';
 import { renderGrootboek } from './grootboek.js';
 import { renderBelasting } from './belasting.js';
 import { renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover } from './voorraad.js';
@@ -21,7 +21,7 @@ import {
 
 Object.assign(window, {
   nav, wisselJaar,
-  renderBank, openTxModal, closeTx, saveTx,
+  renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek,
   renderGrootboek,
   renderBelasting,
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover,

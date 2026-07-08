@@ -97,16 +97,35 @@ export function openTxModal() {
 
 export function closeTx() { document.getElementById('modal-tx').classList.remove('open'); }
 
+// Voorkomt dat type (privé storting/opname) en grootboek (600/601) uit elkaar
+// kunnen lopen — dat was de oorzaak van een foutieve privé-boeking in de data
+// (2023: gb=601 "opname" maar type "storting"). Bij het kiezen van een privé-type
+// wordt de grootboekrekening automatisch meegezet.
+export function syncTxGrootboek() {
+  const type = document.getElementById('tx-t').value;
+  const gbSel = document.getElementById('tx-gb');
+  if (type === 'prive_storting') gbSel.value = '600';
+  else if (type === 'prive_opname') gbSel.value = '601';
+}
+
 export function saveTx() {
+  let type = document.getElementById('tx-t').value;
+  let gb = document.getElementById('tx-gb').value;
+  // Zelfde beveiliging als saveTxGrootboek(), maar dan als laatste vangnet vóór opslaan:
+  // gb en type mogen nooit tegenstrijdig zijn voor privé-boekingen.
+  if (type === 'prive_storting') gb = '600';
+  else if (type === 'prive_opname') gb = '601';
+  else if (gb === '600') type = 'prive_storting';
+  else if (gb === '601') type = 'prive_opname';
   const tx = {
     id: state.editTxId || state.nxtTx++,
     datum: document.getElementById('tx-d').value,
     bedrag: parseFloat(document.getElementById('tx-b').value) || 0,
     naam: document.getElementById('tx-n').value,
     omschr: document.getElementById('tx-o').value,
-    type: document.getElementById('tx-t').value,
+    type,
     rek: document.getElementById('tx-rek').value,
-    gb: document.getElementById('tx-gb').value,
+    gb,
   };
   if (state.editTxId) { state.TX = state.TX.map(t => t.id===state.editTxId ? tx : t); }
   else { state.TX.push(tx); }
