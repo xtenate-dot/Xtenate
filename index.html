@@ -147,14 +147,16 @@
 <div id="p-grootboek" class="page">
   <div class="page-title">Grootboek</div>
   <div class="toolbar">
+    <select id="f-jaar-gb" onchange="renderGrootboek()">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+      <option value="2022">2022</option>
+      <option value="all">Alle jaren</option>
+    </select>
     <select id="f-maand-gb" onchange="renderGrootboek()">
       <option value="">Alle maanden</option>
-      <option value="2026-01">Januari 2026</option>
-      <option value="2026-02">Februari 2026</option>
-      <option value="2026-03">Maart 2026</option>
-      <option value="2026-04">April 2026</option>
-      <option value="2026-05">Mei 2026</option>
-      <option value="2026-06">Juni 2026</option>
     </select>
     <select id="f-gb-rek" onchange="renderGrootboek()">
       <option value="">Alle rekeningen</option>
@@ -196,6 +198,7 @@
       <option value="2024">2024</option>
       <option value="2023">2023</option>
       <option value="2022">2022</option>
+      <option value="all">Alle jaren</option>
     </select>
   </div>
   <div class="alert alert-warn">⚠ Indicatie op basis van ingevoerde data. Raadpleeg een belastingadviseur voor definitieve aangifte.</div>
@@ -344,7 +347,7 @@
     <div class="form-group"><label>Bedrag (€)</label><input type="number" id="tx-b" step="0.01" placeholder="0,00"></div>
     <div class="form-group full"><label>Naam / tegenpartij</label><input type="text" id="tx-n" placeholder="bijv. HNVI, Bol.com..."></div>
     <div class="form-group"><label>Type</label>
-      <select id="tx-t">
+      <select id="tx-t" onchange="syncTxGrootboek()">
         <option value="inkomst">Inkomst</option>
         <option value="uitgave">Uitgave</option>
         <option value="prive_opname">Privé opname</option>

@@ -3,10 +3,29 @@
 import { GBNM, ddmm, fmt, isInkomst, isUitgave, typeBadge, weergaveNaam } from './helpers.js';
 import { state } from './storage.js';
 
+const MND_NAMEN = {'01':'jan','02':'feb','03':'mrt','04':'apr','05':'mei','06':'jun','07':'jul','08':'aug','09':'sep','10':'okt','11':'nov','12':'dec'};
+
 export function renderGrootboek() {
-  const maand = document.getElementById('f-maand-gb').value;
+  const jaarSel = document.getElementById('f-jaar-gb');
+  const gekozenJaar = jaarSel ? jaarSel.value : '2026';
+
+  // Zelfde bron-logica als Bank/HNVI: 2026 = live data, anders historisch, 'all' = alles samen.
+  let bronData;
+  if (gekozenJaar === '2026') bronData = state.TX;
+  else if (gekozenJaar === 'all') bronData = [...state.HIST_TX, ...state.TX];
+  else bronData = state.HIST_TX.filter(t => t.datum.startsWith(gekozenJaar));
+
+  // Maandenlijst dynamisch opbouwen voor het gekozen jaar (was voorheen hardcoded op 2026).
+  const maandSel = document.getElementById('f-maand-gb');
+  const huidigeMaandKeuze = maandSel.value;
+  const beschikbareMaanden = [...new Set(bronData.map(t => t.datum.slice(0,7)))].sort().reverse();
+  maandSel.innerHTML = '<option value="">Alle maanden</option>' + beschikbareMaanden.map(m =>
+    `<option value="${m}"${m === huidigeMaandKeuze ? ' selected' : ''}>${MND_NAMEN[m.slice(5,7)] || m} ${m.slice(0,4)}</option>`
+  ).join('');
+
+  const maand = maandSel.value;
   const gbf = document.getElementById('f-gb-rek').value;
-  let list = state.TX.filter(t => {
+  let list = bronData.filter(t => {
     if (maand && !t.datum.startsWith(maand)) return false;
     if (gbf && t.gb !== gbf) return false;
     return true;

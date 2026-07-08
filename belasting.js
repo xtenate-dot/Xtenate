@@ -6,11 +6,11 @@ import { state } from './storage.js';
 
 export function renderBelasting() {
   const jaar = document.getElementById('f-jaar-bel') ? document.getElementById('f-jaar-bel').value : '2026';
-  const belTX = jaar === '2026' ? state.TX : state.HIST_TX.filter(t => t.datum.startsWith(jaar));
+  const belTX = jaar === 'all' ? [...state.HIST_TX, ...state.TX] : (jaar === '2026' ? state.TX : state.HIST_TX.filter(t => t.datum.startsWith(jaar)));
 
   // Update card title
   const ct = document.getElementById('bel-card-title');
-  if (ct) ct.textContent = `Berekening box 1 — indicatie ${jaar}`;
+  if (ct) ct.textContent = `Berekening box 1 — indicatie ${jaar === 'all' ? 'alle jaren' : jaar}`;
 
   const omzet = belTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t)=>s+t.bedrag,0);
 
@@ -18,7 +18,7 @@ export function renderBelasting() {
   const kostenOverig = belTX.filter(t => isUitgave(t) && t.gb !== '7010').reduce((s,t)=>s+t.bedrag,0);
 
   // HNVI inkoop: filter op jaar van het lot (via datum)
-  const hnviJaar = state.HNVI_LOTS.filter(i => i.datum && i.datum.startsWith(jaar));
+  const hnviJaar = jaar === 'all' ? state.HNVI_LOTS : state.HNVI_LOTS.filter(i => i.datum && i.datum.startsWith(jaar));
   const hnviVerkocht = hnviJaar.filter(i => i.status === 'verkocht').reduce((s,i)=>s+(Number(i.inkoop)||0),0);
   const hnviVoorraad = hnviJaar.filter(i => i.status === 'voorraad').reduce((s,i)=>s+(Number(i.inkoop)||0),0);
   const hnviVoorraadAantal = hnviJaar.filter(i => i.status === 'voorraad').length;
@@ -112,27 +112,27 @@ export function renderBelasting() {
     </tr>`;
   };
 
-  const omzetGbs2 = [...new Set(state.TX.filter(isInkomst).map(t=>t.gb))].filter(isOmzet).sort();
+  const omzetGbs2 = [...new Set(belTX.filter(isInkomst).map(t=>t.gb))].filter(isOmzet).sort();
   const omzetRows = omzetGbs2.map(gb => {
-    const tot = state.TX.filter(t=>isInkomst(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
+    const tot = belTX.filter(t=>isInkomst(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'plus', 'altijd baten', 'pos');
   }).join('');
 
-  const r4Gbs = [...new Set(state.TX.filter(isUitgave).map(t=>t.gb))].filter(g=>g.startsWith('4')).sort();
+  const r4Gbs = [...new Set(belTX.filter(isUitgave).map(t=>t.gb))].filter(g=>g.startsWith('4')).sort();
   const r4Rows = r4Gbs.map(gb => {
-    const tot = state.TX.filter(t=>isUitgave(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
+    const tot = belTX.filter(t=>isUitgave(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'min', 'altijd aftrekbaar', 'neg');
   }).join('');
 
-  const r7AltijdGbs = [...new Set(state.TX.filter(isUitgave).map(t=>t.gb))].filter(g=>['7000','7020','7100','7900'].includes(g)).sort();
+  const r7AltijdGbs = [...new Set(belTX.filter(isUitgave).map(t=>t.gb))].filter(g=>['7000','7020','7100','7900'].includes(g)).sort();
   const r7AltijdRows = r7AltijdGbs.map(gb => {
-    const tot = state.TX.filter(t=>isUitgave(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
+    const tot = belTX.filter(t=>isUitgave(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
     return rij(gb, tot, 'min', 'altijd aftrekbaar', 'neg');
   }).join('');
 
-  const hnviBankTot = state.TX.filter(t=>isUitgave(t)&&t.gb==='7010').reduce((s,t)=>s+t.bedrag,0);
-  const hnviVktTot2 = state.HNVI_LOTS.filter(i=>i.status==='verkocht').reduce((s,i)=>s+i.inkoop,0);
-  const hnviVrdTot2 = state.HNVI_LOTS.filter(i=>i.status==='voorraad').reduce((s,i)=>s+i.inkoop,0);
+  const hnviBankTot = belTX.filter(t=>isUitgave(t)&&t.gb==='7010').reduce((s,t)=>s+t.bedrag,0);
+  const hnviVktTot2 = hnviJaar.filter(i=>i.status==='verkocht').reduce((s,i)=>s+i.inkoop,0);
+  const hnviVrdTot2 = hnviJaar.filter(i=>i.status==='voorraad').reduce((s,i)=>s+i.inkoop,0);
   const heeftLoten = state.HNVI_LOTS.length > 0;
   const r7010Rows = heeftLoten
     ? rij('7010', hnviVktTot2, 'min', 'aftrekbaar — verkocht', 'neg') +
