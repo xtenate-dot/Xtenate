@@ -1,0 +1,10 @@
+/* responsive.css — aanpassingen voor mobiel/smalle schermen */
+@media (max-width: 700px) {
+  .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); padding: .5rem 0; }
+  .main { margin-left: 0; padding: 1rem; }
+  .app { flex-direction: column; }
+  .grid2 { grid-template-columns: 1fr; }
+  .uitsch-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-group.full { grid-column: 1; }
+}

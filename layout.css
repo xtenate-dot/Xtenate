@@ -1,0 +1,20 @@
+/* layout.css — app-layout, zijbalk, navigatie, pagina-structuur */
+/* LAYOUT */
+.app { display: flex; min-height: 100vh; }
+.sidebar { width: 200px; background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 10; }
+.main { margin-left: 200px; padding: 2rem; max-width: 960px; }
+.logo { padding: 0 1.25rem 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+.logo-name { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+.logo-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 1.25rem; cursor: pointer; color: var(--text-muted); font-size: 13px; border-left: 2px solid transparent; transition: all .15s; user-select: none; }
+.nav-item:hover { color: var(--text); background: var(--bg); }
+.nav-item.active { color: var(--text); border-left-color: var(--text); font-weight: 500; background: var(--bg); }
+.nav-item svg { flex-shrink: 0; opacity: .7; }
+.nav-item.active svg { opacity: 1; }
+.nav-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text-hint); padding: 1rem 1.25rem .4rem; }
+
+/* PAGE */
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-size: 20px; font-weight: 600; letter-spacing: -0.4px; margin-bottom: 1.5rem; }
+
