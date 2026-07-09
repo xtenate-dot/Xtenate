@@ -315,10 +315,9 @@ export function doWis() {
     if (jaren.includes('2026')) {
       state.TX = [];
       state.COVERS = [];
-      state.HNVI_LOTS = [];
-      state.nxtTx = 200; state.nxtCover = 100; state.nxtHnvi = 10;
-      saveTxData(); saveCoversData(); saveHnviData();
-      wisLog.push('2026 gewist');
+      state.nxtTx = 200; state.nxtCover = 100;
+      saveTxData(); saveCoversData();
+      wisLog.push('2026 gewist (HNVI/Xtenate-loten blijven bewaard)');
     }
 
     const histJaren = jaren.filter(j => j !== '2026');
