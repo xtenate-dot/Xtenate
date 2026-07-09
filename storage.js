@@ -19,7 +19,8 @@ export const state = {
   hnviImportItems: []
 };
 
-state.HIST_TX = load('xtenate_hist_tx_override', []);
+export const HIST_TX_DEFAULT = [];
+state.HIST_TX = load('xtenate_hist_tx_override', HIST_TX_DEFAULT);
 
 export let MAAND_SALDOS = load('xtenate_maand_saldos_override', {});
 

@@ -1,7 +1,7 @@
 // modals.js — beheer-acties: Excel-import, cloud sync, API-sleutel, data wissen.
 
 import { renderHome } from './dashboard.js';
-import { MAAND_SALDOS, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js';
+import { HIST_TX_DEFAULT, MAAND_SALDOS, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js';
 
 export function importExcel(input) {
   const file = input.files[0];
@@ -192,6 +192,22 @@ export function importExcel(input) {
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+export function herstelHistorischeData() {
+  if (!confirm('Dit herstelt de historische jaren (2022 t/m 2025) naar de standaard/gecorrigeerde data uit de app zelf, en overschrijft eventuele lokale wijzigingen in je browser voor die jaren. 2026 blijft ongewijzigd. Doorgaan?')) {
+    return;
+  }
+  try {
+    state.HIST_TX = JSON.parse(JSON.stringify(HIST_TX_DEFAULT));
+    save('xtenate_hist_tx_override', state.HIST_TX);
+    localStorage.removeItem('xtenate_maand_saldos_override');
+    document.getElementById('modal-wis').classList.remove('open');
+    renderHome();
+    alert('Klaar! Historische data (2022-2025) is hersteld naar de standaardwaarden uit de app.');
+  } catch (err) {
+    alert('Er ging iets mis: ' + err.message);
+  }
 }
 
 export function openWisModal() {
