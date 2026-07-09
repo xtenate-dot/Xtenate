@@ -3,21 +3,21 @@
 // het sluiten van modals bij een klik buiten de modal, en start de app op
 // met de Home-pagina.
 
-import { nav } from './ui.js';
-import { wisselJaar, renderHome } from './dashboard.js';
-import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek } from './bank.js';
-import { renderGrootboek } from './grootboek.js';
-import { renderBelasting } from './belasting.js';
-import { renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover } from './voorraad.js';
+import { nav } from './ui.js?v=20260710a';
+import { wisselJaar, renderHome } from './dashboard.js?v=20260710a';
+import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek } from './bank.js?v=20260710a';
+import { renderGrootboek } from './grootboek.js?v=20260710a';
+import { renderBelasting } from './belasting.js?v=20260710a';
+import { renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover } from './voorraad.js?v=20260710a';
 import {
   renderHNVI, berekenHNVIInkoop, openHNVIModal, openHNVISell, closeHNVIModal, saveHNVI,
   wisHNVIVerkoop, verwijderHNVIItem, toggleAllHNVI, updateHNVIDeleteBtn, verwijderGeselecteerdeHNVI,
   importHNVIFactuur, bevestigHNVIImport
-} from './hnvi.js';
+} from './hnvi.js?v=20260710a';
 import {
   importExcel, openWisModal, doWis, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
   openApiKeyModal, saveApiKey
-} from './modals.js';
+} from './modals.js?v=20260710a';
 
 Object.assign(window, {
   nav, wisselJaar,

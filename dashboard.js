@@ -1,8 +1,8 @@
 // dashboard.js — Home-pagina (renderHome, jaarwissel).
 
-import { charts, dc } from './charts.js';
-import { GBNM, ddmm, fmt, isInkomst, isOmzet, isUitgave, rekBadge, typeBadge, weergaveNaam } from './helpers.js';
-import { HOME_TOTALS, state } from './storage.js';
+import { charts, dc } from './charts.js?v=20260710a';
+import { GBNM, ddmm, fmt, isInkomst, isOmzet, isUitgave, rekBadge, typeBadge, weergaveNaam } from './helpers.js?v=20260710a';
+import { HOME_TOTALS, state } from './storage.js?v=20260710a';
 
 export function wisselJaar() {
   state.huidigJaar = document.getElementById('jaar-selector').value;

@@ -1,11 +1,11 @@
 // ui.js — navigatie tussen pagina's.
 
-import { renderBank } from './bank.js';
-import { renderBelasting } from './belasting.js';
-import { renderHome } from './dashboard.js';
-import { renderGrootboek } from './grootboek.js';
-import { renderHNVI } from './hnvi.js';
-import { renderCovers } from './voorraad.js';
+import { renderBank } from './bank.js?v=20260710a';
+import { renderBelasting } from './belasting.js?v=20260710a';
+import { renderHome } from './dashboard.js?v=20260710a';
+import { renderGrootboek } from './grootboek.js?v=20260710a';
+import { renderHNVI } from './hnvi.js?v=20260710a';
+import { renderCovers } from './voorraad.js?v=20260710a';
 
 export function nav(p, btn) {
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));

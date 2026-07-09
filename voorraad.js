@@ -1,7 +1,7 @@
 // voorraad.js — Funny Covers voorraadbeheer.
 
-import { PRIJS_COVER, fmt } from './helpers.js';
-import { saveCoversData, state } from './storage.js';
+import { PRIJS_COVER, fmt } from './helpers.js?v=20260710a';
+import { saveCoversData, state } from './storage.js?v=20260710a';
 
 export function renderCovers() {
   const st = document.getElementById('f-covers-status').value;
