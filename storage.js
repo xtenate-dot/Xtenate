@@ -24,6 +24,13 @@ state.HIST_TX = load('xtenate_hist_tx_override', HIST_TX_DEFAULT);
 
 export let MAAND_SALDOS = load('xtenate_maand_saldos_override', {});
 
+// Jaartotalen (omzet, kosten, privé opname/storting, HNVI-inkoop) zoals ingelezen uit het
+// "Per Periode"-tabblad van een Excel-import. Deze zijn leidend boven de losse boekingen,
+// want ze komen rechtstreeks uit de boekhouding en zijn dus de betrouwbaarste bron.
+// Structuur: { "2025": {omzet, kosten, omzXt, omzBol, omzHC, priveOp, priveSt, hnviInv}, ... }
+export const HOME_TOTALS_DEFAULT = {};
+export let HOME_TOTALS = load('xtenate_home_totals_override', HOME_TOTALS_DEFAULT);
+
 const TX_INIT = [];
 
 const COVERS_INIT = [];
