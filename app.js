@@ -15,7 +15,7 @@ import {
   importHNVIFactuur, bevestigHNVIImport
 } from './hnvi.js';
 import {
-  importExcel, openWisModal, doWis, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
+  importExcel, openWisModal, doWis, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
   openApiKeyModal, saveApiKey
 } from './modals.js';
 
@@ -28,7 +28,7 @@ Object.assign(window, {
   renderHNVI, berekenHNVIInkoop, openHNVIModal, openHNVISell, closeHNVIModal, saveHNVI,
   wisHNVIVerkoop, verwijderHNVIItem, toggleAllHNVI, updateHNVIDeleteBtn, verwijderGeselecteerdeHNVI,
   importHNVIFactuur, bevestigHNVIImport,
-  importExcel, openWisModal, doWis, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
+  importExcel, openWisModal, doWis, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
   openApiKeyModal, saveApiKey
 });
 
