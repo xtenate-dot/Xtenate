@@ -1,7 +1,7 @@
 // grootboek.js — Grootboek-pagina.
 
-import { GBNM, ddmm, fmt, isInkomst, isUitgave, typeBadge, weergaveNaam } from './helpers.js';
-import { state } from './storage.js';
+import { GBNM, ddmm, fmt, isInkomst, isUitgave, typeBadge, weergaveNaam } from './helpers.js?v=20260710a';
+import { state } from './storage.js?v=20260710a';
 
 const MND_NAMEN = {'01':'jan','02':'feb','03':'mrt','04':'apr','05':'mei','06':'jun','07':'jul','08':'aug','09':'sep','10':'okt','11':'nov','12':'dec'};
 

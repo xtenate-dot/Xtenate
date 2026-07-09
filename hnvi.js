@@ -1,8 +1,8 @@
 // hnvi.js — HNVI/Xtenate voorraadbeheer, inclusief AI-factuurimport.
 
-import { ddmm, fmt } from './helpers.js';
-import { openApiKeyModal } from './modals.js';
-import { saveHnviData, state } from './storage.js';
+import { ddmm, fmt } from './helpers.js?v=20260710a';
+import { openApiKeyModal } from './modals.js?v=20260710a';
+import { saveHnviData, state } from './storage.js?v=20260710a';
 
 export function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
