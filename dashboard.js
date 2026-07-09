@@ -2,7 +2,7 @@
 
 import { charts, dc } from './charts.js';
 import { GBNM, ddmm, fmt, isInkomst, isOmzet, isUitgave, rekBadge, typeBadge, weergaveNaam } from './helpers.js';
-import { state } from './storage.js';
+import { HOME_TOTALS, state } from './storage.js';
 
 export function wisselJaar() {
   state.huidigJaar = document.getElementById('jaar-selector').value;
@@ -15,20 +15,48 @@ export function getHomeTX() {
   return state.HIST_TX.filter(t => t.datum.startsWith(state.huidigJaar));
 }
 
+// Berekent de 8 hoofd-metrics (omzet/kosten/privé/HNVI) voor één jaar. Gebruikt de
+// jaartotalen uit een Excel-import ("Per Periode"-tabblad) als die er zijn — die komen
+// rechtstreeks uit de boekhouding en zijn dus leidend. Alleen als die ontbreken, wordt
+// er (zoals voorheen) opgeteld uit de losse boekingen van dat jaar.
+function berekenJaarMetrics(jaar, txVanJaar) {
+  const override = HOME_TOTALS[jaar];
+  if (override) return { ...override, uitExcel: true };
+  return {
+    omzet: txVanJaar.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t) => s+t.bedrag, 0),
+    kosten: txVanJaar.filter(isUitgave).reduce((s,t) => s+t.bedrag, 0),
+    omzXt: txVanJaar.filter(t => isInkomst(t) && t.gb==='8000').reduce((s,t) => s+t.bedrag, 0),
+    omzBol: txVanJaar.filter(t => isInkomst(t) && t.gb==='8010').reduce((s,t) => s+t.bedrag, 0),
+    omzHC: txVanJaar.filter(t => isInkomst(t) && t.gb==='8020').reduce((s,t) => s+t.bedrag, 0),
+    priveOp: txVanJaar.filter(t => t.type==='prive_opname').reduce((s,t) => s+t.bedrag, 0),
+    priveSt: txVanJaar.filter(t => t.type==='prive_storting').reduce((s,t) => s+t.bedrag, 0),
+    hnviInv: txVanJaar.filter(t => t.gb==='7010').reduce((s,t) => s+t.bedrag, 0),
+    uitExcel: false
+  };
+}
+
 export function renderHome() {
   const homeTX = getHomeTX();
-  const omzet = homeTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t) => s+t.bedrag, 0);
-  const kosten = homeTX.filter(isUitgave).reduce((s,t) => s+t.bedrag, 0);
-  const omzXt = homeTX.filter(t => isInkomst(t) && t.gb==='8000').reduce((s,t) => s+t.bedrag, 0);
-  const omzBol = homeTX.filter(t => isInkomst(t) && t.gb==='8010').reduce((s,t) => s+t.bedrag, 0);
-  const omzHC = homeTX.filter(t => isInkomst(t) && t.gb==='8020').reduce((s,t) => s+t.bedrag, 0);
-  const priveOp = homeTX.filter(t => t.type==='prive_opname').reduce((s,t) => s+t.bedrag, 0);
-  const priveSt = homeTX.filter(t => t.type==='prive_storting').reduce((s,t) => s+t.bedrag, 0);
+
+  let metrics;
+  if (state.huidigJaar === 'all') {
+    const alleTx = [...state.HIST_TX, ...state.TX];
+    const jaren = [...new Set(alleTx.map(t => t.datum.slice(0,4)))];
+    metrics = jaren.reduce((acc, j) => {
+      const m = berekenJaarMetrics(j, alleTx.filter(t => t.datum.startsWith(j)));
+      ['omzet','kosten','omzXt','omzBol','omzHC','priveOp','priveSt','hnviInv'].forEach(k => acc[k] = (acc[k]||0) + m[k]);
+      acc.uitExcel = acc.uitExcel && m.uitExcel;
+      return acc;
+    }, {uitExcel: jaren.length > 0});
+  } else {
+    metrics = berekenJaarMetrics(state.huidigJaar, homeTX);
+  }
+  const { omzet, kosten, omzXt, omzBol, omzHC, priveOp, priveSt, hnviInv, uitExcel } = metrics;
   const vrdCovers = state.COVERS.reduce((s,c) => s+c.voorraad, 0);
-  const hnviInv = homeTX.filter(t => t.gb==='7010').reduce((s,t) => s+t.bedrag, 0);
+  const bronLabel = uitExcel ? ' <span style="font-size:10px;color:var(--green,#4ADE80)" title="Uit Per Periode-totalen van Excel-import">✓ Excel-totalen</span>' : '';
 
   document.getElementById('home-metrics').innerHTML = `
-    <div class="metric"><div class="lbl">Omzet ${state.huidigJaar==='all'?'alle jaren':state.huidigJaar}</div><div class="val pos">${fmt(omzet)}</div></div>
+    <div class="metric"><div class="lbl">Omzet ${state.huidigJaar==='all'?'alle jaren':state.huidigJaar}${bronLabel}</div><div class="val pos">${fmt(omzet)}</div></div>
     <div class="metric"><div class="lbl">Kosten ${state.huidigJaar==='all'?'alle jaren':state.huidigJaar}</div><div class="val neg">${fmt(kosten)}</div></div>
     <div class="metric"><div class="lbl">Netto resultaat</div><div class="val ${omzet-kosten>=0?'pos':'neg'}">${fmt(omzet-kosten)}</div></div>
     <div class="metric"><div class="lbl">Xtenate omzet</div><div class="val">${fmt(omzXt)}</div></div>
