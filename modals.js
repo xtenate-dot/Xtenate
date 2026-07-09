@@ -1,7 +1,57 @@
 // modals.js — beheer-acties: Excel-import, cloud sync, API-sleutel, data wissen.
 
 import { renderHome } from './dashboard.js';
-import { HIST_TX_DEFAULT, MAAND_SALDOS, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js';
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js';
+
+// Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
+// met een kolom "Totaal" voor het hele boekjaar. Dit is de brontabel van de boekhouding zelf,
+// dus betrouwbaarder dan het optellen van losse boekingen (die kunnen ontbreken/verkeerd staan).
+// Boekhoudkundige tekenconventie: omzet- en storting-rekeningen staan negatief bij toename,
+// dus die draaien we om naar de positieve bedragen die de app elders gebruikt.
+function parsePerPeriode(wb, fallback) {
+  const sheetName = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g, '') === 'perperiode');
+  if (!sheetName) return null;
+  const ws = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+  if (rows.length < 2) return null;
+  const header = rows[0];
+  const idxTotaal = header.indexOf('Totaal');
+  if (idxTotaal === -1) return null;
+
+  // byGb bevat alleen rekeningen waarvan de Totaal-cel een echt getal is. Cellen met een
+  // formulefout (#N/A, #REF! etc — komt voor in oudere boekjaren) worden bewust NIET
+  // opgeslagen, zodat hieronder per rekening teruggevallen kan worden op de losse boekingen
+  // in plaats van zo'n fout stilzwijgend als €0 te lezen (dat was de eerdere bug).
+  const byGb = {};
+  rows.slice(1).forEach(row => {
+    const nummer = row[0];
+    if (nummer === null || nummer === undefined || nummer === '') return;
+    const gbStr = String(Math.round(parseFloat(nummer)));
+    if (gbStr === 'NaN') return;
+    const totaal = row[idxTotaal];
+    if (typeof totaal === 'number') byGb[gbStr] = totaal;
+  });
+
+  const heeft = gb => gb in byGb;
+  const get = gb => byGb[gb];
+
+  const omzXt = heeft('8000') ? -get('8000') : fallback.omzXt;
+  const omzBol = heeft('8010') ? -get('8010') : fallback.omzBol;
+  const omzHC = heeft('8020') ? -get('8020') : fallback.omzHC;
+  const omzet = (heeft('8000') || heeft('8010') || heeft('8020')) ? (omzXt + omzBol + omzHC) : fallback.omzet;
+  // Kosten normaal uit rekening 9990 ("Kosten"); anders rubriek 4 + inkopen; anders terugval.
+  let kosten;
+  if (heeft('9990')) kosten = get('9990');
+  else if (heeft('4999') && heeft('7999')) kosten = get('4999') + get('7999');
+  else kosten = fallback.kosten;
+
+  return {
+    omzet, kosten, omzXt, omzBol, omzHC,
+    priveOp: heeft('601') ? get('601') : fallback.priveOp,
+    priveSt: heeft('600') ? -get('600') : fallback.priveSt,
+    hnviInv: heeft('7010') ? get('7010') : fallback.hnviInv
+  };
+}
 
 export function importExcel(input) {
   const file = input.files[0];
@@ -87,19 +137,17 @@ export function importExcel(input) {
           const omschr = row[10];
           if (!datum) return;
           if (typeof bedrag !== 'number') return;
-          const gbStr = gb ? String(Math.round(parseFloat(gb))) : '';
+          const gbStr = gb ? String(Math.round(parseFloat(gb))) : '7010';
           const isPrive = ['600','601'].includes(gbStr);
           const ccType = isPrive ? (bedrag > 0 ? 'prive_storting' : 'prive_opname') : 'uitgave';
           newTx.push({id:tid++, datum, gb:gbStr, bedrag:Math.abs(bedrag),
             naam: omschr ? String(omschr) : 'Creditkaart Privé', omschr: omschr ? String(omschr) : '', rek:'1030', type:ccType});
           ccCount++;
-          // Creditkaart-uitgaven worden door de gebruiker zelf voorgeschoten vanuit privé:
-          // automatisch een gekoppelde privé-storting aanmaken voor hetzelfde bedrag.
-          if (!isPrive) {
-            newTx.push({id:tid++, datum, gb:'600', bedrag:Math.abs(bedrag),
-              naam: 'Privé storting (CC: ' + (omschr ? String(omschr) : 'creditkaart') + ')',
-              omschr: '', rek:'1030', type:'prive_storting'});
-          }
+          // Let op: er wordt HIER GEEN automatische gekoppelde privé-storting meer aangemaakt.
+          // Dat bleek bij analyse van de echte boekhouding structureel niet te kloppen met de
+          // "Per Periode"-ledger (soms te veel, soms te weinig privé storting). De betrouwbare
+          // privé-totalen komen nu uit HOME_TOTALS (het Per Periode-tabblad), niet meer uit een
+          // aanname per creditkaart-boeking.
         });
       }
 
@@ -173,6 +221,25 @@ export function importExcel(input) {
         save('xtenate_maand_saldos_override', MAAND_SALDOS);
       }
 
+      // Jaartotalen uit "Per Periode" (indien aanwezig) — leidend voor de Home-cijfers.
+      // Terugval per rekening: optellen uit de zojuist ingelezen losse boekingen (newTx),
+      // voor het geval een deel van het "Per Periode"-tabblad #N/A-fouten bevat.
+      const fallbackTotals = {
+        omzXt: newTx.filter(t => t.type==='inkomst' && t.gb==='8000').reduce((s,t)=>s+t.bedrag,0),
+        omzBol: newTx.filter(t => t.type==='inkomst' && t.gb==='8010').reduce((s,t)=>s+t.bedrag,0),
+        omzHC: newTx.filter(t => t.type==='inkomst' && t.gb==='8020').reduce((s,t)=>s+t.bedrag,0),
+        omzet: newTx.filter(t => t.type==='inkomst' && OMZET_GB.includes(t.gb)).reduce((s,t)=>s+t.bedrag,0),
+        kosten: newTx.filter(t => t.type==='uitgave').reduce((s,t)=>s+t.bedrag,0),
+        priveOp: newTx.filter(t => t.type==='prive_opname').reduce((s,t)=>s+t.bedrag,0),
+        priveSt: newTx.filter(t => t.type==='prive_storting').reduce((s,t)=>s+t.bedrag,0),
+        hnviInv: newTx.filter(t => t.gb==='7010').reduce((s,t)=>s+t.bedrag,0)
+      };
+      const perPeriodeTotals = parsePerPeriode(wb, fallbackTotals);
+      if (perPeriodeTotals) {
+        gevondenJaren.forEach(j => { HOME_TOTALS[j] = perPeriodeTotals; });
+        save('xtenate_home_totals_override', HOME_TOTALS);
+      }
+
       const saldoCount = Object.keys(newSaldos).length;
       document.getElementById('import-title').textContent = 'Import geslaagd!';
       document.getElementById('import-body').innerHTML =
@@ -181,6 +248,7 @@ export function importExcel(input) {
         `✅ <strong>${ccCount}</strong> creditkaart boekingen ingelezen<br>` +
         (saldoCount > 0 ? `✅ <strong>${saldoCount}</strong> maandsaldos ingelezen<br>` : '') +
         (newCovers.length > 0 ? `✅ <strong>${coverCount}</strong> covers artikelen ingelezen<br>` : '') +
+        (perPeriodeTotals ? `✅ Jaartotalen (omzet/kosten/privé) ingelezen uit "Per Periode" — dit is nu leidend voor de Home-cijfers van dit jaar<br>` : `⚠️ Geen "Per Periode" tabblad gevonden — Home-cijfers worden voor dit jaar nog berekend uit losse boekingen<br>`) +
         `<br>Je data is opgeslagen. HNVI-loten blijven bewaard.`;
       document.getElementById('import-actions').style.display = 'flex';
 
@@ -202,9 +270,17 @@ export function herstelHistorischeData() {
     state.HIST_TX = JSON.parse(JSON.stringify(HIST_TX_DEFAULT));
     save('xtenate_hist_tx_override', state.HIST_TX);
     localStorage.removeItem('xtenate_maand_saldos_override');
+
+    // Ook de jaartotalen (omzet/kosten/privé) terugzetten — dit was eerder al eens
+    // los gecachet in localStorage (bijv. als leeg object {} uit een oudere versie
+    // van de app) en bleef daardoor de nieuwe, gecorrigeerde standaardwaarden overstemmen.
+    Object.keys(HOME_TOTALS).forEach(k => delete HOME_TOTALS[k]);
+    Object.assign(HOME_TOTALS, JSON.parse(JSON.stringify(HOME_TOTALS_DEFAULT)));
+    save('xtenate_home_totals_override', HOME_TOTALS);
+
     document.getElementById('modal-wis').classList.remove('open');
     renderHome();
-    alert('Klaar! Historische data (2022-2025) is hersteld naar de standaardwaarden uit de app.');
+    alert('Klaar! Historische data (2022-2025) én de jaartotalen zijn hersteld naar de standaardwaarden uit de app.');
   } catch (err) {
     alert('Er ging iets mis: ' + err.message);
   }
@@ -232,6 +308,9 @@ export function doWis() {
     }
 
     let wisLog = [];
+
+    jaren.forEach(j => { delete HOME_TOTALS[j]; });
+    save('xtenate_home_totals_override', HOME_TOTALS);
 
     if (jaren.includes('2026')) {
       state.TX = [];
