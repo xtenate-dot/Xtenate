@@ -56,3 +56,48 @@ export function typeBadge(type, bedrag) {
   if (type === 'prive_opname') return `<span class="neg">–${fmt(bedrag)}</span>`;
   return `<span class="neg">–${fmt(bedrag)}</span>`;
 }
+
+// ---------- Toevoegingen fase 2026-08 ----------
+
+export const MND_KORT = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+
+/** "2026-03" -> "mrt 26" */
+export function maandLabel(ym) {
+  const [j, m] = ym.split('-');
+  return `${MND_KORT[parseInt(m,10)-1] || m} ${j.slice(2)}`;
+}
+
+/** Korte bedragnotatie voor asvlakken: € 1,2k */
+export const fmtKort = n => {
+  const a = Math.abs(n);
+  if (a >= 1000) return '€' + (n/1000).toFixed(a >= 10000 ? 0 : 1).replace('.', ',') + 'k';
+  return '€' + Math.round(n);
+};
+
+/** Voorkomt dat data uit een import als HTML wordt uitgevoerd. */
+export function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/**
+ * Indicatieve inkomstenbelasting box 1 voor een eenmanszaak.
+ * MKB-winstvrijstelling 14,2%; schijf 1 36,97% tot € 38.441, daarboven 49,5%.
+ * Bij verlies wordt een mogelijke teruggave (negatief bedrag) teruggegeven.
+ */
+export function calcIB(winst) {
+  if (winst <= 0) return winst * 0.3697;
+  const mkb = winst * 0.142;
+  const belastbaar = Math.max(0, winst - mkb);
+  return belastbaar <= 38441
+    ? belastbaar * 0.3697
+    : 38441 * 0.3697 + (belastbaar - 38441) * 0.495;
+}
+
+/** Percentage van de winst dat je opzij zou moeten zetten voor de IB. */
+export const RESERVE_PCT = 0.30;
+
+/** Effect van een boeking op het banksaldo. */
+export function saldoDelta(t) {
+  if (t.type === 'inkomst' || t.type === 'prive_storting') return t.bedrag;
+  return -t.bedrag;
+}

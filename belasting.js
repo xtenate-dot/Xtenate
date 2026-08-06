@@ -1,8 +1,8 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc } from './charts.js?v=20260710a';
-import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260710a';
-import { state } from './storage.js?v=20260710a';
+import { charts, dc } from './charts.js?v=20260806a';
+import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260806a';
+import { state } from './storage.js?v=20260806a';
 
 export function renderBelasting() {
   const jaar = document.getElementById('f-jaar-bel') ? document.getElementById('f-jaar-bel').value : '2026';
@@ -56,19 +56,19 @@ export function renderBelasting() {
     <div class="metric"><div class="lbl">Aftrekbare kosten</div><div class="val neg">${fmt(kostenAftrekbaar)}</div></div>
     <div class="metric"><div class="lbl">Winst / verlies</div><div class="val ${winst>=0?'pos':'neg'}">${fmt(winst)}</div></div>
     <div class="metric"><div class="lbl">${ib<=0?'Geschatte teruggave':'Geschatte IB'}</div><div class="val ${ib<=0?'pos':'neg'}">${ib<=0?'+':''}${fmt(Math.abs(Math.round(ib)))}</div></div>
-    <div class="metric"><div class="lbl">HNVI voorraad (niet aftrekbaar)</div><div class="val" style="color:#888">${fmt(hnviNietAftrekbaar)}</div><div class="sub">${hnviVoorraadAantal} loten nog in voorraad</div></div>
+    <div class="metric"><div class="lbl">HNVI voorraad (niet aftrekbaar)</div><div class="val" style="color:var(--text-muted)">${fmt(hnviNietAftrekbaar)}</div><div class="sub">${hnviVoorraadAantal} loten nog in voorraad</div></div>
     <div class="metric"><div class="lbl">Projectie heel jaar</div><div class="val ${winstJaar>=0?'pos':'neg'}">${fmt(winstJaar)}</div><div class="sub">op basis van ${maandenMet} mnd</div></div>`;
 
   const teruggaveRegel = ib < 0 ? `
-    <div style="background:var(--green-bg);border:1px solid rgba(26,122,74,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--green)">
+    <div style="background:var(--green-bg);border:1px solid color-mix(in srgb, var(--green) 25%, transparent);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--green)">
       💡 Bij verlies kun je dit verrekenen met ander inkomen (bijv. loon). Geschatte teruggave: <strong>${fmt(Math.abs(Math.round(ib)))}</strong> — bespreek dit met je belastingadviseur.
     </div>` : '';
 
   const hnviWaarschuwing = hnviNietAftrekbaar > 0 ? `
-    <div style="background:var(--amber-bg);border:1px solid rgba(122,79,0,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
+    <div style="background:var(--amber-bg);border:1px solid color-mix(in srgb, var(--amber) 25%, transparent);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
       ⚠ ${fmt(hnviNietAftrekbaar)} HNVI inkoop is nog niet aftrekbaar (voorraad). Zodra je die loten verkoopt in de HNVI-tab wordt dit automatisch aangepast.
     </div>` : (state.HNVI_LOTS.length === 0 ? `
-    <div style="background:var(--amber-bg);border:1px solid rgba(122,79,0,.2);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
+    <div style="background:var(--amber-bg);border:1px solid color-mix(in srgb, var(--amber) 25%, transparent);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
       ⚠ Voeg je HNVI-loten toe in de HNVI-tab zodat de belasting correct wordt berekend. Nu wordt alle 7010 inkoop als aftrekbaar beschouwd.
     </div>` : '');
 
@@ -76,7 +76,7 @@ export function renderBelasting() {
     <div class="ib-row"><span>Bruto omzet</span><span>${fmt(omzet)}</span></div>
     <div class="ib-row"><span>Overige kosten & inkoop</span><span class="neg">– ${fmt(kostenOverig)}</span></div>
     <div class="ib-row"><span>HNVI inkoop (verkochte loten)</span><span class="neg">– ${fmt(hnviAftrekbaar)}</span></div>
-    <div class="ib-row" style="color:#888;font-size:11px"><span>HNVI inkoop (voorraad, niet aftrekbaar)</span><span>${fmt(hnviNietAftrekbaar)}</span></div>
+    <div class="ib-row" style="color:var(--text-muted);font-size:11px"><span>HNVI inkoop (voorraad, niet aftrekbaar)</span><span>${fmt(hnviNietAftrekbaar)}</span></div>
     <div class="ib-row"><span style="font-weight:600">Winst / verlies</span><span style="font-weight:600" class="${winst>=0?'pos':'neg'}">${fmt(winst)}</span></div>
     ${winst > 0 ? `
     <div class="ib-row"><span>MKB-winstvrijstelling (14,2%)</span><span class="neg">– ${fmt(mkb)}</span></div>
@@ -102,8 +102,8 @@ export function renderBelasting() {
 
   const subkop = (tekst) => `<tr><td colspan="4" style="padding:10px 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">${tekst}</td></tr>`;
   const rij = (gb, bedrag, richting, label, kleur) => {
-    const bg = kleur==='pos'?'var(--green-bg)':kleur==='neg'?'var(--red-bg)':'#f0f0f0';
-    const fc = kleur==='pos'?'var(--green)':kleur==='neg'?'var(--red)':'#888';
+    const bg = kleur==='pos'?'var(--green-bg)':kleur==='neg'?'var(--red-bg)':'var(--gray-bg)';
+    const fc = kleur==='pos'?'var(--green)':kleur==='neg'?'var(--red)':'var(--text-muted)';
     return `<tr>
       <td style="color:var(--text-muted);font-size:11px">${gb}</td>
       <td>${GBNM[gb]||gb}</td>
