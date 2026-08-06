@@ -1,7 +1,7 @@
 // bank.js — Bank-pagina inclusief transactie-modal.
 
-import { GBNM, ddmm, fmt, isInkomst, isUitgave, rekBadge, typeBadge, weergaveNaam } from './helpers.js?v=20260710a';
-import { MAAND_SALDOS, saveTxData, state } from './storage.js?v=20260710a';
+import { GBNM, ddmm, fmt, isInkomst, isUitgave, rekBadge, typeBadge, weergaveNaam } from './helpers.js?v=20260806a';
+import { MAAND_SALDOS, saveTxData, state } from './storage.js?v=20260806a';
 
 export function renderBank() {
   const jaarSel = document.getElementById('f-jaar-bank');

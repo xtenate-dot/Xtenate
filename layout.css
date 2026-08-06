@@ -1,20 +1,123 @@
-/* layout.css — app-layout, zijbalk, navigatie, pagina-structuur */
-/* LAYOUT */
-.app { display: flex; min-height: 100vh; }
-.sidebar { width: 200px; background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 10; }
-.main { margin-left: 200px; padding: 2rem; max-width: 960px; }
-.logo { padding: 0 1.25rem 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
-.logo-name { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
-.logo-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 1.25rem; cursor: pointer; color: var(--text-muted); font-size: 13px; border-left: 2px solid transparent; transition: all .15s; user-select: none; }
-.nav-item:hover { color: var(--text); background: var(--bg); }
-.nav-item.active { color: var(--text); border-left-color: var(--text); font-weight: 500; background: var(--bg); }
-.nav-item svg { flex-shrink: 0; opacity: .7; }
-.nav-item.active svg { opacity: 1; }
-.nav-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text-hint); padding: 1rem 1.25rem .4rem; }
+/* layout.css — app-shell: zijmenu, bovenbalk en paginaruimte. */
 
-/* PAGE */
+.app { display: flex; min-height: 100vh; }
+
+/* ---------- ZIJMENU ---------- */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: var(--sp-4) 0 var(--sp-5);
+  flex-shrink: 0;
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 40;
+  transition: width .18s ease;
+  display: flex;
+  flex-direction: column;
+}
+body.nav-collapsed .sidebar { width: var(--sidebar-w-collapsed); }
+
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 14px var(--sp-4); }
+.brand-mark {
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  background: var(--accent); color: var(--accent-contrast);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; letter-spacing: -0.5px;
+}
+.brand-text { min-width: 0; }
+.brand-name { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; white-space: nowrap; }
+.brand-sub { font-size: 10.5px; color: var(--text-hint); white-space: nowrap; }
+body.nav-collapsed .brand-text { display: none; }
+
+.nav-section {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .9px;
+  color: var(--text-hint); padding: var(--sp-4) 14px var(--sp-1); white-space: nowrap;
+}
+body.nav-collapsed .nav-section {
+  font-size: 0; padding: var(--sp-3) 14px var(--sp-1); position: relative;
+}
+body.nav-collapsed .nav-section::after {
+  content: ''; display: block; height: 1px; background: var(--border);
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  margin: 1px 8px; padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer; color: var(--text-muted);
+  font-size: 13px; user-select: none;
+  transition: background .12s, color .12s;
+  white-space: nowrap;
+}
+.nav-item:hover { color: var(--text); background: var(--surface-hover); }
+.nav-item.active { color: var(--accent); background: var(--accent-bg); font-weight: 500; }
+.nav-item svg { flex-shrink: 0; opacity: .75; }
+.nav-item.active svg { opacity: 1; }
+.nav-label { overflow: hidden; text-overflow: ellipsis; }
+body.nav-collapsed .nav-label { display: none; }
+body.nav-collapsed .nav-item { justify-content: center; padding: 8px; }
+
+.nav-spacer { flex: 1; }
+
+.nav-collapse-btn {
+  display: flex; align-items: center; gap: 10px;
+  margin: var(--sp-2) 8px 0; padding: 7px 8px;
+  border: none; background: none; cursor: pointer;
+  color: var(--text-hint); font-size: 12px; font-family: inherit;
+  border-radius: var(--radius-sm); width: calc(100% - 16px);
+}
+.nav-collapse-btn:hover { background: var(--surface-hover); color: var(--text); }
+.nav-collapse-btn svg { transition: transform .18s ease; flex-shrink: 0; }
+body.nav-collapsed .nav-collapse-btn svg { transform: rotate(180deg); }
+body.nav-collapsed .nav-collapse-btn { justify-content: center; }
+body.nav-collapsed .nav-collapse-btn span { display: none; }
+
+/* ---------- HOOFDGEBIED ---------- */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1; min-width: 0;
+  transition: margin-left .18s ease;
+}
+body.nav-collapsed .main { margin-left: var(--sidebar-w-collapsed); }
+
+/* ---------- BOVENBALK ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  height: var(--topbar-h);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: 0 var(--sp-5);
+}
+.topbar-title { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; white-space: nowrap; }
+.topbar-spacer { flex: 1; }
+
+.menu-toggle { display: none; background: none; border: none; cursor: pointer; color: var(--text); padding: 6px; border-radius: var(--radius-sm); }
+.menu-toggle:hover { background: var(--surface-hover); }
+
+.page-wrap { padding: var(--sp-5); max-width: var(--content-max); }
+
 .page { display: none; }
 .page.active { display: block; }
-.page-title { font-size: 20px; font-weight: 600; letter-spacing: -0.4px; margin-bottom: 1.5rem; }
 
+.page-head { display: flex; align-items: baseline; gap: var(--sp-3); margin-bottom: var(--sp-4); flex-wrap: wrap; }
+.page-title { font-size: 21px; font-weight: 600; letter-spacing: -0.5px; }
+.page-sub { font-size: 12.5px; color: var(--text-muted); }
+
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-3); margin: var(--sp-5) 0 var(--sp-3);
+}
+.section-head:first-child { margin-top: 0; }
+
+/* Backdrop voor het mobiele menu */
+.nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 35; }
+.nav-backdrop.open { display: block; }
+
+/* Pagina's die nog geen .page-head hebben, houden hun eigen ondermarge */
+.page > .page-title { margin-bottom: var(--sp-4); }

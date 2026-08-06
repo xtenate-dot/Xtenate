@@ -1,8 +1,14 @@
-// dashboard.js — Home-pagina (renderHome, jaarwissel).
+// dashboard.js — Home: het financiële dashboard.
 
-import { charts, dc } from './charts.js?v=20260710a';
-import { GBNM, ddmm, fmt, isInkomst, isOmzet, isUitgave, rekBadge, typeBadge, weergaveNaam } from './helpers.js?v=20260710a';
-import { HOME_TOTALS, state } from './storage.js?v=20260710a';
+import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260806a';
+import {
+  BEGINSALDO_2026, GBNM, calcIB, ddmm, esc, fmt, fmtKort, isInkomst, isOmzet, isUitgave,
+  maandLabel, rekBadge, saldoDelta, typeBadge, weergaveNaam
+} from './helpers.js?v=20260806a';
+import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260806a';
+import { maakSorteerbaar } from './tables.js?v=20260806a';
+
+const HOOFDREKENING = '1010'; // Rabobank — hierop staat het beginsaldo
 
 export function wisselJaar() {
   state.huidigJaar = document.getElementById('jaar-selector').value;
@@ -15,89 +21,244 @@ export function getHomeTX() {
   return state.HIST_TX.filter(t => t.datum.startsWith(state.huidigJaar));
 }
 
-// Berekent de 8 hoofd-metrics (omzet/kosten/privé/HNVI) voor één jaar. Gebruikt de
-// jaartotalen uit een Excel-import ("Per Periode"-tabblad) als die er zijn — die komen
-// rechtstreeks uit de boekhouding en zijn dus leidend. Alleen als die ontbreken, wordt
-// er (zoals voorheen) opgeteld uit de losse boekingen van dat jaar.
+// Berekent de hoofdcijfers voor één jaar. Jaartotalen uit een Excel-import
+// ("Per Periode") komen rechtstreeks uit de boekhouding en zijn leidend;
+// alleen als die ontbreken wordt er opgeteld uit de losse boekingen.
 function berekenJaarMetrics(jaar, txVanJaar) {
   const override = HOME_TOTALS[jaar];
   if (override) return { ...override, uitExcel: true };
   return {
-    omzet: txVanJaar.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t) => s+t.bedrag, 0),
-    kosten: txVanJaar.filter(isUitgave).reduce((s,t) => s+t.bedrag, 0),
-    omzXt: txVanJaar.filter(t => isInkomst(t) && t.gb==='8000').reduce((s,t) => s+t.bedrag, 0),
-    omzBol: txVanJaar.filter(t => isInkomst(t) && t.gb==='8010').reduce((s,t) => s+t.bedrag, 0),
-    omzHC: txVanJaar.filter(t => isInkomst(t) && t.gb==='8020').reduce((s,t) => s+t.bedrag, 0),
-    priveOp: txVanJaar.filter(t => t.type==='prive_opname').reduce((s,t) => s+t.bedrag, 0),
-    priveSt: txVanJaar.filter(t => t.type==='prive_storting').reduce((s,t) => s+t.bedrag, 0),
-    hnviInv: txVanJaar.filter(t => t.gb==='7010').reduce((s,t) => s+t.bedrag, 0),
+    omzet: txVanJaar.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s, t) => s + t.bedrag, 0),
+    kosten: txVanJaar.filter(isUitgave).reduce((s, t) => s + t.bedrag, 0),
+    omzXt: txVanJaar.filter(t => isInkomst(t) && t.gb === '8000').reduce((s, t) => s + t.bedrag, 0),
+    omzBol: txVanJaar.filter(t => isInkomst(t) && t.gb === '8010').reduce((s, t) => s + t.bedrag, 0),
+    omzHC: txVanJaar.filter(t => isInkomst(t) && t.gb === '8020').reduce((s, t) => s + t.bedrag, 0),
+    priveOp: txVanJaar.filter(t => t.type === 'prive_opname').reduce((s, t) => s + t.bedrag, 0),
+    priveSt: txVanJaar.filter(t => t.type === 'prive_storting').reduce((s, t) => s + t.bedrag, 0),
+    hnviInv: txVanJaar.filter(t => t.gb === '7010').reduce((s, t) => s + t.bedrag, 0),
     uitExcel: false
   };
 }
 
+/**
+ * Banksaldo van de hoofdrekening. Voor 2026 loopt het door vanaf het beginsaldo;
+ * voor afgesloten jaren wordt het eindsaldo van de laatste maand gebruikt.
+ */
+function berekenBanksaldo(jaar) {
+  const huidig = () => BEGINSALDO_2026 + state.TX
+    .filter(t => t.rek === HOOFDREKENING)
+    .reduce((s, t) => s + saldoDelta(t), 0);
+
+  if (jaar === '2026' || jaar === 'all') return { saldo: huidig(), label: 'Rabobank · nu' };
+
+  const maandenVanJaar = Object.keys(MAAND_SALDOS).filter(m => m.startsWith(jaar)).sort();
+  const laatste = maandenVanJaar[maandenVanJaar.length - 1];
+  if (laatste) return { saldo: MAAND_SALDOS[laatste].eind, label: `Rabobank · eind ${maandLabel(laatste)}` };
+  return { saldo: null, label: 'geen saldo bekend' };
+}
+
+/** Waarde van de voorraad: HNVI-loten tegen inkoopprijs, plus het aantal covers. */
+function berekenVoorraad() {
+  const inVoorraad = state.HNVI_LOTS.filter(l => l.status === 'voorraad');
+  return {
+    waarde: inVoorraad.reduce((s, l) => s + (Number(l.inkoop) || 0), 0),
+    loten: inVoorraad.length,
+    covers: state.COVERS.reduce((s, c) => s + c.voorraad, 0)
+  };
+}
+
+function kpi(label, waarde, klasse = '', sub = '', extra = '') {
+  return `<div class="kpi${extra}">
+    <div class="kpi-lbl">${label}</div>
+    <div class="kpi-val ${klasse}">${waarde}</div>
+    ${sub ? `<div class="kpi-sub">${sub}</div>` : ''}
+  </div>`;
+}
+
+function leegVlak(titel, tekst) {
+  return `<div class="empty">
+    <div class="empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div>
+    <div class="empty-title">${titel}</div>
+    <div class="empty-text">${tekst}</div>
+  </div>`;
+}
+
 export function renderHome() {
   const homeTX = getHomeTX();
+  const jaar = state.huidigJaar;
+  const jaarTekst = jaar === 'all' ? 'alle jaren' : jaar;
 
+  // ---------- Hoofdcijfers ----------
   let metrics;
-  if (state.huidigJaar === 'all') {
+  if (jaar === 'all') {
     const alleTx = [...state.HIST_TX, ...state.TX];
-    const jaren = [...new Set(alleTx.map(t => t.datum.slice(0,4)))];
+    const jaren = [...new Set(alleTx.map(t => t.datum.slice(0, 4)))];
     metrics = jaren.reduce((acc, j) => {
       const m = berekenJaarMetrics(j, alleTx.filter(t => t.datum.startsWith(j)));
-      ['omzet','kosten','omzXt','omzBol','omzHC','priveOp','priveSt','hnviInv'].forEach(k => acc[k] = (acc[k]||0) + m[k]);
+      ['omzet','kosten','omzXt','omzBol','omzHC','priveOp','priveSt','hnviInv'].forEach(k => acc[k] = (acc[k] || 0) + m[k]);
       acc.uitExcel = acc.uitExcel && m.uitExcel;
       return acc;
-    }, {uitExcel: jaren.length > 0});
+    }, { uitExcel: jaren.length > 0 });
   } else {
-    metrics = berekenJaarMetrics(state.huidigJaar, homeTX);
+    metrics = berekenJaarMetrics(jaar, homeTX);
   }
+
   const { omzet, kosten, omzXt, omzBol, omzHC, priveOp, priveSt, hnviInv, uitExcel } = metrics;
-  const vrdCovers = state.COVERS.reduce((s,c) => s+c.voorraad, 0);
-  const bronLabel = uitExcel ? ' <span style="font-size:10px;color:var(--green,#4ADE80)" title="Uit Per Periode-totalen van Excel-import">✓ Excel-totalen</span>' : '';
+  const winst = omzet - kosten;
+  const bank = berekenBanksaldo(jaar);
+  const voorraad = berekenVoorraad();
+  const ib = calcIB(winst);
+  const reservering = Math.max(0, Math.round(winst * 0.30));
 
-  document.getElementById('home-metrics').innerHTML = `
-    <div class="metric"><div class="lbl">Omzet ${state.huidigJaar==='all'?'alle jaren':state.huidigJaar}${bronLabel}</div><div class="val pos">${fmt(omzet)}</div></div>
-    <div class="metric"><div class="lbl">Kosten ${state.huidigJaar==='all'?'alle jaren':state.huidigJaar}</div><div class="val neg">${fmt(kosten)}</div></div>
-    <div class="metric"><div class="lbl">Netto resultaat</div><div class="val ${omzet-kosten>=0?'pos':'neg'}">${fmt(omzet-kosten)}</div></div>
-    <div class="metric"><div class="lbl">Xtenate omzet</div><div class="val">${fmt(omzXt)}</div></div>
-    <div class="metric"><div class="lbl">Bol.com omzet</div><div class="val">${fmt(omzBol)}</div></div>
-    <div class="metric"><div class="lbl">Helmetstore omzet</div><div class="val">${fmt(omzHC)}</div></div>
-    <div class="metric"><div class="lbl">Covers voorraad</div><div class="val">${vrdCovers} stuks</div></div>
-    <div class="metric"><div class="lbl">HNVI inkoop</div><div class="val neg">${fmt(hnviInv)}</div></div>
-    <div class="metric"><div class="lbl">Privé opnames</div><div class="val" style="color:#888">${fmt(priveOp)}</div></div>
-    <div class="metric"><div class="lbl">Privé stortingen</div><div class="val" style="color:#888">${fmt(priveSt)}</div></div>`;
+  const bronMerk = uitExcel
+    ? '<span class="badge badge-green" title="Overgenomen uit de Per Periode-totalen van je Excel-import">Excel</span>'
+    : '';
 
-  const topInc = [...homeTX].filter(t => isInkomst(t)).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
-  const topExp = [...homeTX].filter(isUitgave).sort((a,b) => b.bedrag-a.bedrag).slice(0,2);
-  document.getElementById('home-uitsch').innerHTML = [...topInc,...topExp].map(t => `
-    <div class="uitsch-item">
-      <div class="uitsch-icon" style="background:${isInkomst(t)?'var(--green-bg)':'var(--red-bg)'}">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${isInkomst(t)?'var(--green)':'var(--red)'}" stroke-width="2.5">
-          ${isInkomst(t)?'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>':'<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>'}
-        </svg>
-      </div>
-      <div class="uitsch-info"><div class="uitsch-naam">${weergaveNaam(t)}</div><div class="uitsch-meta">${ddmm(t.datum)} · ${GBNM[t.gb]||t.gb}</div></div>
-      <div class="uitsch-bedrag ${isInkomst(t)?'pos':'neg'}">${isInkomst(t)?'+':'–'}${fmt(t.bedrag)}</div>
-    </div>`).join('');
+  document.getElementById('home-kpi').innerHTML =
+    kpi(`Omzet ${jaarTekst} ${bronMerk}`, fmt(omzet), 'pos',
+        `Xtenate ${fmt(omzXt)} · Bol ${fmt(omzBol)} · Helmetstore ${fmt(omzHC)}`) +
+    kpi('Totale kosten', fmt(kosten), 'neg',
+        hnviInv > 0 ? `waarvan ${fmt(hnviInv)} HNVI-inkoop` : '') +
+    kpi('Netto winst', fmt(winst), winst >= 0 ? 'pos' : 'neg',
+        omzet > 0 ? `marge ${Math.round(winst / omzet * 100)}%` : '') +
+    kpi('Banksaldo', bank.saldo === null ? '—' : fmt(bank.saldo),
+        bank.saldo !== null && bank.saldo < 0 ? 'neg' : '', bank.label);
 
-  const alleM = [...new Set(homeTX.map(t=>t.datum.slice(0,7)))].sort();
-  const maanden = alleM;
-  const mnmsFull = {'2022-01':'jan 22','2022-02':'feb 22','2022-03':'mrt 22','2022-04':'apr 22','2022-05':'mei 22','2022-06':'jun 22','2022-07':'jul 22','2022-08':'aug 22','2022-09':'sep 22','2022-10':'okt 22','2022-11':'nov 22','2022-12':'dec 22','2023-01':'jan 23','2023-02':'feb 23','2023-03':'mrt 23','2023-04':'apr 23','2023-05':'mei 23','2023-06':'jun 23','2023-07':'jul 23','2023-08':'aug 23','2023-09':'sep 23','2023-10':'okt 23','2023-11':'nov 23','2023-12':'dec 23','2024-01':'jan 24','2024-02':'feb 24','2024-03':'mrt 24','2024-04':'apr 24','2024-05':'mei 24','2024-06':'jun 24','2024-07':'jul 24','2024-08':'aug 24','2024-09':'sep 24','2024-10':'okt 24','2024-11':'nov 24','2024-12':'dec 24','2025-01':'jan 25','2025-02':'feb 25','2025-03':'mrt 25','2025-04':'apr 25','2025-05':'mei 25','2025-06':'jun 25','2025-07':'jul 25','2025-08':'aug 25','2025-09':'sep 25','2025-10':'okt 25','2025-11':'nov 25','2025-12':'dec 25','2026-01':'jan 26','2026-02':'feb 26','2026-03':'mrt 26','2026-04':'apr 26','2026-05':'mei 26','2026-06':'jun 26'};
-  const labels = maanden.map(m => mnmsFull[m] || m);
-  const incD = maanden.map(m => homeTX.filter(t => isInkomst(t) && isOmzet(t.gb) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
-  const expD = maanden.map(m => homeTX.filter(t => isUitgave(t) && t.datum.startsWith(m)).reduce((s,t)=>s+t.bedrag,0));
-  const netD = maanden.map((_,i) => incD[i]-expD[i]);
+  document.getElementById('home-kpi2').innerHTML =
+    kpi('Privé-opnames', fmt(priveOp), 'muted', '', ' kpi--secondary') +
+    kpi('Privé-stortingen', fmt(priveSt), 'muted', '', ' kpi--secondary') +
+    kpi(ib <= 0 ? 'Geschatte teruggave' : 'Geschatte inkomstenbelasting',
+        (ib <= 0 ? '+' : '') + fmt(Math.abs(Math.round(ib))),
+        ib <= 0 ? 'pos' : 'neg',
+        winst > 0 ? `reserveer ± ${fmt(reservering)}` : 'geen winst dit jaar', ' kpi--secondary') +
+    kpi('Voorraadwaarde', fmt(voorraad.waarde), '',
+        `${voorraad.loten} loten · ${voorraad.covers} covers`, ' kpi--secondary');
+
+  // ---------- Uitschieters ----------
+  const topIn = [...homeTX].filter(isInkomst).sort((a, b) => b.bedrag - a.bedrag).slice(0, 2);
+  const topUit = [...homeTX].filter(isUitgave).sort((a, b) => b.bedrag - a.bedrag).slice(0, 2);
+  const uitschieters = [...topIn, ...topUit];
+  document.getElementById('home-uitsch').innerHTML = uitschieters.length
+    ? uitschieters.map(t => `
+      <div class="uitsch-item row-click" data-id="${esc(t.id)}">
+        <div class="uitsch-icon" style="background:${isInkomst(t) ? 'var(--green-bg)' : 'var(--red-bg)'}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${isInkomst(t) ? 'var(--green)' : 'var(--red)'}" stroke-width="2.5">
+            ${isInkomst(t)
+              ? '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>'
+              : '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>'}
+          </svg>
+        </div>
+        <div class="uitsch-info">
+          <div class="uitsch-naam">${esc(weergaveNaam(t))}</div>
+          <div class="uitsch-meta">${ddmm(t.datum)} · ${esc(GBNM[t.gb] || t.gb)}</div>
+        </div>
+        <div class="uitsch-bedrag ${isInkomst(t) ? 'pos' : 'neg'}">${isInkomst(t) ? '+' : '–'}${fmt(t.bedrag)}</div>
+      </div>`).join('')
+    : `<div class="card" style="grid-column:1/-1;margin:0">${leegVlak('Nog geen boekingen', 'Zodra je een Excel-bestand importeert of een transactie toevoegt, zie je hier de grootste in- en uitgaven.')}</div>`;
+
+  // ---------- Grafieken ----------
+  const alleMaanden = [...new Set(homeTX.map(t => t.datum.slice(0, 7)))].sort();
+  const maanden = jaar === 'all' ? alleMaanden.slice(-24) : alleMaanden;
+  const labels = maanden.map(maandLabel);
+  const omzetD = maanden.map(m => homeTX.filter(t => isInkomst(t) && isOmzet(t.gb) && t.datum.startsWith(m)).reduce((s, t) => s + t.bedrag, 0));
+  const kostenD = maanden.map(m => homeTX.filter(t => isUitgave(t) && t.datum.startsWith(m)).reduce((s, t) => s + t.bedrag, 0));
+
+  let loper = 0;
+  const cumulatief = maanden.map((_, i) => (loper += omzetD[i] - kostenD[i]));
+
+  const kleur = palette();
 
   dc('c-ie');
-  charts['c-ie'] = new Chart(document.getElementById('c-ie'), {type:'bar',data:{labels,datasets:[{label:'Omzet',data:incD,backgroundColor:'#7C4DFF'},{label:'Kosten',data:expD,backgroundColor:'#FF6B9D'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
-  dc('c-net');
-  charts['c-net'] = new Chart(document.getElementById('c-net'), {type:'line',data:{labels,datasets:[{label:'Netto',data:netD,borderColor:'#FFB347',backgroundColor:'rgba(255,179,71,0.1)',tension:.35,fill:true,pointRadius:4,pointBackgroundColor:'#FFB347'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11},callback:v=>'€'+v}}}}});
+  if (maanden.length) {
+    charts['c-ie'] = new Chart(document.getElementById('c-ie'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Omzet', data: omzetD, backgroundColor: kleur[1], borderRadius: 3, maxBarThickness: 26 },
+          { label: 'Kosten', data: kostenD, backgroundColor: kleur[2], borderRadius: 3, maxBarThickness: 26 }
+        ]
+      },
+      options: baseOpts({ yFmt: fmtKort })
+    });
+  }
 
-  const recent = [...homeTX].sort((a,b) => b.datum.localeCompare(a.datum)).slice(0,8);
-  document.getElementById('home-recent').innerHTML = recent.map(t => `<tr>
-    <td style="color:var(--text-muted)">${ddmm(t.datum)}</td>
-    <td class="td-trunc">${weergaveNaam(t)}</td>
-    <td>${rekBadge(t.rek)}</td>
-    <td style="text-align:right">${typeBadge(t.type, t.bedrag)}</td>
-  </tr>`).join('');
+  dc('c-net');
+  if (maanden.length) {
+    charts['c-net'] = new Chart(document.getElementById('c-net'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Winst, opgeteld',
+          data: cumulatief,
+          borderColor: kleur[0],
+          backgroundColor: 'transparent',
+          tension: .3,
+          borderWidth: 2,
+          pointRadius: maanden.length > 18 ? 0 : 3,
+          pointBackgroundColor: kleur[0]
+        }]
+      },
+      options: baseOpts({ yFmt: fmtKort })
+    });
+  }
+
+  // Kostenverdeling per grootboekrekening
+  const perGb = {};
+  homeTX.filter(isUitgave).forEach(t => { perGb[t.gb] = (perGb[t.gb] || 0) + t.bedrag; });
+  const gesorteerd = Object.entries(perGb).sort((a, b) => b[1] - a[1]);
+  const top = gesorteerd.slice(0, 5);
+  const restBedrag = gesorteerd.slice(5).reduce((s, [, v]) => s + v, 0);
+  const kostLabels = top.map(([gb]) => GBNM[gb] || gb).concat(restBedrag > 0 ? ['Overig'] : []);
+  const kostData = top.map(([, v]) => v).concat(restBedrag > 0 ? [restBedrag] : []);
+
+  dc('c-kosten');
+  const kostenCanvas = document.getElementById('c-kosten');
+  const kostenLeeg = document.getElementById('c-kosten-leeg');
+  if (kostData.length) {
+    kostenCanvas.style.display = '';
+    kostenLeeg.innerHTML = kostLabels.map((n, i) =>
+      `<span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:2px;background:${kleur[i % kleur.length]}"></span>${esc(n)} ${fmt(kostData[i])}</span>`).join('');
+    charts['c-kosten'] = new Chart(kostenCanvas, {
+      type: 'doughnut',
+      data: { labels: kostLabels, datasets: [{ data: kostData, backgroundColor: kleur, borderWidth: 0 }] },
+      options: {
+        ...baseOpts({ legend: false }),
+        cutout: '64%',
+        scales: {}
+      }
+    });
+  } else {
+    kostenCanvas.style.display = 'none';
+    kostenLeeg.innerHTML = '<span class="muted" style="font-size:12.5px">Nog geen kosten geboekt in deze periode.</span>';
+  }
+
+  // ---------- Laatste boekingen ----------
+  const recent = [...homeTX].sort((a, b) => b.datum.localeCompare(a.datum)).slice(0, 8);
+  const body = document.getElementById('home-recent');
+  body.innerHTML = recent.length
+    ? recent.map(t => `<tr class="row-click" data-id="${esc(t.id)}">
+        <td class="muted" data-v="${t.datum}">${ddmm(t.datum)}</td>
+        <td class="td-trunc">${esc(weergaveNaam(t))}</td>
+        <td><span class="gbnr">${esc(t.gb)}</span> ${esc(GBNM[t.gb] || '')}</td>
+        <td>${rekBadge(t.rek)}</td>
+        <td style="text-align:right" data-v="${t.bedrag}">${typeBadge(t.type, t.bedrag)}</td>
+      </tr>`).join('')
+    : `<tr data-geen-sort="1"><td colspan="5">${leegVlak('Nog geen boekingen', 'Importeer je Excel-bestand via het menu links, of voeg handmatig een transactie toe op de Bank-pagina.')}</td></tr>`;
+  maakSorteerbaar(document.getElementById('tbl-home-recent'));
+
+  // ---------- Laatste voorraadmutaties ----------
+  const mutaties = [...state.HNVI_LOTS]
+    .filter(l => l.datum)
+    .sort((a, b) => b.datum.localeCompare(a.datum))
+    .slice(0, 6);
+  document.getElementById('home-voorraad').innerHTML = mutaties.length
+    ? mutaties.map(l => `<tr>
+        <td class="muted">${ddmm(l.datum)}</td>
+        <td class="td-trunc">${esc(l.omschrijving || 'Lot zonder omschrijving')}</td>
+        <td><span class="${l.status === 'verkocht' ? 'badge badge-gray' : 'stock-ok'}">${l.status === 'verkocht' ? 'verkocht' : 'op voorraad'}</span></td>
+        <td style="text-align:right">${fmt(l.inkoop || 0)}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="4">${leegVlak('Nog geen loten', 'Voeg loten toe op de HNVI-pagina om je voorraad hier te volgen.')}</td></tr>`;
 }
