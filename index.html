@@ -245,7 +245,7 @@
   <div class="toolbar">
     <div class="search-field" id="gb-zoek-wrap" style="flex:1;min-width:180px;max-width:300px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input type="search" id="gb-zoek" placeholder="Zoek op code of omschrijving" oninput="renderGrootboek()"
+      <input type="search" id="gb-zoek" placeholder="Zoek op code of omschrijving" oninput="zoekGrootboekVertraagd()"
              style="flex:1;border:none;background:none;padding:8px 0;font-size:12.5px;color:var(--text);outline:none;min-width:0">
     </div>
     <select id="f-jaar-gb" onchange="renderGrootboek()" aria-label="Jaar">
@@ -309,9 +309,12 @@
 
 <!-- BELASTING -->
 <div id="p-belasting" class="page">
-  <div class="page-title">Belasting</div>
+  <div class="page-head">
+    <div class="page-title">Belasting</div>
+    <div class="page-sub">Wat je over dit jaar aan inkomstenbelasting kunt verwachten</div>
+  </div>
   <div class="toolbar">
-    <select id="f-jaar-bel" onchange="renderBelasting()">
+    <select id="f-jaar-bel" onchange="renderBelasting()" aria-label="Jaar">
       <option value="2026">2026</option>
       <option value="2025">2025</option>
       <option value="2024">2024</option>
@@ -349,7 +352,7 @@
   <div class="toolbar">
     <div class="search-field" style="flex:1;min-width:180px;max-width:280px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input type="search" id="voorraad-zoek" placeholder="Zoek op artikelnaam" oninput="renderCovers()"
+      <input type="search" id="voorraad-zoek" placeholder="Zoek op artikelnaam" oninput="zoekVoorraadVertraagd()"
              style="flex:1;border:none;background:none;padding:8px 0;font-size:12.5px;color:var(--text);outline:none;min-width:0">
     </div>
     <select id="f-voorraad-jaar" onchange="kiesVoorraadJaar()" aria-label="Periode"></select>
@@ -402,10 +405,13 @@
 
 <!-- HNVI -->
 <div id="p-hnvi" class="page">
-  <div class="page-title">HNVI / Xtenate — voorraad</div>
+  <div class="page-head">
+    <div class="page-title">HNVI / Xtenate</div>
+    <div class="page-sub">Loten inkopen, verkopen en de marge volgen</div>
+  </div>
   <div class="metrics" id="hnvi-metrics"></div>
   <div class="toolbar">
-    <select id="f-hnvi-jaar" onchange="renderHNVI()">
+    <select id="f-hnvi-jaar" onchange="renderHNVI()" aria-label="Jaar">
       <option value="">Alle jaren</option>
       <option value="2022">2022</option>
       <option value="2023">2023</option>
@@ -413,25 +419,25 @@
       <option value="2025">2025</option>
       <option value="2026">2026</option>
     </select>
-    <select id="f-hnvi-status" onchange="renderHNVI()">
+    <select id="f-hnvi-status" onchange="renderHNVI()" aria-label="Status">
       <option value="">Alle loten</option>
       <option value="voorraad">In voorraad</option>
       <option value="verkocht">Verkocht</option>
     </select>
-    <button class="btn" id="hnvi-delete-btn" onclick="verwijderGeselecteerdeHNVI()" style="display:none;color:var(--red);border-color:var(--red)">🗑 Verwijder selectie</button>
+    <button class="btn btn-danger" id="hnvi-delete-btn" onclick="verwijderGeselecteerdeHNVI()" style="display:none">Verwijder selectie</button>
     <button class="btn btn-primary btn-ml" onclick="openHNVIModal()">+ Lot toevoegen</button>
   </div>
-  <div class="card" style="padding:0">
-    <div class="table-wrap"><table>
+  <div class="card card-flush">
+    <div class="table-wrap"><table id="tbl-hnvi" class="js-sorteerbaar tbl-compact">
       <thead><tr>
-        <th style="width:36px;padding-left:14px"><input type="checkbox" id="hnvi-check-all" onchange="toggleAllHNVI(this)" title="Alles selecteren"></th>
-        <th style="width:78px">Datum</th>
-        <th>Omschrijving</th>
-        <th style="width:84px;text-align:right">Inkoop</th>
-        <th style="width:84px;text-align:right">Verkoop</th>
-        <th style="width:84px;text-align:right">Winst</th>
-        <th style="width:76px">Status</th>
-        <th style="width:80px"></th>
+        <th style="width:36px;padding-left:16px"><input type="checkbox" id="hnvi-check-all" onchange="toggleAllHNVI(this)" title="Alles selecteren"></th>
+        <th style="width:78px" data-sort="datum">Datum</th>
+        <th data-sort="tekst">Omschrijving</th>
+        <th style="width:88px;text-align:right" data-sort="getal">Inkoop</th>
+        <th style="width:88px;text-align:right" data-sort="getal">Verkoop</th>
+        <th style="width:88px;text-align:right" data-sort="getal">Winst</th>
+        <th style="width:104px" data-sort="tekst">Status</th>
+        <th style="width:88px;padding-right:16px"></th>
       </tr></thead>
       <tbody id="hnvi-body"></tbody>
     </table></div>
@@ -533,10 +539,10 @@
   <h3 id="tx-modal-title">Transactie toevoegen</h3>
   <div class="form-grid">
     <div class="form-group"><label>Datum</label><input type="date" id="tx-d"></div>
-    <div class="form-group"><label>Bedrag (€)</label><input type="number" id="tx-b" step="0.01" placeholder="0,00"></div>
+    <div class="form-group"><label>Bedrag (€)</label><input type="text" inputmode="decimal" id="tx-b" placeholder="0,00"></div>
     <div class="form-group full"><label>Naam / tegenpartij</label><input type="text" id="tx-n" placeholder="bijv. HNVI, Bol.com..."></div>
     <div class="form-group"><label>Type</label>
-      <select id="tx-t" onchange="syncTxGrootboek()">
+      <select id="tx-t" aria-label="Soort mutatie" onchange="syncTxGrootboek()">
         <option value="inkomst">Inkomst</option>
         <option value="uitgave">Uitgave</option>
         <option value="prive_opname">Privé opname</option>
@@ -544,7 +550,7 @@
       </select>
     </div>
     <div class="form-group"><label>Rekening</label>
-      <select id="tx-rek">
+      <select id="tx-rek" aria-label="Rekening">
         <option value="1010">1010 Rabobank</option>
         <option value="1009">1009 Revolut</option>
         <option value="1030">1030 Creditkaart</option>
@@ -553,7 +559,7 @@
       </select>
     </div>
     <div class="form-group full"><label>Grootboek</label>
-      <select id="tx-gb">
+      <select id="tx-gb" aria-label="Grootboekrekening">
         <optgroup label="Omzet">
           <option value="8000">8000 Omzet Xtenate</option>
           <option value="8010">8010 Omzet Bol.com (covers)</option>
@@ -581,6 +587,7 @@
     </div>
     <div class="form-group full"><label>Omschrijving (optioneel)</label><input type="text" id="tx-o" placeholder="extra toelichting"></div>
   </div>
+  <div id="tx-fout" style="font-size:12px;color:var(--red);min-height:16px;margin-top:8px"></div>
   <div class="modal-actions">
     <button class="btn" onclick="closeTx()">Annuleren</button>
     <button class="btn btn-primary" id="tx-save-btn" onclick="saveTx()">Opslaan</button>
@@ -595,7 +602,7 @@
   <div class="form-grid">
     <div class="form-group full"><label>Artikelnaam</label><input type="text" id="cv-naam" placeholder="bijv. Stitch"></div>
     <div class="form-group full"><label>Productgroep</label>
-      <select id="cv-cat"></select>
+      <select id="cv-cat" aria-label="Productgroep"></select>
     </div>
     <div class="form-group"><label>Huidige voorraad</label><input type="number" id="cv-vrd" placeholder="0" min="0"></div>
     <div class="form-group"><label>Melden onder <span style="color:var(--text-hint)">(standaard 3)</span></label><input type="number" id="cv-min" placeholder="3" min="0"></div>
@@ -621,18 +628,18 @@
   <div class="form-grid">
     <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end">
       <label style="min-height:32px;display:flex;align-items:flex-end;margin-bottom:4px">Bod excl. (€)</label>
-      <input type="number" id="hn-bod" step="0.01" placeholder="0,00" oninput="berekenHNVIInkoop()">
+      <input type="text" inputmode="decimal" id="hn-bod" placeholder="0,00" oninput="berekenHNVIInkoop()">
     </div>
     <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end">
       <label style="min-height:32px;display:flex;flex-direction:column;justify-content:flex-end;margin-bottom:4px">
         Inkoopprijs incl. (€)<br><span style="font-size:10px;color:var(--text-muted)">×1,17 ×1,21 · aanpasbaar</span>
       </label>
-      <input type="number" id="hn-ik" step="0.01" placeholder="automatisch">
+      <input type="text" inputmode="decimal" id="hn-ik" placeholder="automatisch">
     </div>
     <div class="form-group full"><label>Omschrijving</label><input type="text" id="hn-o" placeholder="bijv. HNVI lot 482 — sieradenset"></div>
     <div class="form-group"><label>Datum</label><input type="date" id="hn-d"></div>
     <div class="form-group full"><label>Notitie <span style="font-size:10px;color:var(--text-muted)">(optioneel)</span></label><input type="text" id="hn-noot" placeholder="bijv. defect, ophalen dinsdag..."></div>
-    <div class="form-group full" id="hn-vk-wrap" style="display:none"><label>Verkoopprijs (€)</label><input type="number" id="hn-vk" step="0.01" placeholder="0,00"></div>
+    <div class="form-group full" id="hn-vk-wrap" style="display:none"><label>Verkoopprijs (€)</label><input type="text" inputmode="decimal" id="hn-vk" placeholder="0,00"></div>
   </div>
   <div class="modal-actions">
     <button class="btn" onclick="closeHNVIModal()">Annuleren</button>

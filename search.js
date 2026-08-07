@@ -1,6 +1,6 @@
 // search.js — globale zoekfunctie over boekingen, voorraad en HNVI-loten.
 
-import { GBNM, REKNM, ddmm, esc, fmt, isInkomst, weergaveNaam } from './helpers.js?v=20260806a';
+import { GBNM, REKNM, ddmm, esc, fmt, isInkomst, vertraag, weergaveNaam } from './helpers.js?v=20260806a';
 import { state } from './storage.js?v=20260806a';
 import { openBoeking } from './drawer.js?v=20260806a';
 import { gaNaar } from './ui.js?v=20260806a';
@@ -30,7 +30,7 @@ function zoekCovers(q) {
 
 function zoekLoten(q) {
   return state.HNVI_LOTS.filter(l =>
-    [l.omschrijving, l.notitie, l.datum, l.inkoop, l.verkoop]
+    [l.omschr, l.noot, l.datum, l.inkoop, l.verkoop]
       .filter(v => v != null).join(' ').toLowerCase().includes(q));
 }
 
@@ -57,7 +57,7 @@ function regelCover(c) {
 function regelLot(l) {
   return `<div class="sr-item" role="option" data-soort="lot">
     <div class="sr-main">
-      <div class="sr-title">${esc(l.omschrijving || 'Lot zonder omschrijving')}</div>
+      <div class="sr-title">${esc(l.omschr || 'Lot zonder omschrijving')}</div>
       <div class="sr-meta">${l.datum ? ddmm(l.datum) + ' · ' : ''}${l.status === 'verkocht' ? 'verkocht' : 'in voorraad'}</div>
     </div>
     <div class="sr-amount muted">${fmt(l.inkoop || 0)}</div>
@@ -124,7 +124,9 @@ export function initZoek() {
   const paneel = document.getElementById('search-results');
   if (!veld || !paneel) return;
 
-  veld.addEventListener('input', zoek);
+  // Zoeken loopt over alle boekingen; even wachten scheelt veel werk.
+  const zoekVertraagd = vertraag(zoek, 140);
+  veld.addEventListener('input', zoekVertraagd);
   veld.addEventListener('focus', () => { if (veld.value.trim().length >= 2) zoek(); });
 
   paneel.addEventListener('click', e => {

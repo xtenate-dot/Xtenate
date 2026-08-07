@@ -520,10 +520,11 @@ export function openCoverEdit(id) {
 
 export function closeCoverModal() { el('modal-cover').classList.remove('open'); }
 
+/** Leest een veld uit; leeg blijft leeg (null), niet nul. */
 const getal = (id, decimalen) => {
-  const v = el(id).value.trim();
-  if (v === '') return null;
-  const n = decimalen ? parseFloat(v.replace(',', '.')) : parseInt(v, 10);
+  const ruw = el(id).value.trim();
+  if (ruw === '') return null;
+  const n = decimalen ? parseFloat(ruw.replace(',', '.')) : parseInt(ruw, 10);
   return isNaN(n) ? null : n;
 };
 

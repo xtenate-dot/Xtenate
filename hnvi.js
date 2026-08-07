@@ -1,6 +1,7 @@
 // hnvi.js — HNVI/Xtenate voorraadbeheer, inclusief AI-factuurimport.
 
-import { ddmm, fmt } from './helpers.js?v=20260806a';
+import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260806a';
+import { maakSorteerbaar } from './tables.js?v=20260806a';
 import { openApiKeyModal } from './modals.js?v=20260806a';
 import { saveHnviData, state } from './storage.js?v=20260806a';
 
@@ -23,14 +24,19 @@ export function renderHNVI() {
   const winst = vktJaar.reduce((s,i)=>s+((Number(i.verkoop)||0)-(Number(i.inkoop)||0)),0);
 
   // Gemiddelde marge over alle verkochte loten (gefilterd)
-  const avg = vktJaar.length ? Math.round(vktJaar.reduce((s,i)=>s+((Number(i.verkoop)||0)-(Number(i.inkoop)||0))/(Number(i.inkoop)||1)*100,0)/vktJaar.length) : 0;
+  // Alleen loten met een echte inkoopprijs tellen mee; delen door nul (of door
+  // een vervangende 1) leverde marges van duizenden procenten op.
+  const metInkoop = vktJaar.filter(i => Number(i.inkoop) > 0);
+  const avg = metInkoop.length
+    ? Math.round(metInkoop.reduce((s,i)=>s+((Number(i.verkoop)||0)-Number(i.inkoop))/Number(i.inkoop)*100,0)/metInkoop.length)
+    : null;
   const periodeLabel = jaar ? jaar : 'alle jaren';
   document.getElementById('hnvi-metrics').innerHTML = `
     <div class="metric"><div class="lbl">In voorraad</div><div class="val">${vrd.length} loten</div></div>
     <div class="metric"><div class="lbl">Totaal inkoop</div><div class="val neg">${fmt(totInkoop)}</div><div class="sub">${periodeLabel}</div></div>
     <div class="metric"><div class="lbl">Totaal verkoop</div><div class="val pos">${fmt(totVerkoop)}</div><div class="sub">${vktJaar.length} loten · ${periodeLabel}</div></div>
     <div class="metric"><div class="lbl">Winst / verlies</div><div class="val ${winst>=0?'pos':'neg'}">${winst>=0?'+':''}${fmt(winst)}</div></div>
-    <div class="metric"><div class="lbl">Gem. marge</div><div class="val ${avg>=0?'pos':'neg'}">${avg}%</div></div>`;
+    <div class="metric"><div class="lbl">Gem. marge</div><div class="val ${avg==null?'muted':avg>=0?'pos':'neg'}">${avg==null?'—':avg+'%'}</div><div class="sub">${metInkoop.length} loten met inkoopprijs</div></div>`;
 
   // Reset checkboxes
   const deleteBtn = document.getElementById('hnvi-delete-btn');
@@ -42,23 +48,28 @@ export function renderHNVI() {
     const w = i.verkoop!=null ? i.verkoop-i.inkoop : null;
     const pct = w!=null&&i.inkoop ? Math.round(w/i.inkoop*100) : null;
     return `<tr>
-      <td style="padding-left:14px"><input type="checkbox" class="hnvi-check" data-key="${i._key||i.id}" onchange="updateHNVIDeleteBtn()"></td>
-      <td style="color:var(--text-muted)">${ddmm(i.datum)}</td>
-      <td class="td-trunc">${i.omschr}${i.noot?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${i.noot}</div>`:''}</td>
-      <td style="text-align:right">${fmt(i.inkoop)}</td>
-      <td style="text-align:right">${i.verkoop!=null&&i.verkoop>0?fmt(i.verkoop):'—'}</td>
-      <td style="text-align:right">${w!=null&&i.verkoop>0?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
-      <td><span class="${i.status==='verkocht'?'stock-ok':'stock-uit'}">${i.status}</span></td>
+      <td style="padding-left:16px"><input type="checkbox" class="hnvi-check" data-key="${esc(i._key||i.id)}" onchange="updateHNVIDeleteBtn()"></td>
+      <td class="muted" data-v="${esc(i.datum)}">${ddmm(i.datum)}</td>
+      <td class="td-trunc">${esc(i.omschr)}${i.noot?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${esc(i.noot)}</div>`:''}</td>
+      <td style="text-align:right" data-v="${Number(i.inkoop)||0}">${fmt(i.inkoop)}</td>
+      <td style="text-align:right" data-v="${Number(i.verkoop)||0}">${i.verkoop!=null&&i.verkoop>0?fmt(i.verkoop):'—'}</td>
+      <td style="text-align:right" data-v="${w||0}">${w!=null&&i.verkoop>0?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
+      <td data-v="${esc(i.status)}">${i.status==='verkocht'?'<span class="badge badge-green">verkocht</span>':'<span class="badge badge-blue">op voorraad</span>'}</td>
       <td style="white-space:nowrap">
-        <span class="sell-link" onclick="openHNVISell(${i.id})">${i.status==='voorraad'?'Verkoop':'Wijzig'}</span>
-        ${i.status==='verkocht'?`<span class="sell-link" style="color:var(--text-muted)" onclick="wisHNVIVerkoop(${i.id})">Wis</span>`:''}
+        <span class="sell-link" onclick="openHNVISell('${esc(i.id)}')">${i.status==='voorraad'?'Verkoop':'Wijzig'}</span>
+        ${i.status==='verkocht'?`<span class="sell-link" style="color:var(--text-muted)" onclick="wisHNVIVerkoop('${esc(i.id)}')">Wis</span>`:''}
       </td>
     </tr>`;
-  }).join('') : '<tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--text-muted)">Nog geen loten toegevoegd. Klik op "+ Lot toevoegen".</td></tr>';
+  }).join('') : `<tr data-geen-sort="1"><td colspan="8">${leegVlak(
+      state.HNVI_LOTS.length ? 'Geen loten binnen deze filters' : 'Nog geen loten toegevoegd',
+      state.HNVI_LOTS.length ? 'Kies een ander jaar of een andere status.' : 'Voeg een lot toe of lees een HNVI-factuur in.',
+      '<button class="btn" onclick="openHNVIModal()">Lot toevoegen</button>')}</td></tr>`;
+
+  maakSorteerbaar(document.getElementById('tbl-hnvi'));
 }
 
 export function berekenHNVIInkoop() {
-  const bod = parseFloat(document.getElementById('hn-bod').value) || 0;
+  const bod = bedragUit('hn-bod');
   if (bod > 0) {
     const inkoop = Math.round(bod * 1.17 * 1.21 * 100) / 100;
     document.getElementById('hn-ik').value = inkoop.toFixed(2);
@@ -83,7 +94,7 @@ export function openHNVIModal() {
 
 export function openHNVISell(id) {
   state.hnviSellId = id;
-  const i = state.HNVI_LOTS.find(x=>x.id===id);
+  const i = state.HNVI_LOTS.find(x=>String(x.id)===String(id));
   document.getElementById('hnvi-modal-title').textContent = i.status==='verkocht' ? 'Verkoop wijzigen' : 'Verkoop registreren';
   document.getElementById('hn-save-btn').textContent = 'Opslaan';
   document.getElementById('hn-d').value = i.datum;
@@ -100,11 +111,11 @@ export function closeHNVIModal() { document.getElementById('modal-hnvi').classLi
 
 export function saveHNVI() {
   if (state.hnviSellId) {
-    const vk = parseFloat(document.getElementById('hn-vk').value)||0;
+    const vk = bedragUit('hn-vk');
     const noot = document.getElementById('hn-noot').value;
     const nieuweStatus = vk > 0 ? 'verkocht' : 'voorraad';
-    const nieuweInkoop = parseFloat(document.getElementById('hn-ik').value)||0;
-    state.HNVI_LOTS = state.HNVI_LOTS.map(i => i.id===state.hnviSellId ? {
+    const nieuweInkoop = bedragUit('hn-ik');
+    state.HNVI_LOTS = state.HNVI_LOTS.map(i => String(i.id)===String(state.hnviSellId) ? {
       ...i,
       datum: document.getElementById('hn-d').value,
       omschr: document.getElementById('hn-o').value,
@@ -116,7 +127,7 @@ export function saveHNVI() {
   } else {
     const newId = state.nxtHnvi++;
     state.hnviLaatsteDatum = document.getElementById('hn-d').value;
-    state.HNVI_LOTS.push({id:newId, _key:String(newId), datum:state.hnviLaatsteDatum, omschr:document.getElementById('hn-o').value, inkoop:parseFloat(document.getElementById('hn-ik').value)||0, verkoop:null, status:'voorraad', noot:document.getElementById('hn-noot').value});
+    state.HNVI_LOTS.push({id:newId, _key:String(newId), datum:state.hnviLaatsteDatum, omschr:document.getElementById('hn-o').value, inkoop:bedragUit('hn-ik'), verkoop:null, status:'voorraad', noot:document.getElementById('hn-noot').value});
   }
   saveHnviData();
   closeHNVIModal();
@@ -125,7 +136,7 @@ export function saveHNVI() {
 
 export function wisHNVIVerkoop(id) {
   if (!confirm('Verkoopbedrag verwijderen en lot terug op voorraad zetten?')) return;
-  state.HNVI_LOTS = state.HNVI_LOTS.map(i => i.id===id ? {...i, verkoop:null, status:'voorraad'} : i);
+  state.HNVI_LOTS = state.HNVI_LOTS.map(i => String(i.id)===String(id) ? {...i, verkoop:null, status:'voorraad'} : i);
   saveHnviData();
   renderHNVI();
 }

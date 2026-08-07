@@ -1,11 +1,9 @@
 // grootboek.js — Grootboek: compacte saldotabel per rekening, met doorklik
 // naar de losse boekingen van één rekening.
 
-import { GBNM, ddmm, esc, fmt, isInkomst, isUitgave, rekBadge, typeBadge, weergaveNaam } from './helpers.js?v=20260806a';
+import { GBNM, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, rekBadge, typeBadge, vulMaandSelect, weergaveNaam } from './helpers.js?v=20260806a';
 import { state } from './storage.js?v=20260806a';
 import { maakSorteerbaar } from './tables.js?v=20260806a';
-
-const MND_NAMEN = { '01':'jan','02':'feb','03':'mrt','04':'apr','05':'mei','06':'jun','07':'jul','08':'aug','09':'sep','10':'okt','11':'nov','12':'dec' };
 
 const el = id => document.getElementById(id);
 const waarde = id => (el(id) ? el(id).value.trim() : '');
@@ -32,19 +30,11 @@ function bronVoorJaar(jaar) {
   return state.HIST_TX.filter(t => t.datum.startsWith(jaar));
 }
 
-function vulMaanden(bron) {
-  const sel = el('f-maand-gb');
-  const gekozen = sel.value;
-  const maanden = [...new Set(bron.map(t => t.datum.slice(0, 7)))].sort().reverse();
-  sel.innerHTML = '<option value="">Alle maanden</option>' + maanden.map(m =>
-    `<option value="${m}"${m === gekozen ? ' selected' : ''}>${MND_NAMEN[m.slice(5, 7)] || m} ${m.slice(0, 4)}</option>`).join('');
-}
-
 /** De boekingen die binnen de huidige periodefilters vallen. */
 function gefilterdeBoekingen() {
   const jaar = el('f-jaar-gb') ? el('f-jaar-gb').value : '2026';
   const bron = bronVoorJaar(jaar);
-  vulMaanden(bron);
+  vulMaandSelect(el('f-maand-gb'), bron);
   const maand = waarde('f-maand-gb');
   return maand ? bron.filter(t => t.datum.startsWith(maand)) : bron;
 }
@@ -181,7 +171,3 @@ export function sluitGrootboekRekening() {
   renderGrootboek();
 }
 
-/** Vanuit andere pagina's rechtstreeks een rekening openen. */
-export function filterOpGrootboek(gb) {
-  openGrootboekRekening(gb);
-}

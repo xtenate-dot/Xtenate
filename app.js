@@ -5,7 +5,7 @@
 import { nav, gaNaar, hertekenHuidigePagina } from './ui.js?v=20260806a';
 import { wisselJaar, renderHome } from './dashboard.js?v=20260806a';
 import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek } from './bank.js?v=20260806a';
-import { renderGrootboek, filterOpGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260806a';
+import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260806a';
 import { renderBelasting } from './belasting.js?v=20260806a';
 import {
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
@@ -24,12 +24,19 @@ import {
 } from './modals.js?v=20260806a';
 import { initUiVoorkeuren, wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu } from './theme.js?v=20260806a';
 import { initZoek, focusZoek, sluitZoek } from './search.js?v=20260806a';
+import { vertraag } from './helpers.js?v=20260806a';
 import { toonBoeking, sluitDrawer } from './drawer.js?v=20260806a';
 
+// Zoeken tijdens typen wacht kort: anders wordt bij elke aanslag de hele
+// tabel opnieuw opgebouwd, wat bij honderden regels merkbaar hapert.
+const zoekGrootboekVertraagd = vertraag(renderGrootboek);
+const zoekVoorraadVertraagd = vertraag(renderCovers);
+
 Object.assign(window, {
+  zoekGrootboekVertraagd, zoekVoorraadVertraagd,
   nav, gaNaar, wisselJaar, hertekenHuidigePagina,
   renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek,
-  renderGrootboek, filterOpGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
+  renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
   renderBelasting,
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie,

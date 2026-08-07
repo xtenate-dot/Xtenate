@@ -101,3 +101,43 @@ export function saldoDelta(t) {
   if (t.type === 'inkomst' || t.type === 'prive_storting') return t.bedrag;
   return -t.bedrag;
 }
+
+/** Vult een maandkeuzelijst op basis van de datums die in de data voorkomen. */
+export function vulMaandSelect(select, boekingen) {
+  if (!select) return;
+  const gekozen = select.value;
+  const maanden = [...new Set(boekingen.map(t => t.datum.slice(0, 7)))].sort().reverse();
+  select.innerHTML = '<option value="">Alle maanden</option>' +
+    maanden.map(m => `<option value="${m}"${m === gekozen ? ' selected' : ''}>${maandLabel(m)}</option>`).join('');
+}
+
+/**
+ * Voert een functie pas uit als er even niets meer is getypt. Zonder dit wordt
+ * bij elke toetsaanslag de hele tabel opnieuw opgebouwd.
+ */
+export function vertraag(fn, ms = 160) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+/** Standaard leeg-vlak, zodat elke pagina er hetzelfde uitziet. */
+export function leegVlak(titel, tekst, knop = '') {
+  return `<div class="empty">
+    <div class="empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+    <div class="empty-title">${esc(titel)}</div>
+    <div class="empty-text">${esc(tekst)}</div>
+    ${knop}
+  </div>`;
+}
+
+/**
+ * Leest een bedrag uit een invoerveld. Accepteert zowel 12,50 als 12.50 —
+ * bedragvelden zijn tekstvelden, omdat een getalveld in de browser stilzwijgend
+ * een komma weigert en dan gewoon leeg lijkt.
+ */
+export function bedragUit(id, standaard = 0) {
+  const veld = document.getElementById(id);
+  if (!veld) return standaard;
+  const n = parseFloat(String(veld.value).trim().replace(/\s/g, '').replace(',', '.'));
+  return isNaN(n) ? standaard : n;
+}
