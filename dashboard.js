@@ -8,7 +8,7 @@ import {
 import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260806a';
 import { maakSorteerbaar } from './tables.js?v=20260806a';
 
-const HOOFDREKENING = '1010'; // Rabobank — hierop staat het beginsaldo
+const HOOFDREKENING = '1010'; // de bankrekening waarop het beginsaldo staat
 
 export function wisselJaar() {
   state.huidigJaar = document.getElementById('jaar-selector').value;
@@ -49,11 +49,11 @@ function berekenBanksaldo(jaar) {
     .filter(t => t.rek === HOOFDREKENING)
     .reduce((s, t) => s + saldoDelta(t), 0);
 
-  if (jaar === '2026' || jaar === 'all') return { saldo: huidig(), label: 'Rabobank · nu' };
+  if (jaar === '2026' || jaar === 'all') return { saldo: huidig(), label: 'Bank · nu' };
 
   const maandenVanJaar = Object.keys(MAAND_SALDOS).filter(m => m.startsWith(jaar)).sort();
   const laatste = maandenVanJaar[maandenVanJaar.length - 1];
-  if (laatste) return { saldo: MAAND_SALDOS[laatste].eind, label: `Rabobank · eind ${maandLabel(laatste)}` };
+  if (laatste) return { saldo: MAAND_SALDOS[laatste].eind, label: `Bank · eind ${maandLabel(laatste)}` };
   return { saldo: null, label: 'geen saldo bekend' };
 }
 

@@ -1,10 +1,10 @@
 // bank.js — Bank: alle mutaties per rekening, inclusief transactie-modal.
 
 import {
-  GBNM, bedragUit, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, maandLabel, rekBadge,
+  GBNM, REKNM, bedragUit, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, maandLabel, rekBadge,
   typeBadge, vulMaandSelect, weergaveNaam
 } from './helpers.js?v=20260806a';
-import { MAAND_SALDOS, saveTxData, state } from './storage.js?v=20260806a';
+import { MAAND_SALDOS, saveHistTxData, saveTxData, state } from './storage.js?v=20260806a';
 import { maakSorteerbaar } from './tables.js?v=20260806a';
 
 const el = id => document.getElementById(id);
@@ -15,7 +15,7 @@ function bronVoorJaar(jaar) {
   return state.HIST_TX.filter(t => t.datum.startsWith(jaar));
 }
 
-/** Laatst bekende eindsaldo binnen een jaar. */
+/** Laatst bekende eindsaldo van de bankrekening binnen een jaar. */
 function eindsaldoVanJaar(jaar) {
   const laatste = Object.keys(MAAND_SALDOS).filter(m => m.startsWith(jaar)).sort().pop();
   return laatste ? MAAND_SALDOS[laatste].eind : null;
@@ -104,6 +104,48 @@ export function renderBank() {
 
 // -------------------------------------------------------------------- modal
 
+/** Zoekt een boeking in het lopende jaar én in de historische jaren. */
+function vindTx(id) {
+  const inTX = state.TX.find(t => String(t.id) === String(id));
+  if (inTX) return { tx: inTX, historisch: false };
+  const inHist = state.HIST_TX.find(t => String(t.id) === String(id));
+  return inHist ? { tx: inHist, historisch: true } : null;
+}
+
+/**
+ * Opent een bestaande boeking om te bewerken. Wordt aangeroepen vanuit het
+ * detailpaneel en vanaf de controlepagina, zodat je een gevonden fout meteen
+ * kunt herstellen zonder hem eerst te moeten opzoeken.
+ */
+export function bewerkBoeking(id) {
+  const gevonden = vindTx(id);
+  if (!gevonden) return;
+  const { tx, historisch } = gevonden;
+
+  state.editTxId = tx.id;
+  el('tx-modal-title').textContent = historisch ? `Boeking bewerken (${tx.datum.slice(0, 4)})` : 'Boeking bewerken';
+  el('tx-save-btn').textContent = 'Opslaan';
+  el('tx-d').value = tx.datum || '';
+  el('tx-b').value = tx.bedrag != null ? String(tx.bedrag).replace('.', ',') : '';
+  el('tx-n').value = tx.naam || '';
+  el('tx-o').value = tx.omschr || '';
+  el('tx-t').value = tx.type || 'uitgave';
+  el('tx-rek').value = REKNM[tx.rek] ? tx.rek : '1010';
+  // Staat het grootboeknummer niet in de keuzelijst, dan voegen we het
+  // tijdelijk toe — anders zou bewerken het nummer stilzwijgend veranderen.
+  const gbSel = el('tx-gb');
+  if (tx.gb && ![...gbSel.options].some(o => o.value === tx.gb)) {
+    const optie = window.document.createElement('option');
+    optie.value = tx.gb;
+    optie.textContent = `${tx.gb} (niet in schema)`;
+    gbSel.appendChild(optie);
+  }
+  gbSel.value = tx.gb || '';
+  el('tx-fout').textContent = '';
+  el('modal-tx').classList.add('open');
+  el('tx-b').focus();
+}
+
 export function openTxModal() {
   state.editTxId = null;
   el('tx-modal-title').textContent = 'Transactie toevoegen';
@@ -158,17 +200,29 @@ export function saveTx() {
     gb
   };
 
-  if (state.editTxId) state.TX = state.TX.map(t => (t.id === state.editTxId ? tx : t));
-  else state.TX.push(tx);
-
-  saveTxData();
+  if (state.editTxId != null) {
+    // Een historische boeking hoort in HIST_TX te blijven staan, anders zou hij
+    // naar 2026 verhuizen en uit de jaaroverzichten van dat jaar verdwijnen.
+    const bestaand = vindTx(state.editTxId);
+    if (bestaand && bestaand.historisch) {
+      state.HIST_TX = state.HIST_TX.map(t => (String(t.id) === String(state.editTxId) ? tx : t));
+      saveHistTxData();
+    } else {
+      state.TX = state.TX.map(t => (String(t.id) === String(state.editTxId) ? tx : t));
+      saveTxData();
+    }
+  } else {
+    state.TX.push(tx);
+    saveTxData();
+  }
   closeTx();
 
   // Een nieuwe boeking is altijd 2026; sta je in een ander jaar te kijken,
   // dan zou hij anders ongemerkt buiten beeld vallen.
-  if (el('f-jaar-bank') && el('f-jaar-bank').value !== '2026' && el('f-jaar-bank').value !== 'all') {
+  if (state.editTxId == null && el('f-jaar-bank') && el('f-jaar-bank').value !== '2026' && el('f-jaar-bank').value !== 'all') {
     el('f-jaar-bank').value = '2026';
     el('f-maand').value = '';
   }
+  state.editTxId = null;
   renderBank();
 }

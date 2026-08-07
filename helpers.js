@@ -10,7 +10,9 @@ export const GBNM = {
   '8000':'Omzet Xtenate','8010':'Omzet Bol.com','8020':'Omzet Helmetstore'
 };
 
-export const REKNM = {'1009':'Revolut','1010':'Rabobank','1020':'Paypal','1030':'Creditkaart','1090':'Kruisposten'};
+// Rekening 1010 heet bewust gewoon 'Bank': er kunnen meerdere banken naast
+// elkaar bestaan, dus nergens in de interface staat een merknaam.
+export const REKNM = {'1009':'Revolut','1010':'Bank','1020':'Paypal','1030':'Creditkaart','1090':'Kruisposten'};
 
 export function isIban(str) {
   return typeof str === 'string' && /^[A-Z]{2}\d{2}[A-Z0-9]{4,}\d*$/.test(str.trim());
