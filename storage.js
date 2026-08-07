@@ -78,12 +78,29 @@ export const VOORRAAD_CATEGORIEEN = [
 export const CATEGORIE_NAAM = Object.fromEntries(VOORRAAD_CATEGORIEEN.map(c => [c.id, c.naam]));
 export const STANDAARD_MIN_VOORRAAD = 3;
 
-state.COVERS = state.COVERS.map(c => ({
-  ...c,
-  categorie: c.categorie || 'covers',
-  inkoopprijs: c.inkoopprijs ?? null,
-  minVoorraad: c.minVoorraad ?? null
-}));
+/**
+ * Vult ontbrekende voorraadvelden aan. Draait niet alleen bij het opstarten,
+ * maar ook na een Excel-import of cloud-download: die vervangen de hele lijst
+ * en zouden je indeling anders elke keer wissen. `vorige` is de lijst zoals
+ * die er vóór de vervanging uitzag, zodat groep, inkoopprijs en meldgrens
+ * behouden blijven — gekoppeld op id, en anders op artikelnaam.
+ */
+export function normaliseerVoorraad(lijst, vorige = []) {
+  const opId = new Map(vorige.map(c => [String(c.id), c]));
+  const opNaam = new Map(vorige.map(c => [String(c.artikel || '').trim().toLowerCase(), c]));
+  return (lijst || []).map(c => {
+    const oud = opId.get(String(c.id)) || opNaam.get(String(c.artikel || '').trim().toLowerCase()) || {};
+    return {
+      ...c,
+      categorie: c.categorie || oud.categorie || 'covers',
+      inkoopprijs: c.inkoopprijs ?? oud.inkoopprijs ?? null,
+      minVoorraad: c.minVoorraad ?? oud.minVoorraad ?? null,
+      prijs: c.prijs ?? oud.prijs ?? null
+    };
+  });
+}
+
+state.COVERS = normaliseerVoorraad(state.COVERS);
 
 state.HNVI_LOTS = load('xtenate_hnvi', []);
 

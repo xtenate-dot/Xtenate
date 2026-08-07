@@ -9,6 +9,9 @@ const el = id => document.getElementById(id);
 /** Welke tab er open staat: 'alle' of een categorie-id. */
 let actieveTab = 'alle';
 
+/** Artikelen die zijn aangevinkt om in bulk te verplaatsen. */
+const selectie = new Set();
+
 /** Verkoopprijs van een artikel; Funny Covers hebben een vaste standaardprijs. */
 function verkoopprijs(c) {
   if (c.prijs != null && c.prijs !== '') return Number(c.prijs);
@@ -49,6 +52,52 @@ function renderTabs() {
 
 export function kiesVoorraadTab(id) {
   actieveTab = id;
+  selectie.clear();
+  renderCovers();
+}
+
+// --------------------------------------------------------------- selecteren
+
+export function wisselVoorraadSelectie(id, vinkje) {
+  if (vinkje.checked) selectie.add(String(id)); else selectie.delete(String(id));
+  renderBulkbalk();
+}
+
+/** Vinkt alles aan of uit wat op dit moment in de tabel staat. */
+export function selecteerAlleVoorraad(vinkje) {
+  document.querySelectorAll('#covers-body input[data-artikel-id]').forEach(v => {
+    v.checked = vinkje.checked;
+    const id = v.dataset.artikelId;
+    if (vinkje.checked) selectie.add(id); else selectie.delete(id);
+  });
+  renderBulkbalk();
+}
+
+function renderBulkbalk() {
+  const balk = el('voorraad-bulk');
+  const n = selectie.size;
+  balk.style.display = n ? 'flex' : 'none';
+  if (n) el('bulk-aantal').textContent = `${n} artikel${n === 1 ? '' : 'en'} geselecteerd`;
+  const alles = el('voorraad-check-all');
+  const zichtbaar = document.querySelectorAll('#covers-body input[data-artikel-id]').length;
+  if (alles) {
+    alles.checked = zichtbaar > 0 && n >= zichtbaar;
+    alles.indeterminate = n > 0 && n < zichtbaar;
+  }
+}
+
+/** Verplaatst alle aangevinkte artikelen naar de gekozen groep. */
+export function verplaatsVoorraadSelectie() {
+  const doel = el('bulk-cat').value;
+  if (!doel || !selectie.size) return;
+  state.COVERS = state.COVERS.map(c => (selectie.has(String(c.id)) ? { ...c, categorie: doel } : c));
+  saveCoversData();
+  selectie.clear();
+  renderCovers();
+}
+
+export function wisVoorraadSelectie() {
+  selectie.clear();
   renderCovers();
 }
 
@@ -115,7 +164,9 @@ export function renderCovers() {
         const waarde = voorraadwaarde(c);
         const omzet = vk != null ? c.omzet2026 * vk : null;
         return `<tr>
-          <td style="padding-left:16px;font-weight:${c.voorraad > 0 ? 500 : 400}">${esc(c.artikel)}</td>
+          <td style="padding-left:16px;width:34px"><input type="checkbox" data-artikel-id="${esc(c.id)}"${selectie.has(String(c.id)) ? ' checked' : ''}
+            onchange="wisselVoorraadSelectie('${esc(c.id)}', this)" aria-label="Selecteer ${esc(c.artikel)}"></td>
+          <td style="font-weight:${c.voorraad > 0 ? 500 : 400}">${esc(c.artikel)}</td>
           ${toonCategorie ? `<td class="muted">${esc(CATEGORIE_NAAM[c.categorie] || c.categorie)}</td>` : ''}
           <td style="text-align:right" data-v="${c.voorraad}">${c.voorraad}</td>
           <td style="text-align:right" class="muted" data-v="${c.inkoopprijs ?? -1}">${c.inkoopprijs != null && c.inkoopprijs !== '' ? fmt(c.inkoopprijs) : '—'}</td>
@@ -129,7 +180,7 @@ export function renderCovers() {
           <td style="padding-right:16px"><span class="sell-link" onclick="openCoverEdit(${c.id})">Bewerk</span></td>
         </tr>`;
       }).join('')
-    : `<tr data-geen-sort="1"><td colspan="${toonCategorie ? 10 : 9}"><div class="empty">
+    : `<tr data-geen-sort="1"><td colspan="${toonCategorie ? 11 : 10}"><div class="empty">
         <div class="empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
         <div class="empty-title">${basis.length ? 'Geen artikelen binnen deze filters' : 'Nog geen artikelen in deze groep'}</div>
         <div class="empty-text">${basis.length
@@ -138,6 +189,7 @@ export function renderCovers() {
         <button class="btn" onclick="openCoverModal()">Artikel toevoegen</button>
       </div></td></tr>`;
 
+  renderBulkbalk();
   maakSorteerbaar(el('tbl-voorraad'));
 }
 
