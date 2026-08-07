@@ -265,7 +265,7 @@ export function importExcel(input) {
 }
 
 export function herstelHistorischeData() {
-  if (!confirm('Dit herstelt de historische jaren (2022 t/m 2025) naar de standaard/gecorrigeerde data uit de app zelf, en overschrijft eventuele lokale wijzigingen in je browser voor die jaren. 2026 blijft ongewijzigd. Doorgaan?')) {
+  if (!window.confirm('Dit herstelt de historische jaren (2022 t/m 2025) naar de standaard/gecorrigeerde data uit de app zelf, en overschrijft eventuele lokale wijzigingen in je browser voor die jaren. 2026 blijft ongewijzigd. Doorgaan?')) {
     return;
   }
   try {
@@ -282,9 +282,9 @@ export function herstelHistorischeData() {
 
     document.getElementById('modal-wis').classList.remove('open');
     renderHome();
-    alert('Klaar! Historische data (2022-2025) én de jaartotalen zijn hersteld naar de standaardwaarden uit de app.');
+    window.alert('Klaar! Historische data (2022-2025) én de jaartotalen zijn hersteld naar de standaardwaarden uit de app.');
   } catch (err) {
-    alert('Er ging iets mis: ' + err.message);
+    window.alert('Er ging iets mis: ' + err.message);
   }
 }
 
@@ -305,7 +305,7 @@ export function doWis() {
       return;
     }
 
-    if (!confirm('Weet je zeker dat je data van ' + jaren.join(', ') + ' wilt wissen? Dit kan niet ongedaan gemaakt worden.')) {
+    if (!window.confirm('Weet je zeker dat je data van ' + jaren.join(', ') + ' wilt wissen? Dit kan niet ongedaan gemaakt worden.')) {
       return;
     }
 
@@ -335,10 +335,10 @@ export function doWis() {
 
     document.getElementById('modal-wis').classList.remove('open');
     renderHome();
-    alert('Klaar! ' + wisLog.join(' / ') + '. Je kunt nu opnieuw importeren.');
+    window.alert('Klaar! ' + wisLog.join(' / ') + '. Je kunt nu opnieuw importeren.');
   } catch (err) {
     document.getElementById('wis-status').textContent = 'Fout: ' + err.message;
-    alert('Er ging iets mis: ' + err.message);
+    window.alert('Er ging iets mis: ' + err.message);
   }
 }
 
@@ -392,7 +392,7 @@ export async function syncUpload() {
 export async function syncDownload() {
   const url = getSyncUrl();
   if (!url) { document.getElementById('sync-status').textContent = 'Stel eerst een sync URL in.'; return; }
-  if (!confirm('Dit overschrijft je lokale data met de cloud data. Doorgaan?')) return;
+  if (!window.confirm('Dit overschrijft je lokale data met de cloud data. Doorgaan?')) return;
   document.getElementById('sync-status').textContent = 'Downloaden...';
   try {
     const response = await fetch(url + '?action=load');

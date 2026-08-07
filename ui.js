@@ -5,6 +5,7 @@ import { renderBelasting } from './belasting.js?v=20260806a';
 import { renderHome } from './dashboard.js?v=20260806a';
 import { renderGrootboek } from './grootboek.js?v=20260806a';
 import { renderHNVI } from './hnvi.js?v=20260806a';
+import { renderControle } from './controle.js?v=20260806a';
 import { renderCovers } from './voorraad.js?v=20260806a';
 
 const RENDERS = {
@@ -12,6 +13,7 @@ const RENDERS = {
   bank: renderBank,
   grootboek: renderGrootboek,
   belasting: renderBelasting,
+  controle: renderControle,
   voorraad: renderCovers,
   hnvi: renderHNVI
 };
@@ -21,6 +23,7 @@ const TITELS = {
   bank: 'Bank',
   grootboek: 'Grootboek',
   belasting: 'Belasting',
+  controle: 'Controle',
   voorraad: 'Voorraad',
   hnvi: 'HNVI / Xtenate'
 };

@@ -46,6 +46,13 @@ export const isUitgave = t => t.type === 'uitgave';
 
 export const isInkomst = t => t.type === 'inkomst';
 
+/**
+ * Telt deze boeking bij of af op de rekening? Privé-stortingen komen erbij,
+ * privé-opnames gaan eraf — precies zoals typeBadge ze in de tabel toont.
+ * isInkomst blijft voorbehouden aan zakelijke inkomsten.
+ */
+export const teltBij = t => t.type === 'inkomst' || t.type === 'prive_storting';
+
 export function rekBadge(rek) {
   return `<span class="badge ${REK_COLOR[rek]||'badge-gray'}">${REKNM[rek]||rek}</span>`;
 }

@@ -252,3 +252,51 @@ label { color: var(--text-muted); }
 .vtab-actie:hover { background: var(--accent-bg); }
 .groep-rij { display: flex; align-items: center; gap: var(--sp-2); }
 .groep-rij input { flex: 1; min-width: 0; }
+
+/* ---------- CONTROLEPAGINA ---------- */
+.ctrl-regel { border-bottom: 1px solid var(--border); }
+.ctrl-regel:last-child { border-bottom: none; }
+
+.ctrl-kop {
+  display: flex; align-items: center; gap: var(--sp-3);
+  width: 100%; padding: 11px var(--sp-4);
+  background: none; border: none; font-family: inherit; font-size: 13px;
+  color: var(--text); text-align: left; cursor: pointer;
+}
+.ctrl-kop[disabled] { cursor: default; }
+.ctrl-kop:not([disabled]):hover { background: var(--surface-hover); }
+
+.ctrl-icoon {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.is-ok .ctrl-icoon { background: var(--green-bg); color: var(--green); }
+.is-let-op .ctrl-icoon { background: var(--amber-bg); color: var(--amber); }
+
+.ctrl-titel { flex: 1; min-width: 0; }
+.ctrl-goed { font-size: 11px; color: var(--text-hint); flex-shrink: 0; }
+.ctrl-pijl { color: var(--text-hint); display: flex; flex-shrink: 0; transition: transform .15s ease; }
+.ctrl-regel.is-open .ctrl-pijl { transform: rotate(180deg); }
+
+.ctrl-detail { padding: 0 var(--sp-4) var(--sp-4) 50px; }
+.ctrl-uitleg { font-size: 12px; color: var(--text-muted); line-height: 1.55; margin-bottom: var(--sp-3); max-width: 62ch; }
+.ctrl-items { display: flex; flex-direction: column; gap: 4px; }
+
+.ctrl-item {
+  display: flex; align-items: center; gap: var(--sp-3);
+  width: 100%; padding: 8px 10px; text-align: left;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer;
+  font-family: inherit; color: var(--text);
+}
+.ctrl-item:hover { border-color: var(--accent); background: var(--accent-bg); }
+.ctrl-item-main { flex: 1; min-width: 0; }
+.ctrl-item-label { display: block; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctrl-item-sub { display: block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.ctrl-item-ga { font-size: 11px; color: var(--accent); flex-shrink: 0; white-space: nowrap; }
+.ctrl-meer { font-size: 11.5px; color: var(--text-hint); padding: 6px 10px; }
+
+@media (max-width: 720px) {
+  .ctrl-detail { padding-left: var(--sp-4); }
+  .ctrl-item-ga { display: none; }
+}
