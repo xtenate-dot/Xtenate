@@ -205,3 +205,21 @@ label { color: var(--text-muted); }
 .stock-ok { background: var(--green-bg); color: var(--green); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
 .stock-uit { background: var(--red-bg); color: var(--red); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
 .sell-link { color: var(--accent); cursor: pointer; font-size: 11px; text-decoration: underline; }
+
+/* ---------- COMPACTE TABEL ---------- */
+.tbl-compact { font-size: 12.5px; }
+.tbl-compact td { padding: 7px 10px; }
+.tbl-compact th { padding: 8px 10px; }
+.gb-rij { cursor: pointer; }
+.gb-rij:focus-visible { outline-offset: -2px; }
+.table-totaal {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 16px; border-top: 1px solid var(--border-strong);
+  font-size: 12px; color: var(--text-muted); background: var(--surface-2);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.table-totaal:empty { display: none; }
+.vtab { border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+.vtabs { overflow-x: auto; scrollbar-width: none; }
+.vtabs::-webkit-scrollbar { display: none; }
+.vtab { white-space: nowrap; }

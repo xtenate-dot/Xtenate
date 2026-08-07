@@ -12,7 +12,7 @@ const RENDERS = {
   bank: renderBank,
   grootboek: renderGrootboek,
   belasting: renderBelasting,
-  covers: renderCovers,
+  voorraad: renderCovers,
   hnvi: renderHNVI
 };
 
@@ -21,7 +21,7 @@ const TITELS = {
   bank: 'Bank',
   grootboek: 'Grootboek',
   belasting: 'Belasting',
-  covers: 'Funny Covers',
+  voorraad: 'Voorraad',
   hnvi: 'HNVI / Xtenate'
 };
 
