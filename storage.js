@@ -68,15 +68,42 @@ state.COVERS = load('xtenate_covers', COVERS_INIT);
 // Voorraadartikelen van vóór de categorie-indeling aanvullen. Alles wat er al
 // stond is een Funny Cover; inkoopprijs en minimumvoorraad blijven leeg tot ze
 // zijn ingevuld, zodat de app niet met verzonnen waarden gaat rekenen.
-export const VOORRAAD_CATEGORIEEN = [
+export const GROEPEN_STANDAARD = [
   { id: 'covers', naam: 'Funny Covers' },
   { id: 'hoezen', naam: 'Hoezen' },
   { id: 'pophouders', naam: 'Pop Houders' },
   { id: 'accessoires', naam: 'Accessoires' },
   { id: 'overig', naam: 'Overig' }
 ];
-export const CATEGORIE_NAAM = Object.fromEntries(VOORRAAD_CATEGORIEEN.map(c => [c.id, c.naam]));
+
 export const STANDAARD_MIN_VOORRAAD = 3;
+
+// Productgroepen zijn zelf te beheren, dus ze staan in de opslag en niet vast
+// in de code. De vijf hierboven zijn alleen het vertrekpunt.
+state.GROEPEN = load('xtenate_voorraad_groepen', GROEPEN_STANDAARD)
+  .filter(g => g && g.id && g.naam);
+if (!state.GROEPEN.length) state.GROEPEN = [...GROEPEN_STANDAARD];
+
+export function saveGroepen() { save('xtenate_voorraad_groepen', state.GROEPEN); }
+
+/** De groep waar artikelen in vallen als er niets anders bekend is. */
+export function standaardGroep() {
+  return state.GROEPEN.some(g => g.id === 'covers') ? 'covers' : state.GROEPEN[0].id;
+}
+
+export function groepNaam(id) {
+  return state.GROEPEN.find(g => g.id === id)?.naam || id || '—';
+}
+
+/** Maakt van een naam een bruikbaar, uniek id. */
+export function groepId(naam) {
+  const basis = String(naam).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'groep';
+  let id = basis, n = 2;
+  while (state.GROEPEN.some(g => g.id === id)) id = `${basis}-${n++}`;
+  return id;
+}
 
 /**
  * Vult ontbrekende voorraadvelden aan. Draait niet alleen bij het opstarten,
@@ -92,7 +119,7 @@ export function normaliseerVoorraad(lijst, vorige = []) {
     const oud = opId.get(String(c.id)) || opNaam.get(String(c.artikel || '').trim().toLowerCase()) || {};
     return {
       ...c,
-      categorie: c.categorie || oud.categorie || 'covers',
+      categorie: c.categorie || oud.categorie || standaardGroep(),
       inkoopprijs: c.inkoopprijs ?? oud.inkoopprijs ?? null,
       minVoorraad: c.minVoorraad ?? oud.minVoorraad ?? null,
       prijs: c.prijs ?? oud.prijs ?? null

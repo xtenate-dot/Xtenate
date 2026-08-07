@@ -1,7 +1,9 @@
 // voorraad.js — Voorraad: overzicht met kerncijfers en tabs per productgroep.
 
 import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260806a';
-import { CATEGORIE_NAAM, STANDAARD_MIN_VOORRAAD, VOORRAAD_CATEGORIEEN, saveCoversData, state } from './storage.js?v=20260806a';
+import {
+  STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
+} from './storage.js?v=20260806a';
 import { maakSorteerbaar } from './tables.js?v=20260806a';
 
 const el = id => document.getElementById(id);
@@ -11,6 +13,9 @@ let actieveTab = 'alle';
 
 /** Artikelen die zijn aangevinkt om in bulk te verplaatsen. */
 const selectie = new Set();
+
+/** De vorige groep per artikel, zodat een verplaatsing terug te draaien is. */
+let laatsteVerplaatsing = null;
 
 /** Verkoopprijs van een artikel; Funny Covers hebben een vaste standaardprijs. */
 function verkoopprijs(c) {
@@ -41,13 +46,26 @@ function artikelenVoorTab() {
 function renderTabs() {
   const tel = id => state.COVERS.filter(c => c.categorie === id).length;
   const tabs = [{ id: 'alle', naam: 'Overzicht', aantal: state.COVERS.length }]
-    .concat(VOORRAAD_CATEGORIEEN.map(c => ({ id: c.id, naam: c.naam, aantal: tel(c.id) })));
+    .concat(state.GROEPEN.map(g => ({ id: g.id, naam: g.naam, aantal: tel(g.id) })));
 
   el('voorraad-tabs').innerHTML = tabs.map(t => `
-    <div class="vtab${t.id === actieveTab ? ' active' : ''}" onclick="kiesVoorraadTab('${t.id}')" role="tab"
+    <div class="vtab${t.id === actieveTab ? ' active' : ''}" onclick="kiesVoorraadTab('${esc(t.id)}')" role="tab"
          tabindex="0" aria-selected="${t.id === actieveTab}">
       ${esc(t.naam)} <span class="muted" style="font-size:11px">${t.aantal}</span>
-    </div>`).join('');
+    </div>`).join('')
+    + `<div class="vtab vtab-actie" onclick="openGroepenModal()" title="Groepen beheren" tabindex="0">+ Groep</div>`;
+}
+
+/** Vult elke keuzelijst met groepen (artikelmodal en bulkbalk). */
+function vulGroepKeuzes() {
+  const opties = state.GROEPEN.map(g => `<option value="${esc(g.id)}">${esc(g.naam)}</option>`).join('');
+  ['cv-cat', 'bulk-cat'].forEach(id => {
+    const sel = el(id);
+    if (!sel) return;
+    const gekozen = sel.value;
+    sel.innerHTML = opties;
+    if (state.GROEPEN.some(g => g.id === gekozen)) sel.value = gekozen;
+  });
 }
 
 export function kiesVoorraadTab(id) {
@@ -90,9 +108,108 @@ function renderBulkbalk() {
 export function verplaatsVoorraadSelectie() {
   const doel = el('bulk-cat').value;
   if (!doel || !selectie.size) return;
+
+  // Onthoud waar alles vandaan kwam, zodat één misklik geen indeling kost.
+  laatsteVerplaatsing = {
+    naar: doel,
+    aantal: selectie.size,
+    vorige: state.COVERS
+      .filter(c => selectie.has(String(c.id)))
+      .map(c => ({ id: c.id, categorie: c.categorie }))
+  };
+
   state.COVERS = state.COVERS.map(c => (selectie.has(String(c.id)) ? { ...c, categorie: doel } : c));
   saveCoversData();
   selectie.clear();
+  renderCovers();
+}
+
+export function draaiVerplaatsingTerug() {
+  if (!laatsteVerplaatsing) return;
+  const terug = new Map(laatsteVerplaatsing.vorige.map(v => [String(v.id), v.categorie]));
+  state.COVERS = state.COVERS.map(c =>
+    terug.has(String(c.id)) ? { ...c, categorie: terug.get(String(c.id)) } : c);
+  saveCoversData();
+  laatsteVerplaatsing = null;
+  renderCovers();
+}
+
+function renderMelding() {
+  const vak = el('voorraad-melding');
+  if (!laatsteVerplaatsing) { vak.style.display = 'none'; vak.innerHTML = ''; return; }
+  const { aantal, naar } = laatsteVerplaatsing;
+  vak.style.display = 'flex';
+  vak.innerHTML = `<span>${aantal} artikel${aantal === 1 ? '' : 'en'} verplaatst naar ${esc(groepNaam(naar))}.</span>
+    <button class="btn btn-sm" onclick="draaiVerplaatsingTerug()">Ongedaan maken</button>`;
+}
+
+// ------------------------------------------------------------ groepenbeheer
+
+export function openGroepenModal() {
+  renderGroepenLijst();
+  el('groep-nieuw').value = '';
+  el('modal-groepen').classList.add('open');
+  el('groep-nieuw').focus();
+}
+
+export function sluitGroepenModal() { el('modal-groepen').classList.remove('open'); }
+
+function renderGroepenLijst() {
+  const tel = id => state.COVERS.filter(c => c.categorie === id).length;
+  el('groepen-lijst').innerHTML = state.GROEPEN.map(g => `
+    <div class="groep-rij">
+      <input type="text" value="${esc(g.naam)}" data-groep-id="${esc(g.id)}" aria-label="Naam van ${esc(g.naam)}">
+      <span class="muted" style="font-size:11px;white-space:nowrap">${tel(g.id)} artikelen</span>
+      <button class="icon-btn" onclick="verwijderGroep('${esc(g.id)}')" title="Groep verwijderen" aria-label="Verwijder ${esc(g.naam)}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+export function voegGroepToe() {
+  const naam = el('groep-nieuw').value.trim();
+  if (!naam) { el('groep-nieuw').focus(); return; }
+  if (state.GROEPEN.some(g => g.naam.toLowerCase() === naam.toLowerCase())) {
+    el('groep-fout').textContent = `Er bestaat al een groep "${naam}".`;
+    return;
+  }
+  el('groep-fout').textContent = '';
+  state.GROEPEN.push({ id: groepId(naam), naam });
+  saveGroepen();
+  el('groep-nieuw').value = '';
+  renderGroepenLijst();
+  renderCovers();
+}
+
+export function verwijderGroep(id) {
+  if (state.GROEPEN.length <= 1) {
+    el('groep-fout').textContent = 'De laatste groep kan niet weg.';
+    return;
+  }
+  const aantal = state.COVERS.filter(c => c.categorie === id).length;
+  const doel = state.GROEPEN.find(g => g.id !== id).id;
+  if (aantal && !window.confirm(`${aantal} artikel${aantal === 1 ? '' : 'en'} staan in "${groepNaam(id)}". Die gaan naar "${groepNaam(doel)}". Doorgaan?`)) return;
+
+  state.GROEPEN = state.GROEPEN.filter(g => g.id !== id);
+  state.COVERS = state.COVERS.map(c => (c.categorie === id ? { ...c, categorie: doel } : c));
+  if (actieveTab === id) actieveTab = 'alle';
+  saveGroepen();
+  saveCoversData();
+  el('groep-fout').textContent = '';
+  renderGroepenLijst();
+  renderCovers();
+}
+
+/** Neemt de hernoemingen uit de invoervelden over en sluit het venster. */
+export function bewaarGroepen() {
+  el('groepen-lijst').querySelectorAll('input[data-groep-id]').forEach(inp => {
+    const naam = inp.value.trim();
+    if (!naam) return;
+    const g = state.GROEPEN.find(x => x.id === inp.dataset.groepId);
+    if (g) g.naam = naam;
+  });
+  saveGroepen();
+  sluitGroepenModal();
   renderCovers();
 }
 
@@ -144,6 +261,8 @@ const STATUS_BADGE = {
 
 export function renderCovers() {
   renderTabs();
+  vulGroepKeuzes();
+  renderMelding();
 
   const statusFilter = el('f-covers-status') ? el('f-covers-status').value : '';
   const zoekterm = (el('voorraad-zoek') ? el('voorraad-zoek').value : '').trim().toLowerCase();
@@ -167,7 +286,7 @@ export function renderCovers() {
           <td style="padding-left:16px;width:34px"><input type="checkbox" data-artikel-id="${esc(c.id)}"${selectie.has(String(c.id)) ? ' checked' : ''}
             onchange="wisselVoorraadSelectie('${esc(c.id)}', this)" aria-label="Selecteer ${esc(c.artikel)}"></td>
           <td style="font-weight:${c.voorraad > 0 ? 500 : 400}">${esc(c.artikel)}</td>
-          ${toonCategorie ? `<td class="muted">${esc(CATEGORIE_NAAM[c.categorie] || c.categorie)}</td>` : ''}
+          ${toonCategorie ? `<td class="muted">${esc(groepNaam(c.categorie))}</td>` : ''}
           <td style="text-align:right" data-v="${c.voorraad}">${c.voorraad}</td>
           <td style="text-align:right" class="muted" data-v="${c.inkoopprijs ?? -1}">${c.inkoopprijs != null && c.inkoopprijs !== '' ? fmt(c.inkoopprijs) : '—'}</td>
           <td style="text-align:right" class="muted" data-v="${vk ?? -1}">${vk != null ? fmt(vk) : '—'}</td>
@@ -202,7 +321,7 @@ export function openCoverModal() {
   el('cover-modal-title').textContent = 'Artikel toevoegen';
   VELDEN.forEach(id => { if (el(id)) el(id).value = ''; });
   // Nieuwe artikelen komen standaard in de groep die je nu bekijkt.
-  el('cv-cat').value = actieveTab === 'alle' ? 'covers' : actieveTab;
+  el('cv-cat').value = actieveTab === 'alle' ? standaardGroep() : actieveTab;
   el('modal-cover').classList.add('open');
   el('cv-naam').focus();
 }
@@ -241,7 +360,7 @@ export function saveCover() {
   const obj = {
     id: state.editCoverId || state.nxtCover++,
     artikel: naam,
-    categorie: el('cv-cat').value || 'overig',
+    categorie: el('cv-cat').value || standaardGroep(),
     inkoop: getal('cv-ink') ?? 0,
     verkoop: getal('cv-vk') ?? 0,
     voorraad: getal('cv-vrd') ?? 0,
