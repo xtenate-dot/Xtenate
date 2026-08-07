@@ -161,7 +161,9 @@ export function importExcel(input) {
           const artikel = row[0];
           const voorraad = row[2];
           if (!artikel || typeof artikel !== 'string') return;
-          if (String(artikel).startsWith('TOTAAL')) return;
+          // Kop- en totaalregels uit het werkblad zijn geen artikelen.
+          const kop = String(artikel).trim().toLowerCase();
+          if (kop.startsWith('totaal') || ['artikel', 'artikelen', 'omschrijving', 'product'].includes(kop)) return;
           const inkoop = row[7] || 0;
           const verkoop = row[8] || 0;
           const omzet2026 = row[15] || 0;

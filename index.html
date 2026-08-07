@@ -352,13 +352,20 @@
       <input type="search" id="voorraad-zoek" placeholder="Zoek op artikelnaam" oninput="renderCovers()"
              style="flex:1;border:none;background:none;padding:8px 0;font-size:12.5px;color:var(--text);outline:none;min-width:0">
     </div>
+    <select id="f-voorraad-jaar" onchange="kiesVoorraadJaar()" aria-label="Periode"></select>
     <select id="f-covers-status" onchange="renderCovers()" aria-label="Status">
       <option value="">Alle statussen</option>
       <option value="ok">Op voorraad</option>
       <option value="laag">Lage voorraad</option>
       <option value="uit">Uitverkocht</option>
+      <option value="onbekend">Niet vastgelegd</option>
     </select>
     <button class="btn btn-primary btn-ml" onclick="openCoverModal()">+ Artikel toevoegen</button>
+  </div>
+
+  <div class="meldbar" id="voorraad-jaarbalk" style="display:none">
+    <span id="voorraad-jaar-tekst"></span>
+    <button class="btn btn-sm" id="voorraad-vastleg-knop" onclick="legVoorraadVast()"></button>
   </div>
 
   <div class="meldbar" id="voorraad-melding" style="display:none"></div>
@@ -369,6 +376,7 @@
     <label style="font-size:11.5px">Verplaats naar</label>
     <select id="bulk-cat" aria-label="Doelgroep"></select>
     <button class="btn btn-primary btn-sm" onclick="verplaatsVoorraadSelectie()">Verplaatsen</button>
+    <button class="btn btn-danger btn-sm" onclick="verwijderVoorraadSelectie()">Verwijderen</button>
     <button class="btn btn-ghost btn-sm" onclick="wisVoorraadSelectie()">Selectie wissen</button>
   </div>
 
@@ -378,14 +386,14 @@
         <th style="width:34px;padding-left:16px"><input type="checkbox" id="voorraad-check-all" onchange="selecteerAlleVoorraad(this)" aria-label="Alles selecteren"></th>
         <th data-sort="tekst">Artikel</th>
         <th style="width:120px" id="voorraad-cat-kop" data-sort="tekst">Groep</th>
-        <th style="width:78px;text-align:right" data-sort="getal">Voorraad</th>
+        <th style="width:88px;text-align:right" data-sort="getal" id="voorraad-kop-aantal">Voorraad</th>
         <th style="width:88px;text-align:right" data-sort="getal">Inkoop</th>
         <th style="width:88px;text-align:right" data-sort="getal">Verkoop</th>
         <th style="width:96px;text-align:right" data-sort="getal">Waarde</th>
-        <th style="width:96px;text-align:right" data-sort="getal">Omzet 2026</th>
+        <th style="width:104px;text-align:right" data-sort="getal" id="voorraad-kop-omzet">Omzet 2026</th>
         <th style="width:104px" data-sort="tekst">Status</th>
         <th style="width:126px"></th>
-        <th style="width:64px;padding-right:16px"></th>
+        <th style="width:96px;padding-right:16px"></th>
       </tr></thead>
       <tbody id="covers-body"></tbody>
     </table></div>
@@ -595,7 +603,8 @@
     <div class="form-group"><label>Verkoopprijs (€)</label><input type="text" inputmode="decimal" id="cv-prijs" placeholder="bijv. 31,95"></div>
     <div class="form-group"><label>Ingekocht totaal (stuks)</label><input type="number" id="cv-ink" placeholder="0" min="0"></div>
     <div class="form-group"><label>Verkocht totaal (stuks)</label><input type="number" id="cv-vk" placeholder="0" min="0"></div>
-    <div class="form-group"><label>Verkopen 2026</label><input type="number" id="cv-26" placeholder="0" min="0"></div>
+    <div class="form-group"><label id="cv-26-label">Verkocht in 2026 (stuks)</label><input type="number" id="cv-26" placeholder="0" min="0"></div>
+    <div class="form-group"><label id="cv-jaar-eind-label">Eindvoorraad 31-12-2026</label><input type="number" id="cv-jaar-eind" placeholder="leeg = niet vastgelegd" min="0"></div>
     <div class="form-group full"><label>Zoekterm AliExpress</label><input type="text" id="cv-zoek" placeholder="bijv. stitch helmet cover plush"></div>
   </div>
   <div class="modal-actions">
