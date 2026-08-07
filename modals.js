@@ -1,6 +1,10 @@
 // modals.js — beheer-acties: Excel-import, cloud sync, API-sleutel, data wissen.
 
+import { REKNM } from './helpers.js?v=20260806a';
 import { renderHome } from './dashboard.js?v=20260806a';
+
+/** Rekeningnummers die de app kent; gebruikt bij het inlezen van kolom G. */
+const REKENINGEN = new Set(Object.keys(REKNM));
 import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260806a';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
@@ -106,6 +110,10 @@ export function importExcel(input) {
             const gb = row[offset+2];
             const bedrag = row[offset+3];
             const naam = row[offset+5];
+            // Kolom G kan een rekeningnummer bevatten (staat in onze eigen export).
+            // Alleen overnemen als het een rekening is die de app kent.
+            const rekKolom = row[offset+6];
+            const rek = REKENINGEN.has(String(rekKolom)) ? String(rekKolom) : '1010';
             if (!datum || bedrag === null || bedrag === undefined || gb === null || String(gb) === 'Onbekend') return;
             if (typeof bedrag !== 'number') return;
             const gbStr = String(Math.round(parseFloat(gb)));
@@ -118,7 +126,7 @@ export function importExcel(input) {
             else if (bedrag > 0 && !isPrive) type = 'inkomst';
             else type = 'uitgave';
             newTx.push({id:tid++, datum, gb:gbStr, bedrag:Math.abs(bedrag),
-              naam: naam ? String(naam) : '', omschr:'', rek:'1010', type});
+              naam: naam ? String(naam) : '', omschr: row[offset+4] ? String(row[offset+4]) : '', rek, type});
             bankCount++;
           });
         });
@@ -167,13 +175,64 @@ export function importExcel(input) {
           const inkoop = row[7] || 0;
           const verkoop = row[8] || 0;
           const omzet2026 = row[15] || 0;
+          const getal = v => (typeof v === 'number' ? v : null);
           newCovers.push({id:cid++, artikel:String(artikel),
+            inkoopprijs: getal(row[3]), prijs: getal(row[4]), minVoorraad: getal(row[6]),
             voorraad: typeof voorraad === 'number' ? Math.round(voorraad) : 0,
             inkoop: typeof inkoop === 'number' ? Math.round(inkoop) : 0,
             verkoop: typeof verkoop === 'number' ? Math.round(verkoop) : 0,
             omzet2026: typeof omzet2026 === 'number' ? Math.round(omzet2026) : 0});
           coverCount++;
         });
+      }
+
+      // HNVI-loten uit onze eigen export terughalen, zodat het Excel-bestand een
+      // volledige reservekopie is en niet alleen de bankmutaties bevat.
+      let lotCount = 0;
+      const lotBlad = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g,'') === 'hnviloten');
+      if (lotBlad) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[lotBlad], {header:1, defval:null});
+        const nieuweLoten = [];
+        rows.slice(1).forEach(row => {
+          const datum = excelDate(row[0]);
+          const omschr = row[1];
+          if (!datum && !omschr) return;
+          const verkoop = typeof row[3] === 'number' ? row[3] : null;
+          nieuweLoten.push({
+            id: row[7] != null && row[7] !== '' ? row[7] : 'x' + (lotCount + 1),
+            _key: String(row[7] ?? 'x' + (lotCount + 1)),
+            datum: datum || '',
+            omschr: omschr ? String(omschr) : '',
+            inkoop: typeof row[2] === 'number' ? row[2] : 0,
+            verkoop,
+            status: String(row[5] || (verkoop ? 'verkocht' : 'voorraad')),
+            noot: row[6] ? String(row[6]) : ''
+          });
+          lotCount++;
+        });
+        if (nieuweLoten.length) { state.HNVI_LOTS = nieuweLoten; saveHnviData(); }
+      }
+
+      // Vastgelegde voorraadstanden per jaar
+      const jaarBlad = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g,'') === 'voorraadperjaar');
+      let jaarStanden = {};
+      if (jaarBlad) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[jaarBlad], {header:1, defval:null});
+        rows.slice(1).forEach(row => {
+          const artikel = row[0], jaar = row[1];
+          if (!artikel || !jaar) return;
+          const sleutel = String(artikel).trim().toLowerCase();
+          (jaarStanden[sleutel] ||= {})[String(jaar)] = {
+            eind: typeof row[2] === 'number' ? row[2] : null,
+            verkocht: typeof row[3] === 'number' ? row[3] : null
+          };
+        });
+        if (newCovers.length) {
+          newCovers.forEach(c => {
+            const gevonden = jaarStanden[String(c.artikel).trim().toLowerCase()];
+            if (gevonden) c.jaren = { ...(c.jaren || {}), ...gevonden };
+          });
+        }
       }
 
       // Lees begin/eindsaldo per maand
@@ -249,6 +308,7 @@ export function importExcel(input) {
         `✅ <strong>${bankCount}</strong> banktransacties ingelezen<br>` +
         `✅ <strong>${ccCount}</strong> creditkaart boekingen ingelezen<br>` +
         (saldoCount > 0 ? `✅ <strong>${saldoCount}</strong> maandsaldos ingelezen<br>` : '') +
+        (lotCount > 0 ? `✅ <strong>${lotCount}</strong> HNVI-loten ingelezen<br>` : '') +
         (newCovers.length > 0 ? `✅ <strong>${coverCount}</strong> covers artikelen ingelezen<br>` : '') +
         (perPeriodeTotals ? `✅ Jaartotalen (omzet/kosten/privé) ingelezen uit "Per Periode" — dit is nu leidend voor de Home-cijfers van dit jaar<br>` : `⚠️ Geen "Per Periode" tabblad gevonden — Home-cijfers worden voor dit jaar nog berekend uit losse boekingen<br>`) +
         `<br>Je data is opgeslagen. HNVI-loten blijven bewaard.`;
