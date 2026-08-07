@@ -1,6 +1,6 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc } from './charts.js?v=20260806a';
+import { charts, dc , palette } from './charts.js?v=20260806a';
 import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260806a';
 import { state } from './storage.js?v=20260806a';
 
@@ -95,7 +95,7 @@ export function renderBelasting() {
     belTX.filter(t=>isInkomst(t)&&t.gb==='8020').reduce((s,t)=>s+t.bedrag,0),
   ];
   const omzLabels = ['Xtenate (8000)','Bol.com covers (8010)','Helmetstore (8020)'];
-  const colors = ['#7C4DFF','#FF6B9D','#FFB347'];
+  const colors = palette().slice(0, 3);
   dc('c-bel');
   charts['c-bel'] = new Chart(document.getElementById('c-bel'), {type:'doughnut',data:{labels:omzLabels,datasets:[{data:omzData,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
   document.getElementById('bel-legend').innerHTML = omzLabels.map((n,i)=>`<span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:${colors[i]}"></span>${n} ${fmt(omzData[i])}</span>`).join('');

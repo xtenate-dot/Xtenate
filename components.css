@@ -14,11 +14,18 @@
 .kpi--secondary .kpi-val { font-size: 17px; letter-spacing: -0.4px; }
 
 /* Oude .metric blijft werken voor pagina's die nog niet zijn omgebouwd */
-.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-4); }
-.metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .875rem 1rem; box-shadow: var(--shadow-sm); }
-.metric .lbl { font-size: 11px; color: var(--text-muted); margin-bottom: 5px; }
-.metric .val { font-size: 19px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.2; }
-.metric .sub { font-size: 10px; color: var(--text-hint); margin-top: 3px; }
+/* .metric is de compacte variant van .kpi. Zelfde vlak, rand, schaduw en
+   typografie, alleen kleiner — zodat pagina's met veel cijfers niet als een
+   andere applicatie ogen. */
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.metric {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: var(--sp-3) var(--sp-4);
+  box-shadow: var(--shadow-sm); min-width: 0;
+}
+.metric .lbl { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+.metric .val { font-size: 19px; font-weight: 600; letter-spacing: -0.4px; line-height: 1.15; }
+.metric .sub { font-size: 11px; color: var(--text-hint); margin-top: 5px; }
 
 .pos { color: var(--green); }
 .neg { color: var(--red); }

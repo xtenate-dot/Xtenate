@@ -160,8 +160,18 @@ export function renderHome() {
   const alleMaanden = [...new Set(homeTX.map(t => t.datum.slice(0, 7)))].sort();
   const maanden = jaar === 'all' ? alleMaanden.slice(-24) : alleMaanden;
   const labels = maanden.map(maandLabel);
-  const omzetD = maanden.map(m => homeTX.filter(t => isInkomst(t) && isOmzet(t.gb) && t.datum.startsWith(m)).reduce((s, t) => s + t.bedrag, 0));
-  const kostenD = maanden.map(m => homeTX.filter(t => isUitgave(t) && t.datum.startsWith(m)).reduce((s, t) => s + t.bedrag, 0));
+  // In één doorloop optellen per maand. Per maand opnieuw door alle boekingen
+  // lopen was bij "alle jaren" tienduizenden vergelijkingen voor hetzelfde
+  // resultaat.
+  const perMaand = new Map(maanden.map(m => [m, { omzet: 0, kosten: 0 }]));
+  homeTX.forEach(t => {
+    const vak = perMaand.get(t.datum.slice(0, 7));
+    if (!vak) return;
+    if (isInkomst(t) && isOmzet(t.gb)) vak.omzet += t.bedrag;
+    else if (isUitgave(t)) vak.kosten += t.bedrag;
+  });
+  const omzetD = maanden.map(m => perMaand.get(m).omzet);
+  const kostenD = maanden.map(m => perMaand.get(m).kosten);
 
   let loper = 0;
   const cumulatief = maanden.map((_, i) => (loper += omzetD[i] - kostenD[i]));
@@ -256,7 +266,7 @@ export function renderHome() {
   document.getElementById('home-voorraad').innerHTML = mutaties.length
     ? mutaties.map(l => `<tr>
         <td class="muted">${ddmm(l.datum)}</td>
-        <td class="td-trunc">${esc(l.omschrijving || 'Lot zonder omschrijving')}</td>
+        <td class="td-trunc">${esc(l.omschr || 'Lot zonder omschrijving')}</td>
         <td><span class="${l.status === 'verkocht' ? 'badge badge-gray' : 'stock-ok'}">${l.status === 'verkocht' ? 'verkocht' : 'op voorraad'}</span></td>
         <td style="text-align:right">${fmt(l.inkoop || 0)}</td>
       </tr>`).join('')
