@@ -4,10 +4,10 @@
 
 import { nav, gaNaar, hertekenHuidigePagina } from './ui.js?v=20260806a';
 import { wisselJaar, renderHome } from './dashboard.js?v=20260806a';
-import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek } from './bank.js?v=20260806a';
+import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking } from './bank.js?v=20260806a';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260806a';
 import { renderBelasting } from './belasting.js?v=20260806a';
-import { renderControle, klapControleUit } from './controle.js?v=20260806a';
+import { renderControle, klapControleUit, toonAlleControleRegels } from './controle.js?v=20260806a';
 import {
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie,
@@ -36,9 +36,9 @@ const zoekVoorraadVertraagd = vertraag(renderCovers);
 Object.assign(window, {
   zoekGrootboekVertraagd, zoekVoorraadVertraagd,
   nav, gaNaar, wisselJaar, hertekenHuidigePagina,
-  renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek,
+  renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
-  renderBelasting, renderControle, klapControleUit,
+  renderBelasting, renderControle, klapControleUit, toonAlleControleRegels,
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie,
   draaiActieTerug, openGroepenModal, sluitGroepenModal, voegGroepToe, verwijderGroep, bewaarGroepen,
@@ -66,15 +66,26 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 // Eén luisteraar voor de hele app: rijen worden telkens opnieuw getekend,
 // dus losse handlers per rij zouden steeds opnieuw gezet moeten worden.
 document.addEventListener('click', e => {
-  // Eerst de controlepagina: die regels zijn zelf knoppen, dus de uitzondering
+  // Bewerkknop in het detailpaneel: paneel dicht, dan de modal open.
+  const bewerkKnop = e.target.closest('[data-bewerk-tx]');
+  if (bewerkKnop) {
+    sluitDrawer();
+    bewerkBoeking(bewerkKnop.dataset.bewerkTx);
+    return;
+  }
+
+  // Dan de controlepagina: die regels zijn zelf knoppen, dus de uitzondering
   // hieronder zou ze anders wegfilteren.
   const controle = e.target.closest('.ctrl-item[data-ga]');
   if (controle) {
     const scheiding = controle.dataset.ga.indexOf(':');
     const soort = controle.dataset.ga.slice(0, scheiding);
     const waarde = controle.dataset.ga.slice(scheiding + 1);
-    if (soort === 'tx') openBoeking(waarde);
+    if (soort === 'tx') bewerkBoeking(waarde);                       // meteen te herstellen
+    else if (soort === 'boeking') openBoeking(waarde);                // alleen bekijken
     else if (soort === 'gb') { gaNaar('grootboek'); openGrootboekRekening(waarde); }
+    else if (soort === 'artikel') { gaNaar('voorraad'); openCoverEdit(waarde); }
+    else if (soort === 'lot') { gaNaar('hnvi'); openHNVISell(waarde); }
     else if (soort === 'pagina') gaNaar(waarde);
     return;
   }

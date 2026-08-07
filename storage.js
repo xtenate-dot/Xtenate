@@ -148,6 +148,9 @@ state.nxtHnvi = load('xtenate_nxtHnvi', 10);
 
 export function saveTxData() { save('xtenate_tx', state.TX); save('xtenate_nxtTx', state.nxtTx); }
 
+/** Bewaart wijzigingen in de historische jaren (2022 t/m 2025). */
+export function saveHistTxData() { save('xtenate_hist_tx_override', state.HIST_TX); }
+
 export function saveCoversData() { save('xtenate_covers', state.COVERS); save('xtenate_nxtCover', state.nxtCover); }
 
 export function saveHnviData() { save('xtenate_hnvi', state.HNVI_LOTS); save('xtenate_nxtHnvi', state.nxtHnvi); }
