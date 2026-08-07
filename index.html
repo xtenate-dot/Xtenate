@@ -361,10 +361,26 @@
     <button class="btn btn-primary btn-ml" onclick="openCoverModal()">+ Artikel toevoegen</button>
   </div>
 
+  <div class="bulkbar" id="voorraad-bulk" style="display:none">
+    <span id="bulk-aantal"></span>
+    <span style="flex:1"></span>
+    <label style="font-size:11.5px">Verplaats naar</label>
+    <select id="bulk-cat" aria-label="Doelgroep">
+      <option value="covers">Funny Covers</option>
+      <option value="hoezen">Hoezen</option>
+      <option value="pophouders">Pop Houders</option>
+      <option value="accessoires">Accessoires</option>
+      <option value="overig">Overig</option>
+    </select>
+    <button class="btn btn-primary btn-sm" onclick="verplaatsVoorraadSelectie()">Verplaatsen</button>
+    <button class="btn btn-ghost btn-sm" onclick="wisVoorraadSelectie()">Selectie wissen</button>
+  </div>
+
   <div class="card card-flush">
     <div class="table-wrap"><table id="tbl-voorraad" class="js-sorteerbaar tbl-compact">
       <thead><tr>
-        <th style="padding-left:16px" data-sort="tekst">Artikel</th>
+        <th style="width:34px;padding-left:16px"><input type="checkbox" id="voorraad-check-all" onchange="selecteerAlleVoorraad(this)" aria-label="Alles selecteren"></th>
+        <th data-sort="tekst">Artikel</th>
         <th style="width:120px" id="voorraad-cat-kop" data-sort="tekst">Groep</th>
         <th style="width:78px;text-align:right" data-sort="getal">Voorraad</th>
         <th style="width:88px;text-align:right" data-sort="getal">Inkoop</th>

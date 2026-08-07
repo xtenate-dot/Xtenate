@@ -1,7 +1,7 @@
 // modals.js — beheer-acties: Excel-import, cloud sync, API-sleutel, data wissen.
 
 import { renderHome } from './dashboard.js?v=20260806a';
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260806a';
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260806a';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
 // met een kolom "Totaal" voor het hele boekjaar. Dit is de brontabel van de boekhouding zelf,
@@ -204,7 +204,7 @@ export function importExcel(input) {
         // Sla op als huidige (2026) data
         state.TX = newTx;
         state.nxtTx = tid;
-        if (newCovers.length > 0) { state.COVERS = newCovers; state.nxtCover = 300; }
+        if (newCovers.length > 0) { state.COVERS = normaliseerVoorraad(newCovers, state.COVERS); state.nxtCover = 300; }
         Object.keys(MAAND_SALDOS).filter(m=>m.startsWith('2026')).forEach(m=>delete MAAND_SALDOS[m]);
         Object.assign(MAAND_SALDOS, newSaldos);
         saveTxData();
@@ -398,7 +398,7 @@ export async function syncDownload() {
     if (data.error) throw new Error(data.error);
 
     if (data.TX && data.TX.length) { state.TX = data.TX; saveTxData(); }
-    if (data.Covers && data.Covers.length) { state.COVERS = data.Covers; saveCoversData(); }
+    if (data.Covers && data.Covers.length) { state.COVERS = normaliseerVoorraad(data.Covers, state.COVERS); saveCoversData(); }
     if (data.HnviLots) { state.HNVI_LOTS = data.HnviLots; saveHnviData(); }
     if (data.MaandSaldos) { Object.assign(MAAND_SALDOS, data.MaandSaldos); }
 
