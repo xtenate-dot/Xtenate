@@ -28,6 +28,7 @@ import {
 } from './modals.js?v=20260806a';
 import { initUiVoorkeuren, wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu } from './theme.js?v=20260806a';
 import { initZoek, focusZoek, sluitZoek } from './search.js?v=20260806a';
+import { openExportModal, sluitExportModal, toonExportSamenvatting, doeExport } from './excel-ui.js?v=20260806a';
 import { vertraag } from './helpers.js?v=20260806a';
 import { toonBoeking, sluitDrawer, openBoeking } from './drawer.js?v=20260806a';
 
@@ -52,6 +53,7 @@ Object.assign(window, {
   importHNVIFactuur, bevestigHNVIImport,
   importExcel, openWisModal, doWis, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
   openApiKeyModal, saveApiKey,
+  openExportModal, sluitExportModal, toonExportSamenvatting, doeExport,
   wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu,
   sluitDrawer
 });
