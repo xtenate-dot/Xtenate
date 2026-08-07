@@ -304,3 +304,28 @@ label { color: var(--text-muted); }
 .ctrl-waarschuwing .ctrl-icoon { background: var(--amber-bg); color: var(--amber); }
 .ctrl-fout .ctrl-icoon { background: var(--red-bg); color: var(--red); }
 .ctrl-fout .ctrl-titel { font-weight: 500; }
+
+/* Meldingen met acties: aanklikbaar hoofddeel plus knoppen om weg te werken. */
+.ctrl-item { flex-wrap: wrap; padding: 0; overflow: hidden; }
+.ctrl-item-main {
+  flex: 1; min-width: 0; display: block; text-align: left;
+  background: none; border: none; font-family: inherit; color: inherit;
+  padding: 9px 10px; cursor: pointer;
+}
+.ctrl-item-main:hover { background: var(--surface-hover); }
+.ctrl-item-acties {
+  display: flex; gap: 2px; align-items: center;
+  padding: 0 8px 0 0; flex-shrink: 0;
+}
+.ctrl-item-acties .btn { color: var(--text-muted); }
+.ctrl-item-acties .btn:hover { color: var(--text); }
+.ctrl-item-ga { display: block; font-size: 11px; color: var(--accent); margin-top: 3px; }
+.ctrl-controle-acties {
+  display: flex; align-items: center; gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+@media (max-width: 720px) {
+  .ctrl-item-acties { padding: 0 8px 8px; width: 100%; justify-content: flex-end; }
+  .ctrl-item-ga { display: none; }
+}

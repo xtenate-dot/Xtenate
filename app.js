@@ -7,7 +7,10 @@ import { wisselJaar, renderHome } from './dashboard.js?v=20260806a';
 import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking } from './bank.js?v=20260806a';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260806a';
 import { renderBelasting } from './belasting.js?v=20260806a';
-import { renderControle, klapControleUit, toonAlleControleRegels } from './controle.js?v=20260806a';
+import {
+  renderControle, klapControleUit, toonAlleControleRegels, verbergControleMelding,
+  zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen
+} from './controle.js?v=20260806a';
 import {
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie,
@@ -39,6 +42,7 @@ Object.assign(window, {
   renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
   renderBelasting, renderControle, klapControleUit, toonAlleControleRegels,
+  verbergControleMelding, zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen,
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie,
   draaiActieTerug, openGroepenModal, sluitGroepenModal, voegGroepToe, verwijderGroep, bewaarGroepen,
@@ -76,7 +80,7 @@ document.addEventListener('click', e => {
 
   // Dan de controlepagina: die regels zijn zelf knoppen, dus de uitzondering
   // hieronder zou ze anders wegfilteren.
-  const controle = e.target.closest('.ctrl-item[data-ga]');
+  const controle = e.target.closest('.ctrl-item-main[data-ga]');
   if (controle) {
     const scheiding = controle.dataset.ga.indexOf(':');
     const soort = controle.dataset.ga.slice(0, scheiding);
