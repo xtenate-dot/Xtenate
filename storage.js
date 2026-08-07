@@ -117,12 +117,19 @@ export function normaliseerVoorraad(lijst, vorige = []) {
   const opNaam = new Map(vorige.map(c => [String(c.artikel || '').trim().toLowerCase(), c]));
   return (lijst || []).map(c => {
     const oud = opId.get(String(c.id)) || opNaam.get(String(c.artikel || '').trim().toLowerCase()) || {};
+    // Jaarcijfers van beide kanten samenvoegen: wat al vastgelegd was blijft
+    // staan, wat uit het bestand komt wint voor dat ene jaar.
+    const jaren = { ...(oud.jaren || {}), ...(c.jaren || {}) };
+    if (c.omzet2026 != null && jaren['2026']?.verkocht == null) {
+      jaren['2026'] = { eind: jaren['2026']?.eind ?? null, verkocht: c.omzet2026 };
+    }
     return {
       ...c,
       categorie: c.categorie || oud.categorie || standaardGroep(),
       inkoopprijs: c.inkoopprijs ?? oud.inkoopprijs ?? null,
       minVoorraad: c.minVoorraad ?? oud.minVoorraad ?? null,
-      prijs: c.prijs ?? oud.prijs ?? null
+      prijs: c.prijs ?? oud.prijs ?? null,
+      jaren
     };
   });
 }
