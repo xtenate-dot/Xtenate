@@ -60,10 +60,10 @@
     <span class="nav-label">Belasting</span>
   </div>
 
-  <div class="nav-section">Voorraad</div>
-  <div class="nav-item" data-page="covers" onclick="nav('covers',this)" title="Funny Covers">
+  <div class="nav-section">Magazijn</div>
+  <div class="nav-item" data-page="voorraad" onclick="nav('voorraad',this)" title="Voorraad">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-    <span class="nav-label">Funny Covers</span>
+    <span class="nav-label">Voorraad</span>
   </div>
   <div class="nav-item" data-page="hnvi" onclick="nav('hnvi',this)" title="HNVI / Xtenate">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
@@ -239,13 +239,13 @@
 <div id="p-grootboek" class="page">
   <div class="page-head">
     <div class="page-title">Grootboek</div>
-    <div class="page-sub">Alle boekingen, gefilterd zoals jij wilt</div>
+    <div class="page-sub">Saldo per rekening, met doorklik naar de boekingen</div>
   </div>
 
   <div class="toolbar">
-    <div class="search-field" style="flex:1;min-width:180px;max-width:300px">
+    <div class="search-field" id="gb-zoek-wrap" style="flex:1;min-width:180px;max-width:300px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input type="search" id="gb-zoek" placeholder="Zoek op omschrijving of naam" oninput="renderGrootboek()"
+      <input type="search" id="gb-zoek" placeholder="Zoek op code of omschrijving" oninput="renderGrootboek()"
              style="flex:1;border:none;background:none;padding:8px 0;font-size:12.5px;color:var(--text);outline:none;min-width:0">
     </div>
     <select id="f-jaar-gb" onchange="renderGrootboek()" aria-label="Jaar">
@@ -259,60 +259,51 @@
     <select id="f-maand-gb" onchange="renderGrootboek()" aria-label="Maand">
       <option value="">Alle maanden</option>
     </select>
-    <select id="f-gb-rek" onchange="renderGrootboek()" aria-label="Grootboekrekening">
-      <option value="">Alle grootboekrekeningen</option>
-      <optgroup label="Omzet">
-        <option value="8000">8000 Omzet Xtenate</option>
-        <option value="8010">8010 Omzet Bol.com</option>
-        <option value="8020">8020 Omzet Helmetstore</option>
-      </optgroup>
-      <optgroup label="Inkoop">
-        <option value="7000">7000 Inkoop AliExpress</option>
-        <option value="7010">7010 Inkoop HNVI</option>
-        <option value="7020">7020 Inkoop MijnMagie</option>
-        <option value="7100">7100 Inkoop verzendartikelen</option>
-        <option value="7900">7900 Transportkosten</option>
-      </optgroup>
-      <optgroup label="Kosten">
-        <option value="4235">4235 Kleine aanschaf inventaris</option>
-        <option value="4290">4290 Overige zakelijke aankopen</option>
-        <option value="4350">4350 Bankkosten</option>
-        <option value="4760">4760 Abonnement</option>
-        <option value="4810">4810 Reclame</option>
-        <option value="4815">4815 Website</option>
-        <option value="4895">4895 Overige verkoopkosten</option>
-        <option value="600">600 Privé storting</option>
-        <option value="601">601 Privé opname</option>
-      </optgroup>
+    <select id="f-rubriek-gb" onchange="renderGrootboek()" aria-label="Rubriek">
+      <option value="">Alle rubrieken</option>
+      <option value="omzet">Omzet</option>
+      <option value="inkoop">Inkoop</option>
+      <option value="kosten">Kosten</option>
+      <option value="prive">Privé</option>
+      <option value="overig">Overig</option>
     </select>
-  </div>
-
-  <div class="toolbar" style="margin-bottom:var(--sp-4)">
-    <label style="font-size:11px">Van</label>
-    <input type="date" id="f-datum-van" onchange="renderGrootboek()" aria-label="Datum vanaf">
-    <label style="font-size:11px">tot</label>
-    <input type="date" id="f-datum-tot" onchange="renderGrootboek()" aria-label="Datum tot en met">
-    <label style="font-size:11px;margin-left:8px">Bedrag</label>
-    <input type="number" id="f-bedrag-min" placeholder="min" step="0.01" oninput="renderGrootboek()" style="width:88px" aria-label="Minimumbedrag">
-    <input type="number" id="f-bedrag-max" placeholder="max" step="0.01" oninput="renderGrootboek()" style="width:88px" aria-label="Maximumbedrag">
     <button class="btn btn-ghost btn-sm btn-ml" onclick="wisFiltersGrootboek()">Filters wissen</button>
   </div>
 
   <div class="metrics" id="gb-metrics"></div>
 
-  <div id="gb-samenvatting" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--sp-4)"></div>
+  <!-- Overzicht: saldo per grootboekrekening -->
+  <div id="gb-overzicht">
+    <div class="card card-flush">
+      <div class="table-wrap"><table id="tbl-grootboek" class="js-sorteerbaar tbl-compact">
+        <thead><tr>
+          <th style="width:72px;padding-left:16px" data-sort="tekst">Code</th>
+          <th data-sort="tekst">Omschrijving</th>
+          <th style="width:96px" data-sort="tekst">Rubriek</th>
+          <th style="width:88px;text-align:right" data-sort="getal">Boekingen</th>
+          <th style="width:120px;text-align:right;padding-right:16px" data-sort="getal">Saldo</th>
+        </tr></thead>
+        <tbody id="gb-body"></tbody>
+      </table></div>
+      <div class="table-totaal" id="gb-totaal"></div>
+    </div>
+  </div>
 
-  <div class="card card-flush">
-    <div class="table-wrap"><table id="tbl-grootboek" class="js-sorteerbaar">
-      <thead><tr>
-        <th style="width:78px;padding-left:16px" data-sort="datum">Datum</th>
-        <th data-sort="tekst">Naam</th>
-        <th style="width:200px" data-sort="tekst">Grootboek</th>
-        <th style="width:86px" data-sort="tekst">Rekening</th>
-        <th style="width:104px;text-align:right;padding-right:16px" data-sort="getal">Bedrag</th>
-      </tr></thead>
-      <tbody id="gb-body"></tbody>
-    </table></div>
+  <!-- Detail: boekingen van één rekening -->
+  <div id="gb-detail" style="display:none">
+    <div class="card" style="display:flex;align-items:center;gap:var(--sp-4)" id="gb-detail-kop"></div>
+    <div class="card card-flush">
+      <div class="table-wrap"><table id="tbl-gb-detail" class="js-sorteerbaar tbl-compact">
+        <thead><tr>
+          <th style="width:78px;padding-left:16px" data-sort="datum">Datum</th>
+          <th data-sort="tekst">Naam</th>
+          <th style="width:200px" data-sort="tekst">Omschrijving</th>
+          <th style="width:86px" data-sort="tekst">Rekening</th>
+          <th style="width:104px;text-align:right;padding-right:16px" data-sort="getal">Bedrag</th>
+        </tr></thead>
+        <tbody id="gb-detail-body"></tbody>
+      </table></div>
+    </div>
   </div>
 </div>
 
@@ -344,29 +335,45 @@
   </div>
 </div>
 
-<!-- FUNNY COVERS -->
-<div id="p-covers" class="page">
-  <div class="page-title">Funny Covers — voorraad</div>
-  <div class="metrics" id="covers-metrics"></div>
+<!-- VOORRAAD -->
+<div id="p-voorraad" class="page">
+  <div class="page-head">
+    <div class="page-title">Voorraad</div>
+    <div class="page-sub">Wat er ligt, wat het waard is en wat bijna op is</div>
+  </div>
+
+  <div class="kpi-grid" id="voorraad-kpi" style="margin-bottom:var(--sp-5)"></div>
+
+  <div class="vtabs" id="voorraad-tabs" role="tablist"></div>
+
   <div class="toolbar">
-    <select id="f-covers-status" onchange="renderCovers()">
-      <option value="">Alle artikelen</option>
+    <div class="search-field" style="flex:1;min-width:180px;max-width:280px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" id="voorraad-zoek" placeholder="Zoek op artikelnaam" oninput="renderCovers()"
+             style="flex:1;border:none;background:none;padding:8px 0;font-size:12.5px;color:var(--text);outline:none;min-width:0">
+    </div>
+    <select id="f-covers-status" onchange="renderCovers()" aria-label="Status">
+      <option value="">Alle statussen</option>
       <option value="ok">Op voorraad</option>
+      <option value="laag">Lage voorraad</option>
       <option value="uit">Uitverkocht</option>
     </select>
     <button class="btn btn-primary btn-ml" onclick="openCoverModal()">+ Artikel toevoegen</button>
   </div>
-  <div class="card" style="padding:0">
-    <div class="table-wrap"><table>
+
+  <div class="card card-flush">
+    <div class="table-wrap"><table id="tbl-voorraad" class="js-sorteerbaar tbl-compact">
       <thead><tr>
-        <th style="padding-left:14px">Artikel</th>
-        <th style="width:66px;text-align:right">Voorraad</th>
-        <th style="width:66px;text-align:right">Inkoop</th>
-        <th style="width:66px;text-align:right">Verkoop</th>
-        <th style="width:88px;text-align:right">Omzet 2026</th>
-        <th style="width:80px">Status</th>
-        <th style="width:110px">Bestellen</th>
-        <th style="width:50px"></th>
+        <th style="padding-left:16px" data-sort="tekst">Artikel</th>
+        <th style="width:120px" id="voorraad-cat-kop" data-sort="tekst">Groep</th>
+        <th style="width:78px;text-align:right" data-sort="getal">Voorraad</th>
+        <th style="width:88px;text-align:right" data-sort="getal">Inkoop</th>
+        <th style="width:88px;text-align:right" data-sort="getal">Verkoop</th>
+        <th style="width:96px;text-align:right" data-sort="getal">Waarde</th>
+        <th style="width:96px;text-align:right" data-sort="getal">Omzet 2026</th>
+        <th style="width:104px" data-sort="tekst">Status</th>
+        <th style="width:126px"></th>
+        <th style="width:64px;padding-right:16px"></th>
       </tr></thead>
       <tbody id="covers-body"></tbody>
     </table></div>
@@ -546,12 +553,23 @@
   <h3 id="cover-modal-title">Artikel toevoegen</h3>
   <div class="form-grid">
     <div class="form-group full"><label>Artikelnaam</label><input type="text" id="cv-naam" placeholder="bijv. Stitch"></div>
-    <div class="form-group"><label>Inkoop stuks</label><input type="number" id="cv-ink" placeholder="0" min="0"></div>
-    <div class="form-group"><label>Verkoop stuks (totaal)</label><input type="number" id="cv-vk" placeholder="0" min="0"></div>
+    <div class="form-group full"><label>Productgroep</label>
+      <select id="cv-cat">
+        <option value="covers">Funny Covers</option>
+        <option value="hoezen">Hoezen</option>
+        <option value="pophouders">Pop Houders</option>
+        <option value="accessoires">Accessoires</option>
+        <option value="overig">Overig</option>
+      </select>
+    </div>
     <div class="form-group"><label>Huidige voorraad</label><input type="number" id="cv-vrd" placeholder="0" min="0"></div>
+    <div class="form-group"><label>Melden onder <span style="color:var(--text-hint)">(standaard 3)</span></label><input type="number" id="cv-min" placeholder="3" min="0"></div>
+    <div class="form-group"><label>Inkoopprijs per stuk (€)</label><input type="text" inputmode="decimal" id="cv-inkoopprijs" placeholder="bijv. 4,20"></div>
+    <div class="form-group"><label>Verkoopprijs (€)</label><input type="text" inputmode="decimal" id="cv-prijs" placeholder="bijv. 31,95"></div>
+    <div class="form-group"><label>Ingekocht totaal (stuks)</label><input type="number" id="cv-ink" placeholder="0" min="0"></div>
+    <div class="form-group"><label>Verkocht totaal (stuks)</label><input type="number" id="cv-vk" placeholder="0" min="0"></div>
     <div class="form-group"><label>Verkopen 2026</label><input type="number" id="cv-26" placeholder="0" min="0"></div>
     <div class="form-group full"><label>Zoekterm AliExpress</label><input type="text" id="cv-zoek" placeholder="bijv. stitch helmet cover plush"></div>
-    <div class="form-group full"><label>Verkoopprijs (€)</label><input type="number" id="cv-prijs" step="0.01" placeholder="31.95"></div>
   </div>
   <div class="modal-actions">
     <button class="btn" onclick="closeCoverModal()">Annuleren</button>

@@ -1,68 +1,208 @@
-// voorraad.js — Funny Covers voorraadbeheer.
+// voorraad.js — Voorraad: overzicht met kerncijfers en tabs per productgroep.
 
-import { PRIJS_COVER, fmt } from './helpers.js?v=20260806a';
-import { saveCoversData, state } from './storage.js?v=20260806a';
+import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260806a';
+import { CATEGORIE_NAAM, STANDAARD_MIN_VOORRAAD, VOORRAAD_CATEGORIEEN, saveCoversData, state } from './storage.js?v=20260806a';
+import { maakSorteerbaar } from './tables.js?v=20260806a';
+
+const el = id => document.getElementById(id);
+
+/** Welke tab er open staat: 'alle' of een categorie-id. */
+let actieveTab = 'alle';
+
+/** Verkoopprijs van een artikel; Funny Covers hebben een vaste standaardprijs. */
+function verkoopprijs(c) {
+  if (c.prijs != null && c.prijs !== '') return Number(c.prijs);
+  return c.categorie === 'covers' ? PRIJS_COVER : null;
+}
+
+function drempel(c) {
+  return c.minVoorraad != null && c.minVoorraad !== '' ? Number(c.minVoorraad) : STANDAARD_MIN_VOORRAAD;
+}
+
+/** uitverkocht · laag · ok */
+function status(c) {
+  if (c.voorraad <= 0) return 'uit';
+  return c.voorraad <= drempel(c) ? 'laag' : 'ok';
+}
+
+function voorraadwaarde(c) {
+  return c.inkoopprijs != null && c.inkoopprijs !== '' ? c.voorraad * Number(c.inkoopprijs) : null;
+}
+
+function artikelenVoorTab() {
+  return actieveTab === 'alle' ? state.COVERS : state.COVERS.filter(c => c.categorie === actieveTab);
+}
+
+// ------------------------------------------------------------------- tabs
+
+function renderTabs() {
+  const tel = id => state.COVERS.filter(c => c.categorie === id).length;
+  const tabs = [{ id: 'alle', naam: 'Overzicht', aantal: state.COVERS.length }]
+    .concat(VOORRAAD_CATEGORIEEN.map(c => ({ id: c.id, naam: c.naam, aantal: tel(c.id) })));
+
+  el('voorraad-tabs').innerHTML = tabs.map(t => `
+    <div class="vtab${t.id === actieveTab ? ' active' : ''}" onclick="kiesVoorraadTab('${t.id}')" role="tab"
+         tabindex="0" aria-selected="${t.id === actieveTab}">
+      ${esc(t.naam)} <span class="muted" style="font-size:11px">${t.aantal}</span>
+    </div>`).join('');
+}
+
+export function kiesVoorraadTab(id) {
+  actieveTab = id;
+  renderCovers();
+}
+
+// --------------------------------------------------------------- kerncijfers
+
+function renderKerncijfers(lijst) {
+  const stuks = lijst.reduce((s, c) => s + c.voorraad, 0);
+  const metPrijs = lijst.filter(c => voorraadwaarde(c) !== null);
+  const waarde = metPrijs.reduce((s, c) => s + voorraadwaarde(c), 0);
+  const zonderPrijs = lijst.filter(c => c.voorraad > 0 && voorraadwaarde(c) === null).length;
+  const laag = lijst.filter(c => status(c) === 'laag').length;
+  const uit = lijst.filter(c => status(c) === 'uit').length;
+
+  el('voorraad-kpi').innerHTML = `
+    <div class="kpi">
+      <div class="kpi-lbl">Totale voorraadwaarde</div>
+      <div class="kpi-val">${fmt(waarde)}</div>
+      <div class="kpi-sub">${zonderPrijs > 0 ? `${zonderPrijs} artikel${zonderPrijs === 1 ? '' : 'en'} zonder inkoopprijs` : 'tegen inkoopprijs'}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Aantal producten</div>
+      <div class="kpi-val">${lijst.length}</div>
+      <div class="kpi-sub">${stuks} stuks op voorraad</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Lage voorraad</div>
+      <div class="kpi-val ${laag > 0 ? 'neg' : ''}">${laag}</div>
+      <div class="kpi-sub">${laag > 0 ? 'bijbestellen' : 'niets onder de drempel'}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Uitverkocht</div>
+      <div class="kpi-val ${uit > 0 ? 'muted' : ''}">${uit}</div>
+      <div class="kpi-sub">van ${lijst.length} artikelen</div>
+    </div>`;
+}
+
+// -------------------------------------------------------------------- tabel
+
+const STATUS_BADGE = {
+  ok: '<span class="stock-ok">op voorraad</span>',
+  laag: '<span class="badge badge-amber">lage voorraad</span>',
+  uit: '<span class="stock-uit">uitverkocht</span>'
+};
 
 export function renderCovers() {
-  const st = document.getElementById('f-covers-status').value;
-  const totVrd = state.COVERS.reduce((s,c)=>s+c.voorraad,0);
-  const totOmzet = state.COVERS.reduce((s,c)=>s+c.omzet2026*PRIJS_COVER,0);
-  const totVk2026 = state.COVERS.reduce((s,c)=>s+c.omzet2026,0);
-  const aktief = state.COVERS.filter(c=>c.voorraad>0).length;
-  document.getElementById('covers-metrics').innerHTML = `
-    <div class="metric"><div class="lbl">Op voorraad</div><div class="val">${totVrd} stuks</div><div class="sub">${aktief} actieve artikelen</div></div>
-    <div class="metric"><div class="lbl">Omzet 2026</div><div class="val pos">${fmt(totOmzet)}</div><div class="sub">${totVk2026} verkocht à €31,95</div></div>
-    <div class="metric"><div class="lbl">Totaal verkocht</div><div class="val">${state.COVERS.reduce((s,c)=>s+c.verkoop,0)} stuks</div></div>
-    <div class="metric"><div class="lbl">Uitverkocht</div><div class="val">${state.COVERS.filter(c=>c.voorraad===0).length} artikelen</div></div>`;
-  const list = state.COVERS.filter(c => !st || (st==='ok'?c.voorraad>0:c.voorraad===0));
-  document.getElementById('covers-body').innerHTML = list.map(c => `<tr>
-    <td style="padding-left:14px;font-weight:${c.voorraad>0?500:400}">${c.artikel}</td>
-    <td style="text-align:right">${c.voorraad}</td>
-    <td style="text-align:right;color:var(--text-muted)">${c.inkoop}</td>
-    <td style="text-align:right;color:var(--text-muted)">${c.verkoop}</td>
-    <td style="text-align:right" class="${c.omzet2026>0?'pos':''}">${c.omzet2026>0?fmt(c.omzet2026*PRIJS_COVER):'—'}</td>
-    <td><span class="${c.voorraad>0?'stock-ok':'stock-uit'}">${c.voorraad>0?'op voorraad':'uitverkocht'}</span></td>
-    <td>${c.zoekterm?`<a href="https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(c.zoekterm)}" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none;white-space:nowrap">🔍 AliExpress</a>`:''}</td>
-    <td><span class="sell-link" onclick="openCoverEdit(${c.id})">Bewerk</span></td>
-  </tr>`).join('');
+  renderTabs();
+
+  const statusFilter = el('f-covers-status') ? el('f-covers-status').value : '';
+  const zoekterm = (el('voorraad-zoek') ? el('voorraad-zoek').value : '').trim().toLowerCase();
+
+  const basis = artikelenVoorTab();
+  renderKerncijfers(basis);
+
+  let lijst = basis;
+  if (statusFilter) lijst = lijst.filter(c => status(c) === statusFilter);
+  if (zoekterm) lijst = lijst.filter(c => `${c.artikel} ${c.zoekterm || ''}`.toLowerCase().includes(zoekterm));
+
+  const toonCategorie = actieveTab === 'alle';
+  el('voorraad-cat-kop').style.display = toonCategorie ? '' : 'none';
+
+  el('covers-body').innerHTML = lijst.length
+    ? lijst.map(c => {
+        const vk = verkoopprijs(c);
+        const waarde = voorraadwaarde(c);
+        const omzet = vk != null ? c.omzet2026 * vk : null;
+        return `<tr>
+          <td style="padding-left:16px;font-weight:${c.voorraad > 0 ? 500 : 400}">${esc(c.artikel)}</td>
+          ${toonCategorie ? `<td class="muted">${esc(CATEGORIE_NAAM[c.categorie] || c.categorie)}</td>` : ''}
+          <td style="text-align:right" data-v="${c.voorraad}">${c.voorraad}</td>
+          <td style="text-align:right" class="muted" data-v="${c.inkoopprijs ?? -1}">${c.inkoopprijs != null && c.inkoopprijs !== '' ? fmt(c.inkoopprijs) : '—'}</td>
+          <td style="text-align:right" class="muted" data-v="${vk ?? -1}">${vk != null ? fmt(vk) : '—'}</td>
+          <td style="text-align:right;font-weight:500" data-v="${waarde ?? -1}">${waarde != null ? fmt(waarde) : '—'}</td>
+          <td style="text-align:right" class="${omzet ? 'pos' : ''}" data-v="${omzet ?? 0}">${omzet ? fmt(omzet) : '—'}</td>
+          <td data-v="${status(c)}">${STATUS_BADGE[status(c)]}</td>
+          <td>${c.zoekterm
+            ? `<a href="https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(c.zoekterm)}" target="_blank" rel="noopener" style="font-size:11px;white-space:nowrap">Zoek op AliExpress</a>`
+            : ''}</td>
+          <td style="padding-right:16px"><span class="sell-link" onclick="openCoverEdit(${c.id})">Bewerk</span></td>
+        </tr>`;
+      }).join('')
+    : `<tr data-geen-sort="1"><td colspan="${toonCategorie ? 10 : 9}"><div class="empty">
+        <div class="empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
+        <div class="empty-title">${basis.length ? 'Geen artikelen binnen deze filters' : 'Nog geen artikelen in deze groep'}</div>
+        <div class="empty-text">${basis.length
+          ? 'Pas de zoekterm of het statusfilter aan.'
+          : 'Voeg een artikel toe en kies deze productgroep, dan verschijnt het hier.'}</div>
+        <button class="btn" onclick="openCoverModal()">Artikel toevoegen</button>
+      </div></td></tr>`;
+
+  maakSorteerbaar(el('tbl-voorraad'));
 }
+
+// -------------------------------------------------------------------- modal
+
+const VELDEN = ['cv-naam','cv-cat','cv-ink','cv-vk','cv-vrd','cv-26','cv-zoek','cv-prijs','cv-inkoopprijs','cv-min'];
 
 export function openCoverModal() {
   state.editCoverId = null;
-  document.getElementById('cover-modal-title').textContent = 'Artikel toevoegen';
-  ['cv-naam','cv-ink','cv-vk','cv-vrd','cv-26','cv-zoek','cv-prijs'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('modal-cover').classList.add('open');
+  el('cover-modal-title').textContent = 'Artikel toevoegen';
+  VELDEN.forEach(id => { if (el(id)) el(id).value = ''; });
+  // Nieuwe artikelen komen standaard in de groep die je nu bekijkt.
+  el('cv-cat').value = actieveTab === 'alle' ? 'covers' : actieveTab;
+  el('modal-cover').classList.add('open');
+  el('cv-naam').focus();
 }
 
 export function openCoverEdit(id) {
   state.editCoverId = id;
-  const c = state.COVERS.find(x=>x.id===id);
-  document.getElementById('cover-modal-title').textContent = 'Artikel bewerken';
-  document.getElementById('cv-naam').value = c.artikel;
-  document.getElementById('cv-ink').value = c.inkoop;
-  document.getElementById('cv-vk').value = c.verkoop;
-  document.getElementById('cv-vrd').value = c.voorraad;
-  document.getElementById('cv-26').value = c.omzet2026;
-  document.getElementById('cv-zoek').value = c.zoekterm||'';
-  document.getElementById('cv-prijs').value = c.prijs||'';
-  document.getElementById('modal-cover').classList.add('open');
+  const c = state.COVERS.find(x => x.id === id);
+  if (!c) return;
+  el('cover-modal-title').textContent = 'Artikel bewerken';
+  el('cv-naam').value = c.artikel;
+  el('cv-cat').value = c.categorie || 'covers';
+  el('cv-ink').value = c.inkoop;
+  el('cv-vk').value = c.verkoop;
+  el('cv-vrd').value = c.voorraad;
+  el('cv-26').value = c.omzet2026;
+  el('cv-zoek').value = c.zoekterm || '';
+  el('cv-prijs').value = c.prijs ?? '';
+  el('cv-inkoopprijs').value = c.inkoopprijs ?? '';
+  el('cv-min').value = c.minVoorraad ?? '';
+  el('modal-cover').classList.add('open');
 }
 
-export function closeCoverModal() { document.getElementById('modal-cover').classList.remove('open'); }
+export function closeCoverModal() { el('modal-cover').classList.remove('open'); }
+
+const getal = (id, decimalen) => {
+  const v = el(id).value.trim();
+  if (v === '') return null;
+  const n = decimalen ? parseFloat(v.replace(',', '.')) : parseInt(v, 10);
+  return isNaN(n) ? null : n;
+};
 
 export function saveCover() {
+  const naam = el('cv-naam').value.trim();
+  if (!naam) { el('cv-naam').focus(); return; }
+
   const obj = {
     id: state.editCoverId || state.nxtCover++,
-    artikel: document.getElementById('cv-naam').value,
-    inkoop: parseInt(document.getElementById('cv-ink').value)||0,
-    verkoop: parseInt(document.getElementById('cv-vk').value)||0,
-    voorraad: parseInt(document.getElementById('cv-vrd').value)||0,
-    omzet2026: parseInt(document.getElementById('cv-26').value)||0,
-    zoekterm: document.getElementById('cv-zoek').value,
-    prijs: parseFloat(document.getElementById('cv-prijs').value)||null,
+    artikel: naam,
+    categorie: el('cv-cat').value || 'overig',
+    inkoop: getal('cv-ink') ?? 0,
+    verkoop: getal('cv-vk') ?? 0,
+    voorraad: getal('cv-vrd') ?? 0,
+    omzet2026: getal('cv-26') ?? 0,
+    zoekterm: el('cv-zoek').value.trim(),
+    prijs: getal('cv-prijs', true),
+    inkoopprijs: getal('cv-inkoopprijs', true),
+    minVoorraad: getal('cv-min')
   };
-  if (state.editCoverId) { state.COVERS = state.COVERS.map(c => c.id===state.editCoverId ? obj : c); }
-  else { state.COVERS.push(obj); }
+
+  if (state.editCoverId) state.COVERS = state.COVERS.map(c => (c.id === state.editCoverId ? obj : c));
+  else state.COVERS.push(obj);
+
   saveCoversData();
   closeCoverModal();
   renderCovers();

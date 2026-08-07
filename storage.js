@@ -65,6 +65,26 @@ state.TX = load('xtenate_tx', TX_INIT);
 
 state.COVERS = load('xtenate_covers', COVERS_INIT);
 
+// Voorraadartikelen van vóór de categorie-indeling aanvullen. Alles wat er al
+// stond is een Funny Cover; inkoopprijs en minimumvoorraad blijven leeg tot ze
+// zijn ingevuld, zodat de app niet met verzonnen waarden gaat rekenen.
+export const VOORRAAD_CATEGORIEEN = [
+  { id: 'covers', naam: 'Funny Covers' },
+  { id: 'hoezen', naam: 'Hoezen' },
+  { id: 'pophouders', naam: 'Pop Houders' },
+  { id: 'accessoires', naam: 'Accessoires' },
+  { id: 'overig', naam: 'Overig' }
+];
+export const CATEGORIE_NAAM = Object.fromEntries(VOORRAAD_CATEGORIEEN.map(c => [c.id, c.naam]));
+export const STANDAARD_MIN_VOORRAAD = 3;
+
+state.COVERS = state.COVERS.map(c => ({
+  ...c,
+  categorie: c.categorie || 'covers',
+  inkoopprijs: c.inkoopprijs ?? null,
+  minVoorraad: c.minVoorraad ?? null
+}));
+
 state.HNVI_LOTS = load('xtenate_hnvi', []);
 
 state.HNVI_LOTS = state.HNVI_LOTS.map((i,idx) => ({...i, _key: i._key || String(i.id || idx)}));

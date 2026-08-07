@@ -5,9 +5,9 @@
 import { nav, gaNaar, hertekenHuidigePagina } from './ui.js?v=20260806a';
 import { wisselJaar, renderHome } from './dashboard.js?v=20260806a';
 import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek } from './bank.js?v=20260806a';
-import { renderGrootboek, filterOpGrootboek, wisFiltersGrootboek } from './grootboek.js?v=20260806a';
+import { renderGrootboek, filterOpGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260806a';
 import { renderBelasting } from './belasting.js?v=20260806a';
-import { renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover } from './voorraad.js?v=20260806a';
+import { renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab } from './voorraad.js?v=20260806a';
 import {
   renderHNVI, berekenHNVIInkoop, openHNVIModal, openHNVISell, closeHNVIModal, saveHNVI,
   wisHNVIVerkoop, verwijderHNVIItem, toggleAllHNVI, updateHNVIDeleteBtn, verwijderGeselecteerdeHNVI,
@@ -24,9 +24,9 @@ import { toonBoeking, sluitDrawer } from './drawer.js?v=20260806a';
 Object.assign(window, {
   nav, gaNaar, wisselJaar, hertekenHuidigePagina,
   renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek,
-  renderGrootboek, filterOpGrootboek, wisFiltersGrootboek,
+  renderGrootboek, filterOpGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
   renderBelasting,
-  renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover,
+  renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
   renderHNVI, berekenHNVIInkoop, openHNVIModal, openHNVISell, closeHNVIModal, saveHNVI,
   wisHNVIVerkoop, verwijderHNVIItem, toggleAllHNVI, updateHNVIDeleteBtn, verwijderGeselecteerdeHNVI,
   importHNVIFactuur, bevestigHNVIImport,
@@ -50,10 +50,22 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 // Eén luisteraar voor de hele app: rijen worden telkens opnieuw getekend,
 // dus losse handlers per rij zouden steeds opnieuw gezet moeten worden.
 document.addEventListener('click', e => {
-  const rij = e.target.closest('.row-click[data-id]');
-  if (rij && !e.target.closest('button, a, input, select')) {
-    toonBoeking(rij.dataset.id, rij);
-  }
+  if (e.target.closest('button, a, input, select')) return;
+
+  const boeking = e.target.closest('.row-click[data-id]');
+  if (boeking) { toonBoeking(boeking.dataset.id, boeking); return; }
+
+  const rekening = e.target.closest('.gb-rij[data-gb]');
+  if (rekening) openGrootboekRekening(rekening.dataset.gb);
+});
+
+// Grootboekrijen en voorraadtabs zijn ook met het toetsenbord te bedienen.
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const rekening = e.target.closest?.('.gb-rij[data-gb]');
+  if (rekening) { e.preventDefault(); openGrootboekRekening(rekening.dataset.gb); return; }
+  const tab = e.target.closest?.('.vtab[onclick]');
+  if (tab) { e.preventDefault(); tab.click(); }
 });
 
 // ---------- Sneltoetsen ----------
@@ -75,7 +87,7 @@ document.addEventListener('keydown', e => {
 
   // Cijfers 1-6 springen naar een pagina
   if (!inVeld && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    const paginas = ['home', 'bank', 'grootboek', 'belasting', 'covers', 'hnvi'];
+    const paginas = ['home', 'bank', 'grootboek', 'belasting', 'voorraad', 'hnvi'];
     const index = parseInt(e.key, 10) - 1;
     if (index >= 0 && index < paginas.length) { e.preventDefault(); gaNaar(paginas[index]); }
   }
