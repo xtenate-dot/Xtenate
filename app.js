@@ -7,6 +7,7 @@ import { wisselJaar, renderHome } from './dashboard.js?v=20260806a';
 import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek } from './bank.js?v=20260806a';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260806a';
 import { renderBelasting } from './belasting.js?v=20260806a';
+import { renderControle, klapControleUit } from './controle.js?v=20260806a';
 import {
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie,
@@ -25,7 +26,7 @@ import {
 import { initUiVoorkeuren, wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu } from './theme.js?v=20260806a';
 import { initZoek, focusZoek, sluitZoek } from './search.js?v=20260806a';
 import { vertraag } from './helpers.js?v=20260806a';
-import { toonBoeking, sluitDrawer } from './drawer.js?v=20260806a';
+import { toonBoeking, sluitDrawer, openBoeking } from './drawer.js?v=20260806a';
 
 // Zoeken tijdens typen wacht kort: anders wordt bij elke aanslag de hele
 // tabel opnieuw opgebouwd, wat bij honderden regels merkbaar hapert.
@@ -37,7 +38,7 @@ Object.assign(window, {
   nav, gaNaar, wisselJaar, hertekenHuidigePagina,
   renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
-  renderBelasting,
+  renderBelasting, renderControle, klapControleUit,
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie,
   draaiActieTerug, openGroepenModal, sluitGroepenModal, voegGroepToe, verwijderGroep, bewaarGroepen,
@@ -65,6 +66,19 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 // Eén luisteraar voor de hele app: rijen worden telkens opnieuw getekend,
 // dus losse handlers per rij zouden steeds opnieuw gezet moeten worden.
 document.addEventListener('click', e => {
+  // Eerst de controlepagina: die regels zijn zelf knoppen, dus de uitzondering
+  // hieronder zou ze anders wegfilteren.
+  const controle = e.target.closest('.ctrl-item[data-ga]');
+  if (controle) {
+    const scheiding = controle.dataset.ga.indexOf(':');
+    const soort = controle.dataset.ga.slice(0, scheiding);
+    const waarde = controle.dataset.ga.slice(scheiding + 1);
+    if (soort === 'tx') openBoeking(waarde);
+    else if (soort === 'gb') { gaNaar('grootboek'); openGrootboekRekening(waarde); }
+    else if (soort === 'pagina') gaNaar(waarde);
+    return;
+  }
+
   if (e.target.closest('button, a, input, select')) return;
 
   const boeking = e.target.closest('.row-click[data-id]');
@@ -102,7 +116,7 @@ document.addEventListener('keydown', e => {
 
   // Cijfers 1-6 springen naar een pagina
   if (!inVeld && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    const paginas = ['home', 'bank', 'grootboek', 'belasting', 'voorraad', 'hnvi'];
+    const paginas = ['home', 'bank', 'grootboek', 'belasting', 'controle', 'voorraad', 'hnvi'];
     const index = parseInt(e.key, 10) - 1;
     if (index >= 0 && index < paginas.length) { e.preventDefault(); gaNaar(paginas[index]); }
   }

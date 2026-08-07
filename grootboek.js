@@ -1,7 +1,7 @@
 // grootboek.js — Grootboek: compacte saldotabel per rekening, met doorklik
 // naar de losse boekingen van één rekening.
 
-import { GBNM, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, rekBadge, typeBadge, vulMaandSelect, weergaveNaam } from './helpers.js?v=20260806a';
+import { GBNM, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, rekBadge, teltBij, typeBadge, vulMaandSelect, weergaveNaam } from './helpers.js?v=20260806a';
 import { state } from './storage.js?v=20260806a';
 import { maakSorteerbaar } from './tables.js?v=20260806a';
 
@@ -56,7 +56,7 @@ function renderOverzicht(boekingen) {
   const perRekening = new Map();
   boekingen.forEach(t => {
     const r = perRekening.get(t.gb) || { gb: t.gb, saldo: 0, aantal: 0, bij: 0, af: 0 };
-    const bedrag = isInkomst(t) ? t.bedrag : -t.bedrag;
+    const bedrag = teltBij(t) ? t.bedrag : -t.bedrag;
     r.saldo += bedrag;
     if (bedrag >= 0) r.bij += bedrag; else r.af += -bedrag;
     r.aantal++;
@@ -76,13 +76,19 @@ function renderOverzicht(boekingen) {
     RUBRIEK_VOLGORDE.indexOf(a.rubriek) - RUBRIEK_VOLGORDE.indexOf(b.rubriek) || a.gb.localeCompare(b.gb));
 
   // Kerncijfers van de selectie
-  const inkomsten = rijen.reduce((s, r) => s + r.bij, 0);
-  const uitgaven = rijen.reduce((s, r) => s + r.af, 0);
+  // Zakelijk en privé apart houden: privé hoort niet in je resultaat thuis,
+  // maar telt wel mee in het saldo van de rekeningen.
+  const zakelijkeBoekingen = boekingen.filter(t => !String(t.type).startsWith('prive'));
+  const inSelectie = t => rijen.some(r => r.gb === t.gb);
+  const inkomsten = zakelijkeBoekingen.filter(t => isInkomst(t) && inSelectie(t)).reduce((s, t) => s + t.bedrag, 0);
+  const uitgaven = zakelijkeBoekingen.filter(t => isUitgave(t) && inSelectie(t)).reduce((s, t) => s + t.bedrag, 0);
+  const priveSaldo = rijen.filter(r => r.rubriek === 'prive').reduce((s, r) => s + r.saldo, 0);
   const aantal = rijen.reduce((s, r) => s + r.aantal, 0);
   el('gb-metrics').innerHTML = `
     <div class="metric"><div class="lbl">Inkomsten</div><div class="val pos">${fmt(inkomsten)}</div></div>
     <div class="metric"><div class="lbl">Kosten en inkoop</div><div class="val neg">${fmt(uitgaven)}</div></div>
-    <div class="metric"><div class="lbl">Saldo</div><div class="val ${inkomsten - uitgaven >= 0 ? 'pos' : 'neg'}">${fmt(inkomsten - uitgaven)}</div></div>
+    <div class="metric"><div class="lbl">Zakelijk resultaat</div><div class="val ${inkomsten - uitgaven >= 0 ? 'pos' : 'neg'}">${fmt(inkomsten - uitgaven)}</div></div>
+    <div class="metric"><div class="lbl">Privé</div><div class="val ${priveSaldo >= 0 ? 'pos' : 'neg'}">${priveSaldo >= 0 ? '+' : '–'}${fmt(Math.abs(priveSaldo))}</div><div class="sub">stortingen min opnames</div></div>
     <div class="metric"><div class="lbl">Rekeningen</div><div class="val">${rijen.length}</div><div class="sub">${aantal} boekingen</div></div>`;
 
   // Tabel
@@ -101,9 +107,11 @@ function renderOverzicht(boekingen) {
         <button class="btn" onclick="wisFiltersGrootboek()">Filters wissen</button>
       </div></td></tr>`;
 
+  // De voetregel telt letterlijk de kolom erboven op, inclusief privé.
+  const somSaldi = rijen.reduce((s, r) => s + r.saldo, 0);
   el('gb-totaal').innerHTML = rijen.length
     ? `<span>Totaal ${rijen.length} rekening${rijen.length === 1 ? '' : 'en'}</span>
-       <span class="${inkomsten - uitgaven >= 0 ? 'pos' : 'neg'}" style="font-weight:600">${fmt(inkomsten - uitgaven)}</span>`
+       <span class="${somSaldi >= 0 ? 'pos' : 'neg'}" style="font-weight:600">${somSaldi >= 0 ? '+' : '–'}${fmt(Math.abs(somSaldi))}</span>`
     : '';
 
   maakSorteerbaar(el('tbl-grootboek'));
@@ -114,7 +122,7 @@ function renderOverzicht(boekingen) {
 function renderDetail(boekingen) {
   const gb = geopendeRekening;
   const rijen = boekingen.filter(t => t.gb === gb).sort((a, b) => b.datum.localeCompare(a.datum));
-  const saldo = rijen.reduce((s, t) => s + (isInkomst(t) ? t.bedrag : -t.bedrag), 0);
+  const saldo = rijen.reduce((s, t) => s + (teltBij(t) ? t.bedrag : -t.bedrag), 0);
 
   el('gb-detail-kop').innerHTML = `
     <button class="btn btn-ghost btn-sm" onclick="sluitGrootboekRekening()">

@@ -135,14 +135,14 @@ export function saveHNVI() {
 }
 
 export function wisHNVIVerkoop(id) {
-  if (!confirm('Verkoopbedrag verwijderen en lot terug op voorraad zetten?')) return;
+  if (!window.confirm('Verkoopbedrag verwijderen en lot terug op voorraad zetten?')) return;
   state.HNVI_LOTS = state.HNVI_LOTS.map(i => String(i.id)===String(id) ? {...i, verkoop:null, status:'voorraad'} : i);
   saveHnviData();
   renderHNVI();
 }
 
 export function verwijderHNVIItem(key) {
-  if (!confirm('Dit lot verwijderen?')) return;
+  if (!window.confirm('Dit lot verwijderen?')) return;
   state.HNVI_LOTS = state.HNVI_LOTS.filter(i => String(i._key||i.id) !== String(key));
   saveHnviData();
   renderHNVI();
@@ -171,7 +171,7 @@ export function updateHNVIDeleteBtn() {
 export function verwijderGeselecteerdeHNVI() {
   const checked = [...document.querySelectorAll('.hnvi-check:checked')];
   if (checked.length === 0) return;
-  if (!confirm(`Weet je zeker dat je ${checked.length} item(s) wilt verwijderen?`)) return;
+  if (!window.confirm(`Weet je zeker dat je ${checked.length} item(s) wilt verwijderen?`)) return;
   const teVerwijderen = new Set(checked.map(c => c.dataset.key));
   state.HNVI_LOTS = state.HNVI_LOTS.filter(i => !teVerwijderen.has(String(i._key||i.id)));
   saveHnviData();
