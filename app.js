@@ -31,6 +31,7 @@ import { initZoek, focusZoek, sluitZoek } from './search.js?v=20260806a';
 import { openExportModal, sluitExportModal, toonExportSamenvatting, doeExport } from './excel-ui.js?v=20260806a';
 import { vertraag } from './helpers.js?v=20260806a';
 import { toonBoeking, sluitDrawer, openBoeking } from './drawer.js?v=20260806a';
+import { start as startAuth, login, uitloggen, opnieuwVerbinden } from './auth.js?v=20260806a';
 
 // Zoeken tijdens typen wacht kort: anders wordt bij elke aanslag de hele
 // tabel opnieuw opgebouwd, wat bij honderden regels merkbaar hapert.
@@ -54,6 +55,7 @@ Object.assign(window, {
   importExcel, openWisModal, doWis, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
   openApiKeyModal, saveApiKey,
   openExportModal, sluitExportModal, toonExportSamenvatting, doeExport,
+  login, uitloggen, opnieuwVerbinden,
   wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu,
   sluitDrawer
 });
@@ -140,4 +142,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ---------- Start ----------
-renderHome();
+// De administratie wordt pas getekend als er een geldige sessie is. Alles
+// hierboven is voorbereiding; de gegevens komen nog uit dezelfde bron als
+// voorheen, er is alleen een deur voor gezet.
+startAuth(() => renderHome());

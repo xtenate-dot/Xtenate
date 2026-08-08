@@ -27,6 +27,46 @@
 </head>
 <body>
 
+<!-- INLOGSCHERM -->
+<div class="auth-scherm" id="auth-scherm" style="display:none">
+  <div class="auth-kaart">
+    <div class="auth-merk">
+      <div class="brand-mark" aria-hidden="true">X</div>
+      <div>
+        <div class="auth-naam">Xtenate</div>
+        <div class="auth-sub">Administratie</div>
+      </div>
+    </div>
+
+    <div id="auth-bezig" style="display:none">
+      <p class="auth-tekst">Verbinding maken met Supabase…</p>
+    </div>
+
+    <form id="auth-inloggen" style="display:none" onsubmit="login(event)">
+      <div class="form-group full">
+        <label for="auth-email">E-mailadres</label>
+        <input type="email" id="auth-email" autocomplete="username" placeholder="jij@voorbeeld.nl" required>
+      </div>
+      <div class="form-group full" style="margin-top:var(--sp-3)">
+        <label for="auth-wachtwoord">Wachtwoord</label>
+        <input type="password" id="auth-wachtwoord" autocomplete="current-password" required>
+      </div>
+      <div class="alert alert-error" id="auth-fout" style="display:none;margin:var(--sp-3) 0 0"></div>
+      <button class="btn btn-primary" id="auth-knop" type="submit"
+              style="width:100%;justify-content:center;margin-top:var(--sp-4)">Inloggen</button>
+      <p class="auth-voet">Je blijft ingelogd tot je zelf uitlogt.</p>
+    </form>
+
+    <div id="auth-probleem" style="display:none">
+      <div class="auth-probleem-titel" id="auth-probleem-titel"></div>
+      <p class="auth-tekst" id="auth-probleem-tekst"></p>
+      <p class="auth-tekst auth-herstel" id="auth-probleem-herstel"></p>
+      <button class="btn" style="width:100%;justify-content:center;margin-top:var(--sp-4)"
+              onclick="opnieuwVerbinden()">Opnieuw proberen</button>
+    </div>
+  </div>
+</div>
+
 <div class="app">
 
 <div class="nav-backdrop" id="nav-backdrop" onclick="sluitMobielMenu()"></div>
@@ -99,6 +139,18 @@
   </div>
 
   <div class="nav-spacer"></div>
+
+  <div class="account-blok" id="account-blok" style="display:none">
+    <div class="account-info">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>
+      <span class="account-email" id="account-email"></span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="uitloggen()" title="Uitloggen">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span class="account-uitlog-tekst">Uitloggen</span>
+    </button>
+  </div>
+
   <button class="nav-collapse-btn" onclick="wisselMenu()" aria-label="Menu in- of uitklappen">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="15 18 9 12 15 6"/></svg>
     <span>Menu inklappen</span>
