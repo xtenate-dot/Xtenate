@@ -382,3 +382,23 @@ body.nav-collapsed .account-blok .btn { justify-content: center; }
   body.nav-collapsed .account-uitlog-tekst { display: inline; }
   .auth-kaart { padding: var(--sp-5); }
 }
+
+/* ---------- MIGRATIEFASEN ---------- */
+.mig-fasen {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: var(--sp-3) 0 var(--sp-4); margin-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--border);
+}
+.mig-fase { display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.mig-bol {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+}
+.mig-fase.klaar { color: var(--green); }
+.mig-fase.klaar .mig-bol { background: var(--green-bg); color: var(--green); }
+.mig-fase.bezig { color: var(--accent); font-weight: 500; }
+.mig-fase.bezig .mig-bol { background: var(--accent); color: var(--accent-contrast); }
+.mig-fase.wacht { color: var(--text-hint); }
+.mig-fase.wacht .mig-bol { background: var(--gray-bg); color: var(--text-hint); }
+.mig-pijl { color: var(--text-hint); font-size: 12px; }

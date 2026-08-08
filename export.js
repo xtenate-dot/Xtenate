@@ -253,6 +253,24 @@ export function beschikbareJaren() {
   return [...jaren].sort().reverse();
 }
 
+/**
+ * Zet elk boekjaar in een eigen bestand. Bewust niet één groot bestand: de
+ * import herkent per bestand één "Per Periode"-tabblad, dus alleen zo is de
+ * reservekopie ook echt terug te zetten.
+ */
+export async function maakVolledigeReservekopie(bijElkJaar = () => {}) {
+  const jaren = beschikbareJaren().slice().sort();
+  const gemaakt = [];
+  for (const jaar of jaren) {
+    exporteerNaarExcel(jaar);
+    gemaakt.push(jaar);
+    bijElkJaar(jaar, gemaakt.length, jaren.length);
+    // Even wachten, anders blokkeert de browser de opeenvolgende downloads.
+    await new Promise(r => setTimeout(r, 900));
+  }
+  return gemaakt;
+}
+
 export function exporteerNaarExcel(jaar) {
   const wb = bouwWerkboek(jaar);
   XLSX.writeFile(wb, `Administratie_${jaar}.xlsx`);
