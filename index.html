@@ -121,6 +121,10 @@
     <span class="nav-label">Importeer Excel</span>
   </div>
   <input type="file" id="import-file" accept=".xlsx" style="display:none" onchange="importExcel(this)">
+  <div class="nav-item" onclick="openZelftestModal()" title="Supabase testen">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3h6M10 3v6.5L5.5 18a2 2 0 001.7 3h9.6a2 2 0 001.7-3L14 9.5V3"/></svg>
+    <span class="nav-label">Supabase testen</span>
+  </div>
   <div class="nav-item" onclick="openExportModal()" title="Exporteer Excel">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     <span class="nav-label">Exporteer Excel</span>
@@ -563,6 +567,22 @@
   <div class="modal-actions">
     <button class="btn" onclick="sluitGroepenModal()">Annuleren</button>
     <button class="btn btn-primary" onclick="bewaarGroepen()">Opslaan</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: SUPABASE ZELFTEST -->
+<div class="modal-overlay" id="modal-zelftest">
+<div class="modal" style="width:540px">
+  <h3>Supabase testen</h3>
+  <p style="font-size:12.5px;color:var(--text-muted);line-height:1.55;margin-bottom:var(--sp-4)">
+    Controleert of toevoegen, lezen, wijzigen en verwijderen werken tegen je eigen database. De test maakt regels aan met de naam "Zelftest", verwijdert ze daarna weer, en telt of er niets is blijven staan. Je administratie wordt niet aangeraakt.
+  </p>
+  <div id="zelftest-samenvatting"></div>
+  <div class="card card-flush" id="zelftest-lijst" style="margin:0"></div>
+  <div class="modal-actions">
+    <button class="btn" onclick="sluitZelftestModal()">Sluiten</button>
+    <button class="btn btn-primary" id="zelftest-knop" onclick="startZelftest()">Test starten</button>
   </div>
 </div>
 </div>
