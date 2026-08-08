@@ -7,7 +7,7 @@
 // Supabase staan en Row Level Security ze bewaakt.
 
 import { getClient, leesbareFout, testVerbinding } from './supabase.js?v=20260806a';
-import { isGeconfigureerd } from './config.js?v=20260806a';
+import { configProbleem, isGeconfigureerd } from './config.js?v=20260806a';
 
 const el = id => document.getElementById(id);
 
@@ -124,10 +124,8 @@ export async function start(bijInloggen) {
   toonScherm('bezig');
 
   if (!isGeconfigureerd()) {
-    toonProbleem(
-      'Supabase is nog niet ingesteld',
-      'De project-URL en anon key staan nog op hun standaardwaarde.',
-      'Open <code>config.js</code> en vul <code>SUPABASE_URL</code> en <code>SUPABASE_ANON_KEY</code> in. Je vindt beide in Supabase onder Project Settings → API.');
+    const probleem = configProbleem();
+    toonProbleem(probleem.titel, probleem.tekst, probleem.herstel);
     return;
   }
 

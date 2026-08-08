@@ -4,7 +4,7 @@
 // Alle foutafhandeling rond het verbinden zit hier, zodat de rest van de app
 // alleen met een werkende client of met een duidelijke melding te maken heeft.
 
-import { SESSIE_SLEUTEL, SUPABASE_ANON_KEY, SUPABASE_LIB, SUPABASE_URL, isGeconfigureerd } from './config.js?v=20260806a';
+import { SESSIE_SLEUTEL, SUPABASE_LIB, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, configProbleem, isGeconfigureerd } from './config.js?v=20260806a';
 
 let client = null;
 let bezig = null;
@@ -42,11 +42,10 @@ export function getClient() {
 
   bezig = (async () => {
     if (!isGeconfigureerd()) {
-      throw new VerbindingsFout(
-        'De verbinding met Supabase is nog niet ingesteld. Vul je project-URL en anon key in config.js in.');
+      throw new VerbindingsFout(configProbleem().tekst);
     }
     const createClient = await haalBibliotheek();
-    client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: {
         persistSession: true,      // sessie overleeft het sluiten van de app
         autoRefreshToken: true,
@@ -95,7 +94,7 @@ export function leesbareFout(fout) {
     return 'Geen verbinding met Supabase. Controleer je internetverbinding.';
   }
   if (tekst.includes('invalid api key') || tekst.includes('no api key')) {
-    return 'De anon key in config.js wordt niet geaccepteerd. Controleer of je de juiste sleutel hebt gekopieerd.';
+    return 'De publishable key in config.js wordt niet geaccepteerd. Controleer of je de sleutel uit het vak Publishable key hebt gekopieerd.';
   }
   console.warn('Onbekende fout van Supabase:', fout);
   return fout.message || 'Er ging iets mis bij het verbinden met Supabase.';
