@@ -121,6 +121,10 @@
     <span class="nav-label">Importeer Excel</span>
   </div>
   <input type="file" id="import-file" accept=".xlsx" style="display:none" onchange="importExcel(this)">
+  <div class="nav-item" onclick="openMigratieModal()" title="Migratie naar Supabase">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6a8 3 0 1016 0 8 3 0 10-16 0"/><path d="M4 6v6a8 3 0 0016 0V6"/><path d="M4 12v6a8 3 0 0016 0v-6"/></svg>
+    <span class="nav-label">Migratie</span>
+  </div>
   <div class="nav-item" onclick="openZelftestModal()" title="Supabase testen">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3h6M10 3v6.5L5.5 18a2 2 0 001.7 3h9.6a2 2 0 001.7-3L14 9.5V3"/></svg>
     <span class="nav-label">Supabase testen</span>
@@ -567,6 +571,18 @@
   <div class="modal-actions">
     <button class="btn" onclick="sluitGroepenModal()">Annuleren</button>
     <button class="btn btn-primary" onclick="bewaarGroepen()">Opslaan</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: MIGRATIE NAAR SUPABASE -->
+<div class="modal-overlay" id="modal-migratie">
+<div class="modal" style="width:720px">
+  <h3>Migratie naar Supabase</h3>
+  <div class="mig-fasen" id="mig-fasen"></div>
+  <div id="mig-inhoud"></div>
+  <div style="text-align:right;margin-top:var(--sp-3)">
+    <button class="btn btn-ghost btn-sm" onclick="sluitMigratieModal()">Venster sluiten</button>
   </div>
 </div>
 </div>

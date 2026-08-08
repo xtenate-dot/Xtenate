@@ -30,6 +30,10 @@ import { initUiVoorkeuren, wisselThema, wisselMenu, wisselMobielMenu, sluitMobie
 import { initZoek, focusZoek, sluitZoek } from './search.js?v=20260806a';
 import { openExportModal, sluitExportModal, toonExportSamenvatting, doeExport } from './excel-ui.js?v=20260806a';
 import { openZelftestModal, sluitZelftestModal, startZelftest } from './zelftest-ui.js?v=20260806a';
+import {
+  openMigratieModal, sluitMigratieModal, maakReservekopie, naarDryRun,
+  terugNaarVoorbereiden, startDryRun
+} from './migratie-ui.js?v=20260806a';
 import { vertraag } from './helpers.js?v=20260806a';
 import { toonBoeking, sluitDrawer, openBoeking } from './drawer.js?v=20260806a';
 import { start as startAuth, login, uitloggen, opnieuwVerbinden } from './auth.js?v=20260806a';
@@ -57,6 +61,8 @@ Object.assign(window, {
   openApiKeyModal, saveApiKey,
   openExportModal, sluitExportModal, toonExportSamenvatting, doeExport,
   openZelftestModal, sluitZelftestModal, startZelftest,
+  openMigratieModal, sluitMigratieModal, maakReservekopie, naarDryRun,
+  terugNaarVoorbereiden, startDryRun,
   login, uitloggen, opnieuwVerbinden,
   wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu,
   sluitDrawer
