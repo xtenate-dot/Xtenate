@@ -10,7 +10,7 @@
 import {
   BEGINSALDO_2026, GBNM, REKNM, calcIB, isInkomst, isOmzet, isUitgave, teltBij
 } from './helpers.js?v=20260806a';
-import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260806a';
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, state } from './storage.js?v=20260806a';
 import { verborgenOverzicht } from './negeren.js?v=20260806a';
 import { getClient, leesbareFout } from './supabase.js?v=20260806a';
 
@@ -28,62 +28,91 @@ function alleBoekingen() {
  * werkelijk in deze browser staat wanneer de cijfers onverwacht zijn.
  */
 export function diagnose() {
-  const sleutels = [
-    'xtenate_tx', 'xtenate_hist_tx_override', 'xtenate_covers', 'xtenate_hnvi',
-    'xtenate_voorraad_groepen', 'xtenate_maand_saldos_override',
-    'xtenate_home_totals_override', 'xtenate_controle_negeer'
-  ];
-
-  const opslag = sleutels.map(sleutel => {
-    let ruw = null;
-    try { ruw = localStorage.getItem(sleutel); } catch { /* opslag niet leesbaar */ }
-    if (ruw === null) return { sleutel, aanwezig: false, tekens: 0, aantal: null };
-    let aantal = null;
-    try {
-      const waarde = JSON.parse(ruw);
-      aantal = Array.isArray(waarde) ? waarde.length : Object.keys(waarde).length;
-    } catch { /* geen geldige JSON */ }
-    return { sleutel, aanwezig: true, tekens: ruw.length, aantal };
-  });
-
-  const perJaar = bron => {
+  const perJaar = lijst => {
     const uit = {};
-    bron.forEach(t => { const j = String(t.datum || '').slice(0, 4) || 'geen datum'; uit[j] = (uit[j] || 0) + 1; });
+    (lijst || []).forEach(t => {
+      const j = String(t.datum || '').slice(0, 4) || 'geen datum';
+      uit[j] = (uit[j] || 0) + 1;
+    });
     return uit;
   };
 
-  const jaarMaanden = {};
-  Object.keys(MAAND_SALDOS).forEach(mnd => {
-    const j = mnd.slice(0, 4);
-    (jaarMaanden[j] ||= []).push(mnd.slice(5));
-  });
+  const leesSleutel = sleutel => {
+    let ruw = null;
+    try { ruw = localStorage.getItem(sleutel); } catch { /* opslag niet leesbaar */ }
+    if (ruw === null) return { sleutel, aanwezig: false, tekens: 0, waarde: null };
+    let waarde = null;
+    try { waarde = JSON.parse(ruw); } catch { /* geen geldige JSON */ }
+    return { sleutel, aanwezig: true, tekens: ruw.length, waarde };
+  };
+
+  // ---- de vier bronnen van boekingen ----
+  const tx = leesSleutel('xtenate_tx');
+  const hist = leesSleutel('xtenate_hist_tx_override');
+
+  const bronnen = [
+    { naam: 'xtenate_tx (browser)', soort: 'browser',
+      aanwezig: tx.aanwezig, aantal: tx.waarde?.length ?? 0, perJaar: perJaar(tx.waarde) },
+    { naam: 'xtenate_hist_tx_override (browser)', soort: 'browser',
+      aanwezig: hist.aanwezig, aantal: hist.waarde?.length ?? 0, perJaar: perJaar(hist.waarde) },
+    { naam: 'HIST_TX_DEFAULT (in de code)', soort: 'code',
+      aanwezig: true, aantal: HIST_TX_DEFAULT.length, perJaar: perJaar(HIST_TX_DEFAULT) },
+    { naam: 'In gebruik door de app', soort: 'actief',
+      aanwezig: true, aantal: state.TX.length + state.HIST_TX.length,
+      perJaar: perJaar([...state.TX, ...state.HIST_TX]) }
+  ];
+
+  // ---- welke jaren zijn afgedekt door de override? ----
+  const inDefault = perJaar(HIST_TX_DEFAULT);
+  const inGebruik = perJaar([...state.TX, ...state.HIST_TX]);
+  const afgedekt = Object.keys(inDefault)
+    .filter(j => (inGebruik[j] || 0) < inDefault[j])
+    .map(j => ({ jaar: j, inCode: inDefault[j], inGebruik: inGebruik[j] || 0 }));
+
+  // ---- jaartotalen: wat staat er, en wat zou het moeten zijn? ----
+  const jaartotalen = [...new Set([...Object.keys(HOME_TOTALS), ...Object.keys(HOME_TOTALS_DEFAULT)])]
+    .sort().map(jaar => {
+      const nu = HOME_TOTALS[jaar] || {};
+      const standaard = HOME_TOTALS_DEFAULT[jaar] || {};
+      const velden = ['omzet', 'kosten', 'priveOp', 'priveSt'];
+      return {
+        jaar,
+        nu: Object.fromEntries(velden.map(v => [v, nu[v] ?? null])),
+        standaard: Object.fromEntries(velden.map(v => [v, standaard[v] ?? null])),
+        wijktAf: velden.some(v => Math.abs((nu[v] ?? 0) - (standaard[v] ?? 0)) > 0.01),
+        negatief: velden.filter(v => Number(nu[v]) < 0)
+      };
+    });
+
+  // ---- maandsaldi ----
+  const maandenNu = {};
+  Object.keys(MAAND_SALDOS).forEach(mnd => { (maandenNu[mnd.slice(0, 4)] ||= []).push(mnd.slice(5)); });
 
   return {
-    opslag,
-    txPerJaar: perJaar(state.TX),
-    histPerJaar: perJaar(state.HIST_TX),
-    // Boekingen die in de verkeerde bak zitten: niet-2026 in TX, of 2026 in HIST.
+    opslag: ['xtenate_tx', 'xtenate_hist_tx_override', 'xtenate_covers', 'xtenate_hnvi',
+             'xtenate_voorraad_groepen', 'xtenate_maand_saldos_override',
+             'xtenate_home_totals_override', 'xtenate_controle_negeer']
+      .map(s => {
+        const g = leesSleutel(s);
+        return {
+          sleutel: s, aanwezig: g.aanwezig, tekens: g.tekens,
+          aantal: Array.isArray(g.waarde) ? g.waarde.length
+                : g.waarde && typeof g.waarde === 'object' ? Object.keys(g.waarde).length : null
+        };
+      }),
+    bronnen,
+    afgedekt,
+    overrideActief: hist.aanwezig,
     txBuitenJaar: state.TX.filter(t => !String(t.datum || '').startsWith('2026')).length,
+    txBuitenJaarPerJaar: perJaar(state.TX.filter(t => !String(t.datum || '').startsWith('2026'))),
     histIn2026: state.HIST_TX.filter(t => String(t.datum || '').startsWith('2026')).length,
-    maandenPerJaar: Object.fromEntries(Object.entries(jaarMaanden).map(([j, m]) => [j, m.sort()])),
-    jaartotalen: Object.fromEntries(Object.entries(HOME_TOTALS).map(([j, t]) => [j, {
-      omzet: t.omzet, kosten: t.kosten, priveOp: t.priveOp, priveSt: t.priveSt
-    }])),
-    // Twee jaren met exact dezelfde totalen wijzen op een import die dezelfde
-    // cijfers aan meerdere jaren heeft toegekend.
-    gelijkeJaartotalen: (() => {
-      const gezien = new Map(); const paren = [];
-      Object.entries(HOME_TOTALS).forEach(([j, t]) => {
-        const vinger = JSON.stringify(t);
-        if (gezien.has(vinger)) paren.push([gezien.get(vinger), j]); else gezien.set(vinger, j);
-      });
-      return paren;
-    })(),
-    negatieveTotalen: Object.entries(HOME_TOTALS)
-      .filter(([, t]) => ['omzet', 'kosten', 'priveOp', 'priveSt'].some(k => Number(t[k]) < 0))
-      .map(([j]) => j),
+    jaartotalen,
+    maandenPerJaar: Object.fromEntries(Object.entries(maandenNu).map(([j, m]) => [j, m.sort()])),
+    maandenTotaal: Object.keys(MAAND_SALDOS).length,
     artikelen: state.COVERS.length,
-    groepen: state.GROEPEN.length,
+    artikelenZonderKostprijs: state.COVERS.filter(c => c.inkoopprijs == null || c.inkoopprijs === '').length,
+    stuks: state.COVERS.reduce((s, c) => s + (Number(c.voorraad) || 0), 0),
+    groepen: state.GROEPEN.map(g => g.naam),
     loten: state.HNVI_LOTS.length
   };
 }
@@ -91,31 +120,57 @@ export function diagnose() {
 /** Diagnose als platte tekst, om te kunnen doorsturen. */
 export function diagnoseAlsTekst(d) {
   const r = ['DIAGNOSE LOKALE OPSLAG — ' + new Date().toLocaleString('nl-NL'), ''];
-  r.push('OPSLAGSLEUTELS');
+  const jaren = ['2022', '2023', '2024', '2025', '2026'];
+
+  r.push('BOEKINGEN PER BRON EN PER JAAR');
+  r.push('Bron'.padEnd(38) + jaren.map(j => j.padStart(7)).join('') + '   totaal');
+  d.bronnen.forEach(b => r.push(
+    (b.aanwezig ? b.naam : b.naam + ' [AFWEZIG]').padEnd(38) +
+    jaren.map(j => String(b.perJaar[j] ?? 0).padStart(7)).join('') +
+    String(b.aantal).padStart(9)));
+
+  r.push('');
+  r.push('ZIJN 2023 EN 2024 NOG ERGENS AANWEZIG?');
+  if (!d.afgedekt.length) {
+    r.push('  Elk jaar is in de app even volledig als in de code.');
+  } else {
+    d.afgedekt.forEach(a => r.push(
+      `  ${a.jaar}: in de code ${a.inCode} boekingen, in de app ${a.inGebruik} — ${a.inCode - a.inGebruik} afgedekt`));
+    r.push('  De boekingen staan dus nog in de code en zijn niet verdwenen.');
+  }
+  r.push(`  xtenate_hist_tx_override aanwezig: ${d.overrideActief ? 'JA — die overstemt de code' : 'nee'}`);
+
+  r.push('');
+  r.push('BOEKINGEN IN DE VERKEERDE BAK');
+  r.push(`  Niet-2026 boekingen in xtenate_tx : ${d.txBuitenJaar} ` +
+    (d.txBuitenJaar ? `(${Object.entries(d.txBuitenJaarPerJaar).map(([j, n]) => j + ': ' + n).join(', ')})` : ''));
+  r.push(`  2026-boekingen in de historie      : ${d.histIn2026}`);
+
+  r.push('');
+  r.push('JAARTOTALEN — nu in de app tegenover de standaard in de code');
+  d.jaartotalen.forEach(t => {
+    r.push(`  ${t.jaar}${t.wijktAf ? '  WIJKT AF' : ''}${t.negatief.length ? '  NEGATIEF: ' + t.negatief.join(', ') : ''}`);
+    r.push(`     nu        omzet ${String(t.nu.omzet).padStart(10)}  kosten ${String(t.nu.kosten).padStart(10)}` +
+           `  priveOp ${String(t.nu.priveOp).padStart(10)}  priveSt ${String(t.nu.priveSt).padStart(10)}`);
+    r.push(`     standaard omzet ${String(t.standaard.omzet).padStart(10)}  kosten ${String(t.standaard.kosten).padStart(10)}` +
+           `  priveOp ${String(t.standaard.priveOp).padStart(10)}  priveSt ${String(t.standaard.priveSt).padStart(10)}`);
+  });
+
+  r.push('');
+  r.push(`MAANDSALDI — ${d.maandenTotaal} maanden (standaard zijn er 39)`);
+  Object.entries(d.maandenPerJaar).sort().forEach(([j, m]) => r.push(`  ${j}: ${m.join(' ')}`));
+
+  r.push('');
+  r.push('VOORRAAD');
+  r.push(`  artikelen ${d.artikelen}, waarvan zonder kostprijs ${d.artikelenZonderKostprijs}`);
+  r.push(`  stuks ${d.stuks}, HNVI-loten ${d.loten}`);
+  r.push(`  groepen: ${d.groepen.join(', ')}`);
+
+  r.push('');
+  r.push('OPSLAGSLEUTELS IN DEZE BROWSER');
   d.opslag.forEach(o => r.push(`  ${o.sleutel.padEnd(32)} ${o.aanwezig ? 'aanwezig' : 'AFWEZIG '} ` +
     `${o.aantal != null ? String(o.aantal).padStart(5) + ' regels' : '           '}  ${o.tekens} tekens`));
-  r.push('');
-  r.push('BOEKINGEN IN xtenate_tx (bak voor het lopende jaar)');
-  Object.entries(d.txPerJaar).sort().forEach(([j, n]) => r.push(`  ${j}: ${n}`));
-  r.push(`  waarvan niet uit 2026: ${d.txBuitenJaar}`);
-  r.push('');
-  r.push('BOEKINGEN IN xtenate_hist_tx_override (bak voor de historie)');
-  Object.entries(d.histPerJaar).sort().forEach(([j, n]) => r.push(`  ${j}: ${n}`));
-  r.push(`  waarvan uit 2026: ${d.histIn2026}`);
-  r.push('');
-  r.push('MAANDSALDI PER JAAR');
-  Object.entries(d.maandenPerJaar).sort().forEach(([j, m]) => r.push(`  ${j}: ${m.join(' ')}`));
-  r.push('');
-  r.push('JAARTOTALEN');
-  Object.entries(d.jaartotalen).sort().forEach(([j, t]) =>
-    r.push(`  ${j}  omzet ${String(t.omzet).padStart(10)}  kosten ${String(t.kosten).padStart(10)}` +
-           `  priveOp ${String(t.priveOp).padStart(10)}  priveSt ${String(t.priveSt).padStart(10)}`));
-  if (d.gelijkeJaartotalen.length)
-    r.push('  LET OP: identieke totalen bij ' + d.gelijkeJaartotalen.map(p => p.join(' en ')).join(', '));
-  if (d.negatieveTotalen.length)
-    r.push('  LET OP: negatieve totalen in ' + d.negatieveTotalen.join(', '));
-  r.push('');
-  r.push(`VOORRAAD  artikelen ${d.artikelen}, groepen ${d.groepen}, HNVI-loten ${d.loten}`);
+
   return r.join('\n');
 }
 
