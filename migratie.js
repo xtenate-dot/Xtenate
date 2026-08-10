@@ -211,6 +211,65 @@ export function controleerPlan(plan, stam = null) {
   return punten;
 }
 
+/**
+ * Zet de uitkomst om in platte tekst, zodat je hem in één keer kunt kopiëren
+ * en doorsturen. Bewust zonder opmaak: dan blijft hij overal leesbaar.
+ */
+export function alsTekst({ plan, totalen, waarschuwingen, regels, inDatabase }) {
+  const r = [];
+  const bedrag = n => Number(n || 0).toFixed(2).padStart(12);
+
+  r.push('DRY-RUN XTENATE ADMINISTRATIE — ' + new Date().toLocaleString('nl-NL'));
+  r.push('');
+  r.push('WAT ER ZOU WORDEN OVERGEZET');
+  r.push('Onderdeel'.padEnd(22) + 'Erbij'.padStart(7) + '  Nu in DB  Toelichting');
+  regels.forEach(x => r.push(
+    x.tabel.padEnd(22) + String(x.toevoegen).padStart(7) +
+    String(inDatabase?.[x.tabel] ?? '-').padStart(10) + '  ' + x.toelichting));
+
+  r.push('');
+  r.push('BOEKINGEN PER JAAR');
+  plan.perJaar.forEach(j => r.push(`  ${j.jaar}: ${j.aantal}`));
+  r.push(`  totaal: ${plan.boekingen.length}`);
+
+  r.push('');
+  r.push('FINANCIELE TOTALEN PER JAAR');
+  r.push('Jaar  Boekingen        Omzet       Kosten     Prive op     Prive st  Gesch. IB');
+  totalen.perJaar.forEach(j => r.push(
+    j.jaar.padEnd(6) + String(j.aantal).padStart(9) +
+    bedrag(j.excelOmzet ?? j.omzet) + bedrag(j.excelKosten ?? j.kosten) +
+    bedrag(j.excelPriveOp ?? j.priveOp) + bedrag(j.excelPriveSt ?? j.priveSt) +
+    String(j.ib).padStart(11)));
+
+  r.push('');
+  r.push('VOORRAAD EN SALDO');
+  r.push('  Banksaldo                : ' + totalen.banksaldo.toFixed(2));
+  r.push('  Voorraadwaarde artikelen : ' + totalen.voorraadwaardeArtikelen.toFixed(2) +
+    ` (${totalen.artikelenZonderKostprijs} zonder kostprijs)`);
+  r.push('  Stuks op voorraad        : ' + totalen.voorraadStuks);
+  r.push('  HNVI in voorraad         : ' + totalen.hnviVoorraadwaarde.toFixed(2) +
+    ` (${totalen.hnviInVoorraad} loten)`);
+
+  r.push('');
+  r.push('STAMGEGEVENS');
+  r.push('  Grootboeknummers in gebruik : ' + plan.gebruikteNummers.length +
+    ', nieuw aan te maken: ' + (plan.nieuweNummers?.length ?? '?'));
+  r.push('  Bankrekeningen in gebruik   : ' + plan.gebruikteRekeningen.join(', ') +
+    ', nieuw: ' + (plan.nieuweRekeningen?.length ?? '?'));
+  r.push('  Productgroepen              : ' + plan.productgroepen.map(g => g.naam).join(', '));
+  r.push('  Nieuwe productgroepen       : ' + (plan.nieuweGroepen?.length ?? '?'));
+
+  r.push('');
+  r.push('AANDACHTSPUNTEN');
+  if (!waarschuwingen.length) r.push('  geen');
+  waarschuwingen.forEach(w => {
+    r.push(`  [${w.ernst}] ${w.titel} — ${w.aantal}`);
+    if (w.voorbeelden.length) r.push('      ' + w.voorbeelden.join(' | '));
+  });
+
+  return r.join('\n');
+}
+
 // ------------------------------------------------------------------- dry-run
 
 /** Welke stamgegevens staan er al in Supabase? Nodig om te weten wat er

@@ -32,7 +32,7 @@ import { openExportModal, sluitExportModal, toonExportSamenvatting, doeExport } 
 import { openZelftestModal, sluitZelftestModal, startZelftest } from './zelftest-ui.js?v=20260806a';
 import {
   openMigratieModal, sluitMigratieModal, maakReservekopie, naarDryRun,
-  terugNaarVoorbereiden, startDryRun
+  terugNaarVoorbereiden, startDryRun, kopieerDryRun
 } from './migratie-ui.js?v=20260806a';
 import { vertraag } from './helpers.js?v=20260806a';
 import { toonBoeking, sluitDrawer, openBoeking } from './drawer.js?v=20260806a';
@@ -62,7 +62,7 @@ Object.assign(window, {
   openExportModal, sluitExportModal, toonExportSamenvatting, doeExport,
   openZelftestModal, sluitZelftestModal, startZelftest,
   openMigratieModal, sluitMigratieModal, maakReservekopie, naarDryRun,
-  terugNaarVoorbereiden, startDryRun,
+  terugNaarVoorbereiden, startDryRun, kopieerDryRun,
   login, uitloggen, opnieuwVerbinden,
   wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu,
   sluitDrawer

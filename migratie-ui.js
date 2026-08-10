@@ -5,7 +5,7 @@
 // Migreren is in deze versie nog niet gebouwd en blijft dus op slot.
 
 import { maakVolledigeReservekopie, beschikbareJaren } from './export.js?v=20260806a';
-import { dryRun } from './migratie.js?v=20260806a';
+import { alsTekst, dryRun } from './migratie.js?v=20260806a';
 
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -17,6 +17,7 @@ let fase = 0;
 let reservekopieGemaakt = false;
 let dryRunGoed = false;
 let bezig = false;
+let laatsteUitkomst = null;
 
 function renderFasen() {
   el('mig-fasen').innerHTML = FASEN.map((naam, i) => `
@@ -94,6 +95,7 @@ export async function startDryRun() {
   try {
     const uitkomst = await dryRun();
     dryRunGoed = !uitkomst.heeftFouten && !uitkomst.fout;
+    laatsteUitkomst = uitkomst;
     renderDryRunUitkomst(uitkomst);
   } catch (e) {
     el('mig-inhoud').innerHTML =
@@ -189,8 +191,31 @@ function renderDryRunUitkomst({ plan, totalen, waarschuwingen, regels, inDatabas
     <div class="modal-actions">
       <button class="btn" onclick="terugNaarVoorbereiden()">Terug</button>
       <button class="btn" onclick="startDryRun()">Opnieuw uitvoeren</button>
+      <button class="btn" id="mig-kopieer" onclick="kopieerDryRun()">Resultaten kopiëren</button>
       <button class="btn btn-primary" disabled title="Wordt gebouwd nadat je de cijfers hebt goedgekeurd">Migreren</button>
-    </div>`;
+    </div>
+    <textarea id="mig-tekst" readonly style="width:100%;height:150px;margin-top:var(--sp-3);display:none;
+      font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
+      border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)"></textarea>`;
+}
+
+/** Zet de uitkomst op het klembord, met een tekstvak als terugval. */
+export async function kopieerDryRun() {
+  if (!laatsteUitkomst) return;
+  const tekst = alsTekst(laatsteUitkomst);
+  const vak = el('mig-tekst');
+  const knop = el('mig-kopieer');
+  vak.value = tekst;
+  try {
+    await navigator.clipboard.writeText(tekst);
+    knop.textContent = 'Gekopieerd';
+    setTimeout(() => { knop.textContent = 'Resultaten kopiëren'; }, 2500);
+  } catch {
+    // Kopiëren mag niet altijd zomaar; dan tonen we de tekst om zelf te selecteren.
+    vak.style.display = '';
+    vak.select();
+    knop.textContent = 'Selecteer en kopieer hieronder';
+  }
 }
 
 // -------------------------------------------------------------------- modal
