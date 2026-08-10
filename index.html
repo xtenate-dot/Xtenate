@@ -125,6 +125,10 @@
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6a8 3 0 1016 0 8 3 0 10-16 0"/><path d="M4 6v6a8 3 0 0016 0V6"/><path d="M4 12v6a8 3 0 0016 0v-6"/></svg>
     <span class="nav-label">Migratie</span>
   </div>
+  <div class="nav-item" onclick="openOpslagDiagnose()" title="Opslagdiagnose (tijdelijk, alleen lezen)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+    <span class="nav-label">Opslagdiagnose</span>
+  </div>
   <div class="nav-item" onclick="openZelftestModal()" title="Supabase testen">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3h6M10 3v6.5L5.5 18a2 2 0 001.7 3h9.6a2 2 0 001.7-3L14 9.5V3"/></svg>
     <span class="nav-label">Supabase testen</span>
@@ -583,6 +587,17 @@
   <div id="mig-inhoud"></div>
   <div style="text-align:right;margin-top:var(--sp-3)">
     <button class="btn btn-ghost btn-sm" onclick="sluitMigratieModal()">Venster sluiten</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: OPSLAGDIAGNOSE (tijdelijk, alleen lezen) -->
+<div class="modal-overlay" id="modal-opslagdiagnose">
+<div class="modal" style="width:820px">
+  <h3>Opslagdiagnose <span style="font-size:11px;font-weight:500;color:var(--text-muted)">— tijdelijk, leest alleen</span></h3>
+  <div id="diag-inhoud"></div>
+  <div style="text-align:right;margin-top:var(--sp-3)">
+    <button class="btn btn-ghost btn-sm" onclick="sluitOpslagDiagnose()">Venster sluiten</button>
   </div>
 </div>
 </div>
