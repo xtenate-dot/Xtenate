@@ -35,6 +35,9 @@ import {
   terugNaarVoorbereiden, startDryRun, kopieerDryRun, toonDiagnose,
   naarHerstel, doeHerstel, herstelReservekopie
 } from './migratie-ui.js?v=20260806a';
+import {
+  openOpslagDiagnose, sluitOpslagDiagnose, voerOpslagDiagnoseUit, kopieerOpslagDiagnose
+} from './opslagdiagnose-ui.js?v=20260806a';
 import { vertraag } from './helpers.js?v=20260806a';
 import { toonBoeking, sluitDrawer, openBoeking } from './drawer.js?v=20260806a';
 import { start as startAuth, login, uitloggen, opnieuwVerbinden } from './auth.js?v=20260806a';
@@ -65,6 +68,7 @@ Object.assign(window, {
   openMigratieModal, sluitMigratieModal, maakReservekopie, naarDryRun,
   terugNaarVoorbereiden, startDryRun, kopieerDryRun, toonDiagnose,
   naarHerstel, doeHerstel, herstelReservekopie,
+  openOpslagDiagnose, sluitOpslagDiagnose, voerOpslagDiagnoseUit, kopieerOpslagDiagnose,
   login, uitloggen, opnieuwVerbinden,
   wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu,
   sluitDrawer
