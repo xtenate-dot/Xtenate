@@ -5,7 +5,7 @@
 // Migreren is in deze versie nog niet gebouwd en blijft dus op slot.
 
 import { maakVolledigeReservekopie, beschikbareJaren } from './export.js?v=20260806a';
-import { alsTekst, dryRun } from './migratie.js?v=20260806a';
+import { alsTekst, diagnose, diagnoseAlsTekst, dryRun } from './migratie.js?v=20260806a';
 
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -192,11 +192,23 @@ function renderDryRunUitkomst({ plan, totalen, waarschuwingen, regels, inDatabas
       <button class="btn" onclick="terugNaarVoorbereiden()">Terug</button>
       <button class="btn" onclick="startDryRun()">Opnieuw uitvoeren</button>
       <button class="btn" id="mig-kopieer" onclick="kopieerDryRun()">Resultaten kopiëren</button>
+      <button class="btn" onclick="toonDiagnose()">Diagnose opslag</button>
       <button class="btn btn-primary" disabled title="Wordt gebouwd nadat je de cijfers hebt goedgekeurd">Migreren</button>
     </div>
     <textarea id="mig-tekst" readonly style="width:100%;height:150px;margin-top:var(--sp-3);display:none;
       font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
       border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)"></textarea>`;
+}
+
+/** Toont wat er ruw in de opslag van deze browser staat. */
+export async function toonDiagnose() {
+  const tekst = diagnoseAlsTekst(diagnose());
+  const vak = el('mig-tekst');
+  vak.value = tekst;
+  vak.style.display = '';
+  vak.style.height = '320px';
+  vak.select();
+  try { await navigator.clipboard.writeText(tekst); } catch { /* dan selecteert de gebruiker zelf */ }
 }
 
 /** Zet de uitkomst op het klembord, met een tekstvak als terugval. */

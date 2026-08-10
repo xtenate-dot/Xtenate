@@ -272,11 +272,17 @@ export function importExcel(input) {
         saveCoversData();
       } else {
         // Sla op als historische data: vervang alleen de jaren die in dit bestand voorkomen
-        state.HIST_TX = state.HIST_TX.filter(t => !gevondenJaren.some(j => t.datum.startsWith(j)));
+        // Alleen jaren vervangen waarvoor het bestand ook werkelijk boekingen
+        // bevat. Een leeg tabblad "Bank 2023-05" maakte anders het hele jaar
+        // 2023 leeg zonder dat er iets voor terugkwam.
+        const jarenMetRegels = [...new Set(newTx.map(t => t.datum.slice(0,4)))];
+        const legeJaren = gevondenJaren.filter(j => !jarenMetRegels.includes(j));
+        state.HIST_TX = state.HIST_TX.filter(t => !jarenMetRegels.some(j => t.datum.startsWith(j)));
         state.HIST_TX = [...state.HIST_TX, ...newTx.map(t => ({...t, id: 'h' + jaarLabel.replace(/, /g,'_') + '_' + t.id}))];
-        gevondenJaren.forEach(j => {
+        jarenMetRegels.forEach(j => {
           Object.keys(MAAND_SALDOS).filter(m=>m.startsWith(j)).forEach(m=>delete MAAND_SALDOS[m]);
         });
+        if (legeJaren.length) console.warn('Overgeslagen: tabbladen zonder boekingen voor', legeJaren.join(', '));
         Object.assign(MAAND_SALDOS, newSaldos);
         save('xtenate_hist_tx_override', state.HIST_TX);
         save('xtenate_maand_saldos_override', MAAND_SALDOS);
@@ -295,7 +301,26 @@ export function importExcel(input) {
         priveSt: newTx.filter(t => t.type==='prive_storting').reduce((s,t)=>s+t.bedrag,0),
         hnviInv: newTx.filter(t => t.gb==='7010').reduce((s,t)=>s+t.bedrag,0)
       };
-      const perPeriodeTotals = parsePerPeriode(wb, fallbackTotals);
+      // Staat er een blad "Jaartotalen" in (dat schrijft onze eigen export weg),
+      // dan zijn die cijfers per jaar leidend. Per Periode is een berekend
+      // overzicht en levert voor kosten en prive-stortingen andere bedragen op.
+      const jtBlad = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g,'') === 'jaartotalen');
+      let uitJaartotalen = 0;
+      if (jtBlad) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[jtBlad], {header:1, defval:null});
+        rows.slice(1).forEach(row => {
+          const jaar = row[0];
+          if (!jaar || typeof row[1] !== 'number') return;
+          HOME_TOTALS[String(jaar)] = {
+            omzet: row[1] || 0, kosten: row[2] || 0, omzXt: row[3] || 0, omzBol: row[4] || 0,
+            omzHC: row[5] || 0, priveOp: row[6] || 0, priveSt: row[7] || 0, hnviInv: row[8] || 0
+          };
+          uitJaartotalen++;
+        });
+        if (uitJaartotalen) save('xtenate_home_totals_override', HOME_TOTALS);
+      }
+
+      const perPeriodeTotals = uitJaartotalen ? null : parsePerPeriode(wb, fallbackTotals);
       if (perPeriodeTotals) {
         gevondenJaren.forEach(j => { HOME_TOTALS[j] = perPeriodeTotals; });
         save('xtenate_home_totals_override', HOME_TOTALS);

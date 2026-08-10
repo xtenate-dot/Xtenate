@@ -21,6 +21,104 @@ function alleBoekingen() {
   return [...state.HIST_TX, ...state.TX].map(t => ({ ...t, jaar: String(t.datum || '').slice(0, 4) }));
 }
 
+// ------------------------------------------------------------------ diagnose
+
+/**
+ * Leest de ruwe opslag uit, zonder oordeel. Bedoeld om te kunnen zien wat er
+ * werkelijk in deze browser staat wanneer de cijfers onverwacht zijn.
+ */
+export function diagnose() {
+  const sleutels = [
+    'xtenate_tx', 'xtenate_hist_tx_override', 'xtenate_covers', 'xtenate_hnvi',
+    'xtenate_voorraad_groepen', 'xtenate_maand_saldos_override',
+    'xtenate_home_totals_override', 'xtenate_controle_negeer'
+  ];
+
+  const opslag = sleutels.map(sleutel => {
+    let ruw = null;
+    try { ruw = localStorage.getItem(sleutel); } catch { /* opslag niet leesbaar */ }
+    if (ruw === null) return { sleutel, aanwezig: false, tekens: 0, aantal: null };
+    let aantal = null;
+    try {
+      const waarde = JSON.parse(ruw);
+      aantal = Array.isArray(waarde) ? waarde.length : Object.keys(waarde).length;
+    } catch { /* geen geldige JSON */ }
+    return { sleutel, aanwezig: true, tekens: ruw.length, aantal };
+  });
+
+  const perJaar = bron => {
+    const uit = {};
+    bron.forEach(t => { const j = String(t.datum || '').slice(0, 4) || 'geen datum'; uit[j] = (uit[j] || 0) + 1; });
+    return uit;
+  };
+
+  const jaarMaanden = {};
+  Object.keys(MAAND_SALDOS).forEach(mnd => {
+    const j = mnd.slice(0, 4);
+    (jaarMaanden[j] ||= []).push(mnd.slice(5));
+  });
+
+  return {
+    opslag,
+    txPerJaar: perJaar(state.TX),
+    histPerJaar: perJaar(state.HIST_TX),
+    // Boekingen die in de verkeerde bak zitten: niet-2026 in TX, of 2026 in HIST.
+    txBuitenJaar: state.TX.filter(t => !String(t.datum || '').startsWith('2026')).length,
+    histIn2026: state.HIST_TX.filter(t => String(t.datum || '').startsWith('2026')).length,
+    maandenPerJaar: Object.fromEntries(Object.entries(jaarMaanden).map(([j, m]) => [j, m.sort()])),
+    jaartotalen: Object.fromEntries(Object.entries(HOME_TOTALS).map(([j, t]) => [j, {
+      omzet: t.omzet, kosten: t.kosten, priveOp: t.priveOp, priveSt: t.priveSt
+    }])),
+    // Twee jaren met exact dezelfde totalen wijzen op een import die dezelfde
+    // cijfers aan meerdere jaren heeft toegekend.
+    gelijkeJaartotalen: (() => {
+      const gezien = new Map(); const paren = [];
+      Object.entries(HOME_TOTALS).forEach(([j, t]) => {
+        const vinger = JSON.stringify(t);
+        if (gezien.has(vinger)) paren.push([gezien.get(vinger), j]); else gezien.set(vinger, j);
+      });
+      return paren;
+    })(),
+    negatieveTotalen: Object.entries(HOME_TOTALS)
+      .filter(([, t]) => ['omzet', 'kosten', 'priveOp', 'priveSt'].some(k => Number(t[k]) < 0))
+      .map(([j]) => j),
+    artikelen: state.COVERS.length,
+    groepen: state.GROEPEN.length,
+    loten: state.HNVI_LOTS.length
+  };
+}
+
+/** Diagnose als platte tekst, om te kunnen doorsturen. */
+export function diagnoseAlsTekst(d) {
+  const r = ['DIAGNOSE LOKALE OPSLAG — ' + new Date().toLocaleString('nl-NL'), ''];
+  r.push('OPSLAGSLEUTELS');
+  d.opslag.forEach(o => r.push(`  ${o.sleutel.padEnd(32)} ${o.aanwezig ? 'aanwezig' : 'AFWEZIG '} ` +
+    `${o.aantal != null ? String(o.aantal).padStart(5) + ' regels' : '           '}  ${o.tekens} tekens`));
+  r.push('');
+  r.push('BOEKINGEN IN xtenate_tx (bak voor het lopende jaar)');
+  Object.entries(d.txPerJaar).sort().forEach(([j, n]) => r.push(`  ${j}: ${n}`));
+  r.push(`  waarvan niet uit 2026: ${d.txBuitenJaar}`);
+  r.push('');
+  r.push('BOEKINGEN IN xtenate_hist_tx_override (bak voor de historie)');
+  Object.entries(d.histPerJaar).sort().forEach(([j, n]) => r.push(`  ${j}: ${n}`));
+  r.push(`  waarvan uit 2026: ${d.histIn2026}`);
+  r.push('');
+  r.push('MAANDSALDI PER JAAR');
+  Object.entries(d.maandenPerJaar).sort().forEach(([j, m]) => r.push(`  ${j}: ${m.join(' ')}`));
+  r.push('');
+  r.push('JAARTOTALEN');
+  Object.entries(d.jaartotalen).sort().forEach(([j, t]) =>
+    r.push(`  ${j}  omzet ${String(t.omzet).padStart(10)}  kosten ${String(t.kosten).padStart(10)}` +
+           `  priveOp ${String(t.priveOp).padStart(10)}  priveSt ${String(t.priveSt).padStart(10)}`));
+  if (d.gelijkeJaartotalen.length)
+    r.push('  LET OP: identieke totalen bij ' + d.gelijkeJaartotalen.map(p => p.join(' en ')).join(', '));
+  if (d.negatieveTotalen.length)
+    r.push('  LET OP: negatieve totalen in ' + d.negatieveTotalen.join(', '));
+  r.push('');
+  r.push(`VOORRAAD  artikelen ${d.artikelen}, groepen ${d.groepen}, HNVI-loten ${d.loten}`);
+  return r.join('\n');
+}
+
 // ------------------------------------------------------------------ het plan
 
 /**

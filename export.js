@@ -7,7 +7,7 @@
 // bestand voor jou leesbaar maken maar bij het inlezen worden overgeslagen.
 
 import { GBNM, REKNM, isInkomst, maandLabel } from './helpers.js?v=20260806a';
-import { MAAND_SALDOS, groepNaam, state } from './storage.js?v=20260806a';
+import { HOME_TOTALS, MAAND_SALDOS, groepNaam, state } from './storage.js?v=20260806a';
 
 const CREDITKAART = '1030';
 
@@ -189,6 +189,29 @@ function voorraadPerJaarBlad() {
   return ws;
 }
 
+/**
+ * De jaartotalen zoals ze in de app staan.
+ *
+ * Dit blad is er omdat "Per Periode" een berekend overzicht is en niet
+ * herleidbaar tot de losse boekingen: de kosten en de privé-stortingen in je
+ * eigen administratie wijken af van wat de boekingen optellen. Werd het bestand
+ * teruggelezen, dan verving die herberekening je echte jaartotalen. Hier staan
+ * ze onaangeroerd, en de import gebruikt dit blad met voorrang.
+ */
+function jaartotalenBlad() {
+  const kolommen = ['Jaar', 'Omzet', 'Kosten', 'Omzet Xtenate', 'Omzet Bol', 'Omzet Helmetstore',
+                    'Prive opname', 'Prive storting', 'Inkoop HNVI'];
+  const rijen = [kolommen];
+  Object.keys(HOME_TOTALS).sort().forEach(jaar => {
+    const t = HOME_TOTALS[jaar];
+    rijen.push([Number(jaar), t.omzet ?? 0, t.kosten ?? 0, t.omzXt ?? 0, t.omzBol ?? 0,
+                t.omzHC ?? 0, t.priveOp ?? 0, t.priveSt ?? 0, t.hnviInv ?? 0]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rijen);
+  ws['!cols'] = [{ wch: 8 }].concat(Array.from({ length: 8 }, () => ({ wch: 15 })));
+  return ws;
+}
+
 /** Naslag: welk nummer hoort bij welke rekening. */
 function schemaBlad() {
   const rijen = [['Nummer', 'Omschrijving']];
@@ -222,6 +245,7 @@ export function bouwWerkboek(jaar) {
   const creditkaart = boekingen.filter(t => t.rek === CREDITKAART);
   XLSX.utils.book_append_sheet(wb, creditkaartBlad(creditkaart), 'Creditkaart Prive');
   XLSX.utils.book_append_sheet(wb, perPeriodeBlad(jaar, boekingen), 'Per Periode');
+  XLSX.utils.book_append_sheet(wb, jaartotalenBlad(), 'Jaartotalen');
   XLSX.utils.book_append_sheet(wb, voorraadBlad(), 'Voorraad & Mutaties');
   XLSX.utils.book_append_sheet(wb, voorraadPerJaarBlad(), 'Voorraad per jaar');
   XLSX.utils.book_append_sheet(wb, hnviBlad(), 'HNVI Loten');
