@@ -6,18 +6,22 @@
 
 import { maakVolledigeReservekopie, beschikbareJaren } from './export.js?v=20260806a';
 import { alsTekst, diagnose, diagnoseAlsTekst, dryRun } from './migratie.js?v=20260806a';
+import {
+  herstelPreview, maakOpslagReservekopie, reservekopieen, voerHerstelUit, zetReservekopieTerug
+} from './herstel.js?v=20260806a';
 
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const geld = n => '€ ' + Number(n || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const FASEN = ['Voorbereiden', 'Dry-run', 'Migreren', 'Controleren', 'Geslaagd'];
+const FASEN = ['Voorbereiden', 'Dry-run', 'Herstellen', 'Migreren', 'Controleren', 'Geslaagd'];
 let fase = 0;
 let reservekopieGemaakt = false;
 let dryRunGoed = false;
 let bezig = false;
 let laatsteUitkomst = null;
+let laatstePreview = null;
 
 function renderFasen() {
   el('mig-fasen').innerHTML = FASEN.map((naam, i) => `
@@ -193,6 +197,7 @@ function renderDryRunUitkomst({ plan, totalen, waarschuwingen, regels, inDatabas
       <button class="btn" onclick="startDryRun()">Opnieuw uitvoeren</button>
       <button class="btn" id="mig-kopieer" onclick="kopieerDryRun()">Resultaten kopiëren</button>
       <button class="btn" onclick="toonDiagnose()">Diagnose opslag</button>
+      <button class="btn" onclick="naarHerstel()">Herstel bekijken</button>
       <button class="btn btn-primary" disabled title="Wordt gebouwd nadat je de cijfers hebt goedgekeurd">Migreren</button>
     </div>
     <textarea id="mig-tekst" readonly style="width:100%;height:150px;margin-top:var(--sp-3);display:none;
@@ -227,6 +232,226 @@ export async function kopieerDryRun() {
     vak.style.display = '';
     vak.select();
     knop.textContent = 'Selecteer en kopieer hieronder';
+  }
+}
+
+// ---------------------------------------------------------- 3. herstellen
+
+/** Bedrag zonder euroteken, voor de compacte hersteltabellen. */
+const kaal = n => Number(n || 0).toFixed(2);
+
+export function naarHerstel() {
+  fase = 2;
+  renderFasen();
+  renderHerstelPreview();
+}
+
+function renderHerstelPreview() {
+  const p = herstelPreview();
+  laatstePreview = p;
+
+  const jaarRij = j => `
+    <tr>
+      <td style="padding-left:16px">${j.jaar}</td>
+      <td style="text-align:right" class="muted">${j.nu}</td>
+      <td style="text-align:right" class="muted">${j.inCode}</td>
+      <td style="text-align:right">${j.alleenInApp}${j.dubbelInApp ? ` <span class="neg">(${j.dubbelInApp} dubbel)</span>` : ''}</td>
+      <td style="text-align:right" class="muted">${j.alleenInCode}</td>
+      <td style="text-align:right;font-weight:600;padding-right:16px" class="${j.na >= j.nu ? 'pos' : 'neg'}">${j.na}</td>
+    </tr>`;
+
+  const totaalRij = `
+    <tr style="border-top:1px solid var(--border-strong)">
+      <td style="padding-left:16px;font-weight:600">Historie</td>
+      <td style="text-align:right" class="muted">${p.jaren.reduce((s, j) => s + j.nu, 0)}</td>
+      <td style="text-align:right" class="muted">${p.jaren.reduce((s, j) => s + j.inCode, 0)}</td>
+      <td style="text-align:right">${p.jaren.reduce((s, j) => s + j.alleenInApp, 0)}</td>
+      <td style="text-align:right" class="muted">${p.jaren.reduce((s, j) => s + j.alleenInCode, 0)}</td>
+      <td style="text-align:right;font-weight:600;padding-right:16px">${p.jaren.reduce((s, j) => s + j.na, 0)}</td>
+    </tr>`;
+
+  const jtRij = t => `
+    <tr>
+      <td style="padding-left:16px">${t.jaar}${t.wijzigt ? '' : ' <span class="muted">ongewijzigd</span>'}</td>
+      <td style="text-align:right" class="muted">${kaal(t.nu.omzet)}</td>
+      <td style="text-align:right" class="muted">${kaal(t.nu.kosten)}</td>
+      <td style="text-align:right" class="${Number(t.nu.priveOp) < 0 ? 'neg' : 'muted'}">${kaal(t.nu.priveOp)}</td>
+      <td style="text-align:right" class="${Number(t.nu.priveSt) < 0 ? 'neg' : 'muted'}">${kaal(t.nu.priveSt)}</td>
+      <td style="text-align:right;padding-right:16px" class="pos">${t.na ? `${kaal(t.na.omzet)} / ${kaal(t.na.kosten)} / ${kaal(t.na.priveOp)} / ${kaal(t.na.priveSt)}` : '—'}</td>
+    </tr>`;
+
+  const extra2026 = p.huidigJaar.buitenJaar || p.huidigJaar.dubbel;
+
+  el('mig-inhoud').innerHTML = `
+    <div class="alert alert-info">
+      Dit is een voorbeeldweergave. <strong>Er is nog niets gewijzigd.</strong> De herstelknop staat onderaan en werkt pas nadat je het vinkje hebt gezet.
+    </div>
+
+    <div class="section-head"><div class="eyebrow">Historische boekingen 2022 tot en met 2025</div></div>
+    <p class="ctrl-uitleg">Er wordt niets vervangen maar samengevoegd: de boekingen uit de code vormen de basis, en alles wat daarnaast alleen in jouw browser staat blijft behouden. Twee boekingen gelden als dezelfde bij gelijke datum, bedrag, grootboek, rekening, soort, naam en omschrijving.</p>
+    <div class="card card-flush">
+      <div class="table-wrap"><table class="tbl-compact">
+        <thead><tr>
+          <th style="padding-left:16px">Jaar</th>
+          <th style="text-align:right">Nu</th>
+          <th style="text-align:right">In de code</th>
+          <th style="text-align:right">Alleen bij jou</th>
+          <th style="text-align:right">Alleen in de code</th>
+          <th style="text-align:right;padding-right:16px">Na herstel</th>
+        </tr></thead>
+        <tbody>${p.jaren.map(jaarRij).join('')}${totaalRij}</tbody>
+      </table></div>
+    </div>
+    ${p.jaren.some(j => j.alleenInApp) ? `
+      <p class="ctrl-uitleg"><strong>Alleen bij jou aanwezig, blijft dus staan:</strong><br>${
+        p.jaren.filter(j => j.alleenInApp).map(j =>
+          `${j.jaar}: ${j.alleenInAppVoorbeelden.join(' · ')}${j.alleenInApp > 5 ? ` en nog ${j.alleenInApp - 5}` : ''}`).join('<br>')}</p>` : ''}
+
+    <div class="section-head"><div class="eyebrow">Het lopende jaar blijft ongemoeid</div></div>
+    <div class="card">
+      <p class="ctrl-uitleg" style="margin:0">
+        <strong>${p.huidigJaar.aantal} boekingen</strong> in xtenate_tx worden niet aangeraakt.
+        Verdeling over de jaren: ${Object.entries(p.huidigJaar.perJaar).sort().map(([j, n]) => `${j}: ${n}`).join(' · ')}.
+        ${extra2026 ? `<br><span class="neg">Let op:</span> ${p.huidigJaar.buitenJaar} boekingen hebben geen datum in 2026${p.huidigJaar.dubbel ? `, en ${p.huidigJaar.dubbel} regels komen dubbel voor` : ''}. Die laat ik met rust — daar wil ik eerst met je naar kijken.` : ''}
+      </p>
+    </div>
+
+    <div class="section-head"><div class="eyebrow">Jaartotalen</div></div>
+    <div class="card card-flush">
+      <div class="table-wrap"><table class="tbl-compact">
+        <thead><tr>
+          <th style="padding-left:16px">Jaar</th>
+          <th style="text-align:right">Omzet nu</th>
+          <th style="text-align:right">Kosten nu</th>
+          <th style="text-align:right">Privé op nu</th>
+          <th style="text-align:right">Privé st nu</th>
+          <th style="text-align:right;padding-right:16px">Na herstel (omzet / kosten / op / st)</th>
+        </tr></thead>
+        <tbody>${p.jaartotalen.map(jtRij).join('')}</tbody>
+      </table></div>
+    </div>
+
+    <div class="section-head"><div class="eyebrow">Overig</div></div>
+    <div class="kpi-grid" style="margin-bottom:var(--sp-3)">
+      <div class="kpi kpi--secondary"><div class="kpi-lbl">Maandsaldi</div><div class="kpi-val">${p.maandsaldi.nu} → ${p.maandsaldi.na}</div></div>
+      <div class="kpi kpi--secondary"><div class="kpi-lbl">Voorraadartikelen</div><div class="kpi-val">${p.onaangeroerd.voorraadartikelen}</div><div class="kpi-sub">blijft</div></div>
+      <div class="kpi kpi--secondary"><div class="kpi-lbl">HNVI-loten</div><div class="kpi-val">${p.onaangeroerd.hnviLoten}</div><div class="kpi-sub">blijft</div></div>
+      <div class="kpi kpi--secondary"><div class="kpi-lbl">Genegeerde meldingen</div><div class="kpi-val">${p.onaangeroerd.genegeerdeMeldingen}</div><div class="kpi-sub">blijft</div></div>
+    </div>
+
+    <div class="alert alert-ok">
+      Totaal aantal boekingen: <strong>${p.totaalNu} → ${p.totaalNa}</strong>.
+      Voordat er iets verandert wordt je complete browseropslag als reservekopie weggezet, zodat dit terug te draaien is.
+    </div>
+
+    <label style="display:flex;align-items:center;gap:10px;font-size:12.5px;margin:var(--sp-4) 0">
+      <input type="checkbox" id="mig-akkoord" onchange="document.getElementById('mig-herstel-knop').disabled = !this.checked">
+      Ik heb de bovenstaande cijfers gecontroleerd en ga akkoord met het herstel.
+    </label>
+    <div id="mig-herstel-status"></div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="startDryRun()">Terug naar de dry-run</button>
+      <button class="btn btn-primary" id="mig-herstel-knop" disabled onclick="doeHerstel()">Herstel uitvoeren</button>
+    </div>`;
+}
+
+export async function doeHerstel() {
+  if (bezig) return;
+  if (!el('mig-akkoord')?.checked) return;
+  bezig = true;
+  el('mig-herstel-knop').disabled = true;
+  el('mig-herstel-status').innerHTML = '<div class="alert alert-info">Bezig met herstellen…</div>';
+  try {
+    const uit = voerHerstelUit();
+    const na = diagnose();
+    const controle = await dryRun();
+    laatsteUitkomst = controle;
+    fase = 3;
+    renderFasen();
+    renderNaHerstel(uit, na, controle);
+  } catch (e) {
+    el('mig-herstel-status').innerHTML =
+      `<div class="alert alert-error">Het herstel is mislukt: ${esc(e.message)}. Er is een reservekopie gemaakt; die kun je hieronder terugzetten.</div>`;
+    el('mig-herstel-knop').disabled = false;
+  } finally {
+    bezig = false;
+  }
+}
+
+function renderNaHerstel(uit, na, controle) {
+  const kopieen = reservekopieen();
+  el('mig-inhoud').innerHTML = `
+    <div class="alert alert-ok">
+      Herstel uitgevoerd. Reservekopie weggezet onder <code>${esc(uit.reservekopie.naam)}</code> met ${uit.reservekopie.sleutels} opslagsleutels.
+    </div>
+
+    <div class="section-head"><div class="eyebrow">Boekingen per jaar na herstel</div></div>
+    <div class="card card-flush">
+      <div class="table-wrap"><table class="tbl-compact">
+        <thead><tr><th style="padding-left:16px">Jaar</th><th style="text-align:right;padding-right:16px">Boekingen</th></tr></thead>
+        <tbody>${controle.plan.perJaar.map(j =>
+          `<tr><td style="padding-left:16px">${j.jaar}</td><td style="text-align:right;padding-right:16px">${j.aantal}</td></tr>`).join('')}
+          <tr style="border-top:1px solid var(--border-strong)">
+            <td style="padding-left:16px;font-weight:600">Totaal</td>
+            <td style="text-align:right;font-weight:600;padding-right:16px">${controle.plan.boekingen.length}</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="section-head"><div class="eyebrow">Jaartotalen na herstel</div></div>
+    <div class="card card-flush">
+      <div class="table-wrap"><table class="tbl-compact">
+        <thead><tr><th style="padding-left:16px">Jaar</th><th style="text-align:right">Omzet</th><th style="text-align:right">Kosten</th>
+          <th style="text-align:right">Privé op</th><th style="text-align:right;padding-right:16px">Privé st</th></tr></thead>
+        <tbody>${controle.totalen.perJaar.map(j => `
+          <tr><td style="padding-left:16px">${j.jaar}</td>
+            <td style="text-align:right">${kaal(j.excelOmzet ?? j.omzet)}</td>
+            <td style="text-align:right">${kaal(j.excelKosten ?? j.kosten)}</td>
+            <td style="text-align:right" class="${(j.excelPriveOp ?? j.priveOp) < 0 ? 'neg' : ''}">${kaal(j.excelPriveOp ?? j.priveOp)}</td>
+            <td style="text-align:right;padding-right:16px" class="${(j.excelPriveSt ?? j.priveSt) < 0 ? 'neg' : ''}">${kaal(j.excelPriveSt ?? j.priveSt)}</td></tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="section-head"><div class="eyebrow">Maandsaldi</div></div>
+    <div class="card"><p class="ctrl-uitleg" style="margin:0">${na.maandenTotaal} maanden: ${
+      Object.entries(na.maandenPerJaar).sort().map(([j, m]) => `${j} (${m.length})`).join(' · ')}</p></div>
+
+    ${kopieen.length ? `
+      <div class="section-head"><div class="eyebrow">Reservekopieën in deze browser</div></div>
+      <div class="card card-flush">${kopieen.map(k => `
+        <div class="ctrl-item">
+          <span class="ctrl-item-main" style="cursor:default">
+            <span class="ctrl-item-label">${esc(k.sleutel)}</span>
+            <span class="ctrl-item-sub">${esc(k.gemaakt)} · ${k.sleutels} sleutels</span>
+          </span>
+          <div class="ctrl-item-acties">
+            <button class="btn btn-sm" onclick="herstelReservekopie('${esc(k.sleutel)}')">Terugzetten</button>
+          </div>
+        </div>`).join('')}</div>` : ''}
+
+    <div class="alert alert-info" style="margin-top:var(--sp-4)">
+      Ververs de pagina om alles opnieuw te laten tekenen, en controleer daarna de Bank-pagina per jaar. Er is nog steeds niets naar Supabase geschreven.
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="toonDiagnose()">Diagnose opnieuw</button>
+      <button class="btn" onclick="startDryRun()">Dry-run opnieuw</button>
+      <button class="btn" onclick="kopieerDryRun()">Resultaten kopiëren</button>
+    </div>
+    <textarea id="mig-tekst" readonly style="width:100%;height:150px;margin-top:var(--sp-3);display:none;
+      font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
+      border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)"></textarea>`;
+}
+
+export function herstelReservekopie(sleutel) {
+  if (!window.confirm(`Alles terugzetten zoals het was in ${sleutel}? Wijzigingen sindsdien gaan verloren. Daarna moet je de pagina verversen.`)) return;
+  try {
+    const aantal = zetReservekopieTerug(sleutel);
+    window.alert(`${aantal} opslagsleutels teruggezet. Ververs de pagina om het resultaat te zien.`);
+  } catch (e) {
+    window.alert('Terugzetten mislukt: ' + e.message);
   }
 }
 

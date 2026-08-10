@@ -20,16 +20,21 @@ export const state = {
 };
 
 export const HIST_TX_DEFAULT = [];
-state.HIST_TX = load('xtenate_hist_tx_override', HIST_TX_DEFAULT);
+state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
 
-export let MAAND_SALDOS = load('xtenate_maand_saldos_override', {});
+// De maandsaldi zoals ze in de app zijn vastgelegd. Apart benoemd zodat een
+// herstelactie ze binnen dezelfde sessie kan terugzetten, en niet alleen de
+// override uit de browser kan weghalen.
+export const MAAND_SALDOS_DEFAULT = {};
+
+export let MAAND_SALDOS = load('xtenate_maand_saldos_override', JSON.parse(JSON.stringify(MAAND_SALDOS_DEFAULT)));
 
 // Jaartotalen (omzet, kosten, privé opname/storting, HNVI-inkoop) zoals ingelezen uit het
 // "Per Periode"-tabblad van een Excel-import. Deze zijn leidend boven de losse boekingen,
 // want ze komen rechtstreeks uit de boekhouding en zijn dus de betrouwbaarste bron.
 // Structuur: { "2025": {omzet, kosten, omzXt, omzBol, omzHC, priveOp, priveSt, hnviInv}, ... }
 export const HOME_TOTALS_DEFAULT = {};
-export let HOME_TOTALS = load('xtenate_home_totals_override', HOME_TOTALS_DEFAULT);
+export let HOME_TOTALS = load('xtenate_home_totals_override', JSON.parse(JSON.stringify(HOME_TOTALS_DEFAULT)));
 
 const TX_INIT = [];
 
@@ -39,9 +44,12 @@ export function load(key, def) { try { const v = localStorage.getItem(key); retu
 
 export function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
 
-state.TX = load('xtenate_tx', TX_INIT);
+/** Diepe kopie, zodat werkgegevens en standaardwaarden nooit hetzelfde object zijn. */
+export const kopie = v => JSON.parse(JSON.stringify(v));
 
-state.COVERS = load('xtenate_covers', COVERS_INIT);
+state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
+
+state.COVERS = load('xtenate_covers', JSON.parse(JSON.stringify(COVERS_INIT)));
 
 // Voorraadartikelen van vóór de categorie-indeling aanvullen. Alles wat er al
 // stond is een Funny Cover; inkoopprijs en minimumvoorraad blijven leeg tot ze
