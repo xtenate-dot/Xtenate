@@ -7,7 +7,7 @@
 // je ziet wat er écht staat en niet wat de app er in het geheugen van gemaakt
 // heeft. Deze module mag na het onderzoek weer weg.
 
-import { HIST_TX_DEFAULT, HOME_TOTALS_DEFAULT, MAAND_SALDOS_DEFAULT }
+import { HIST_TX_DEFAULT, HOME_TOTALS_DEFAULT, MAAND_SALDOS_DEFAULT, state }
   from './storage.js?v=20260812c';
 
 const JAREN = ['2022', '2023', '2024', '2025', '2026'];
@@ -590,4 +590,226 @@ export function overrideDetailAlsTekst(d) {
   p('');
   p('  ontbrekende maanden binnen de reeks:', d.gaten.length ? d.gaten.join(', ') : 'geen');
   return r.join('\n');
+}
+
+// ------------------------------------------ genegeerde meldingen en backup
+
+/** Leest xtenate_controle_negeer voluit en toont waar elke melding naar wijst. */
+export async function negeerDetail() {
+  const ruw = localStorage.getItem('xtenate_controle_negeer');
+  const uit = { aanwezig: ruw !== null, ruw: ruw ?? '', som: ruw === null ? '—' : await checksum(ruw),
+                meldingen: [], controles: [], fout: null };
+  if (ruw === null) return uit;
+  let d;
+  try { d = JSON.parse(ruw); } catch (e) { uit.fout = e.message; return uit; }
+
+  // De sleutel van een melding is `${controleId}::${itemSleutel}` en itemSleutel
+  // is bij de meeste controles het boekingsnummer. Dat nummer verandert bij een
+  // herstel, dus we tonen het apart zodat je kunt zien wat er stukgaat.
+  Object.entries(d.meldingen || {}).forEach(([sleutel, m]) => {
+    uit.meldingen.push({
+      sleutel,
+      controleId: m.controleId ?? sleutel.split('::')[0],
+      itemSleutel: m.itemSleutel ?? sleutel.split('::').slice(1).join('::'),
+      label: m.label ?? '', controleTitel: m.controleTitel ?? '',
+      reden: m.reden ?? '', vinger: m.vinger ?? '', wanneer: m.wanneer ?? ''
+    });
+  });
+  Object.entries(d.controles || {}).forEach(([id, c]) => {
+    uit.controles.push({ controleId: id, controleTitel: c.controleTitel ?? '', wanneer: c.wanneer ?? '' });
+  });
+  return uit;
+}
+
+/**
+ * Bouwt een volledige reservekopie van localStorage als bestand en biedt die
+ * aan als download. Er wordt niets naar localStorage geschreven — alleen
+ * gelezen en weggeschreven naar je schijf.
+ */
+export async function backupBestand() {
+  const inhoud = {};
+  const sleutels = [];
+  for (let i = 0; i < localStorage.length; i++) sleutels.push(localStorage.key(i));
+  sleutels.sort();
+  for (const s of sleutels) inhoud[s] = localStorage.getItem(s);
+
+  const per = {};
+  for (const s of sleutels) {
+    const ruw = inhoud[s] ?? '';
+    let records = null, vorm = 'tekst';
+    try {
+      const d = JSON.parse(ruw);
+      if (Array.isArray(d)) { vorm = 'lijst'; records = d.length; }
+      else if (d && typeof d === 'object') { vorm = 'object'; records = Object.keys(d).length; }
+      else vorm = typeof d;
+    } catch { vorm = 'tekst (geen JSON)'; }
+    per[s] = { vorm, records, tekens: ruw.length, bytes: new Blob([ruw]).size, som: await checksum(ruw) };
+  }
+
+  const pakket = {
+    soort: 'xtenate-volledige-reservekopie',
+    versie: 1,
+    gemaakt: new Date().toISOString(),
+    tijdzone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    aantalSleutels: sleutels.length,
+    perSleutel: per,
+    inhoud
+  };
+  const tekst = JSON.stringify(pakket, null, 2);
+  const naam = 'xtenate-backup-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '') + '.json';
+
+  const blob = new Blob([tekst], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = naam;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+
+  return { naam, sleutels: sleutels.length, tekens: tekst.length, som: await checksum(tekst), per };
+}
+
+// ------------------------------------------- negeerlijst met D1-gevolgen
+//
+// Voor elke weggeklikte melding: waar wijst hij naar, raakt D1 die boeking,
+// welk nummer krijgt hij daarna, en is meemigreren zinvol. Leest alleen.
+
+const zonderDatum = t => [
+  Number(t.bedrag).toFixed(2), String(t.gb), String(t.rek),
+  String(t.naam || '').trim().toLowerCase(), String(t.omschr || '').trim().toLowerCase()
+].join('|');
+
+const dagErbij = datum => {
+  const d = new Date(datum + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+};
+
+export async function negeerAnalyse() {
+  const ruw = localStorage.getItem('xtenate_controle_negeer');
+  const uit = {
+    moment: new Date().toISOString(), momentLokaal: new Date().toLocaleString('nl-NL'),
+    aanwezig: ruw !== null, ruw: ruw ?? '', som: ruw === null ? '—' : await checksum(ruw),
+    regels: [], fout: null
+  };
+  if (ruw === null) return uit;
+  let d;
+  try { d = JSON.parse(ruw); } catch (e) { uit.fout = e.message; return uit; }
+
+  const hist = Array.isArray(state.HIST_TX) ? state.HIST_TX : [];
+  const tx = Array.isArray(state.TX) ? state.TX : [];
+  const covers = Array.isArray(state.COVERS) ? state.COVERS : [];
+  const loten = Array.isArray(state.HNVI_LOTS) ? state.HNVI_LOTS : [];
+
+  // Code-boekingen gegroepeerd op inhoud zonder datum, om de tegenhanger te vinden.
+  const codeGroep = new Map();
+  HIST_TX_DEFAULT.forEach(t => {
+    const k = t.datum + '#' + zonderDatum(t);
+    if (!codeGroep.has(k)) codeGroep.set(k, []);
+    codeGroep.get(k).push(t);
+  });
+
+  Object.entries(d.controles || {}).forEach(([id, c]) => uit.regels.push({
+    soort: 'controle', sleutel: id, huidigId: id, itemSleutel: '', vinger: '',
+    entiteit: 'geen — hele controle uitgezet', wijstNaar: 'hele controle uitgezet',
+    geraaktDoorD1: false, d1: 'NEE', nieuwId: '',
+    oordeel: 'JA', toelichting: 'verwijst niet naar een boeking',
+    controleTitel: c.controleTitel ?? '', reden: 'nooit', wanneer: c.wanneer ?? '', label: ''
+  }));
+
+  Object.entries(d.meldingen || {}).forEach(([sleutel, m]) => {
+    const item = String(m.itemSleutel ?? sleutel.split('::').slice(1).join('::'));
+    const vinger = String(m.vinger ?? '');
+    const r = {
+      soort: 'melding', sleutel, huidigId: item, itemSleutel: item, vinger,
+      controleId: m.controleId ?? sleutel.split('::')[0],
+      controleTitel: m.controleTitel ?? '', label: m.label ?? '',
+      reden: m.reden ?? '', wanneer: m.wanneer ?? '',
+      entiteit: '', wijstNaar: '', geraaktDoorD1: false, d1: 'NEE',
+      nieuwId: '', oordeel: '', toelichting: ''
+    };
+
+    const inHist = hist.find(t => String(t.id) === item);
+    const inTx = tx.find(t => String(t.id) === item);
+    const cover = covers.find(c => String(c.id) === item);
+    const lot = loten.find(l => String(l.id) === item || String(l._key) === item);
+
+    if (inHist) {
+      r.entiteit = 'historische boeking';
+      r.wijstNaar = `${inHist.datum} · ${Number(inHist.bedrag).toFixed(2)} · ${inHist.naam || '(geen naam)'}`;
+      r.geraaktDoorD1 = true; r.d1 = 'JA';
+      const kandidaten = codeGroep.get(dagErbij(inHist.datum) + '#' + zonderDatum(inHist)) || [];
+      if (kandidaten.length === 1) {
+        r.nieuwId = String(kandidaten[0].id);
+        if (vinger && vinger.includes(inHist.datum)) {
+          r.oordeel = 'NEE';
+          r.toelichting = 'de vingerafdruk bevat de oude datum; de melding komt hoe dan ook terug';
+        } else {
+          r.oordeel = 'JA';
+          r.toelichting = 'precies één tegenhanger in de codehistorie';
+        }
+      } else if (kandidaten.length > 1) {
+        // Niet gokken: meerdere identieke boekingen, dus niet te bepalen welke bedoeld was.
+        r.nieuwId = '';
+        r.oordeel = 'ONBESLIST';
+        r.toelichting = `${kandidaten.length} identieke boekingen (${kandidaten.map(t => t.id).join(', ')}); niet te bepalen welke bedoeld was`;
+      } else {
+        r.nieuwId = '';
+        r.oordeel = 'ONBESLIST';
+        r.toelichting = 'geen tegenhanger in de codehistorie gevonden';
+      }
+    } else if (inTx) {
+      r.entiteit = 'boeking lopend jaar';
+      r.wijstNaar = `${inTx.datum} · ${Number(inTx.bedrag).toFixed(2)} · ${inTx.naam || ''}`;
+      r.oordeel = 'JA'; r.toelichting = 'xtenate_tx wordt niet aangeraakt';
+    } else if (cover) {
+      r.entiteit = 'voorraadartikel';
+      r.wijstNaar = String(cover.artikel || '');
+      r.oordeel = 'JA'; r.toelichting = 'de voorraad wordt niet aangeraakt';
+    } else if (lot) {
+      r.entiteit = 'HNVI-lot';
+      r.wijstNaar = String(lot.omschr || '');
+      r.oordeel = 'JA'; r.toelichting = 'de loten worden niet aangeraakt';
+    } else {
+      r.entiteit = 'onbekend';
+      r.wijstNaar = 'niet gevonden';
+      r.oordeel = 'N.V.T.'; r.toelichting = 'verwijst al nergens meer naar';
+    }
+    uit.regels.push(r);
+  });
+
+  uit.aantalMeldingen = uit.regels.filter(r => r.soort === 'melding').length;
+  uit.aantalControles = uit.regels.filter(r => r.soort === 'controle').length;
+  uit.aantalTotaal = uit.regels.length;
+  uit.geraakt = uit.regels.filter(r => r.geraaktDoorD1).length;
+  uit.perOordeel = uit.regels.reduce((a, r) => { a[r.oordeel] = (a[r.oordeel] || 0) + 1; return a; }, {});
+  return uit;
+}
+
+const csvVeld = v => {
+  const s = String(v ?? '');
+  return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+};
+
+/** Zet de negeerlijst als JSON en CSV op je schijf. Schrijft niets terug. */
+export async function downloadNegeerlijst() {
+  const a = await negeerAnalyse();
+  const stempel = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '');
+
+  // Exact dezelfde gegevensverzameling als de JSON, alleen plat gemaakt.
+  const kolommen = ['soort', 'sleutel', 'huidigId', 'controleId', 'controleTitel', 'label',
+    'reden', 'wanneer', 'vinger', 'entiteit', 'wijstNaar', 'd1', 'nieuwId', 'oordeel', 'toelichting'];
+  const csv = [kolommen.join(';'),
+    ...a.regels.map(r => kolommen.map(k => csvVeld(r[k])).join(';'))].join('\n');
+
+  const zet = (tekst, naam, type) => {
+    const url = URL.createObjectURL(new Blob([tekst], { type }));
+    const el = document.createElement('a');
+    el.href = url; el.download = naam;
+    document.body.appendChild(el); el.click(); el.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  };
+  zet(JSON.stringify(a, null, 2), `xtenate-negeerlijst-${stempel}.json`, 'application/json');
+  setTimeout(() => zet(csv, `xtenate-negeerlijst-${stempel}.csv`, 'text/csv'), 400);
+
+  return { analyse: a, csvRegels: a.regels.length, som: await checksum(csv) };
 }
