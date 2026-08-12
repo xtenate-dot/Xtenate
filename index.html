@@ -125,6 +125,14 @@
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6a8 3 0 1016 0 8 3 0 10-16 0"/><path d="M4 6v6a8 3 0 0016 0V6"/><path d="M4 12v6a8 3 0 0016 0v-6"/></svg>
     <span class="nav-label">Migratie</span>
   </div>
+  <div class="nav-item" onclick="openGegevenscontrole()" title="Gegevenscontrole (keuze per afwijking)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+    <span class="nav-label">Gegevenscontrole</span>
+  </div>
+  <div class="nav-item" onclick="openUitvoeren()" title="Herstel uitvoeren (met reservekopie en controle)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+    <span class="nav-label">Herstel uitvoeren</span>
+  </div>
   <div class="nav-item" onclick="openOpslagDiagnose()" title="Opslagdiagnose (tijdelijk, alleen lezen)">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
     <span class="nav-label">Opslagdiagnose</span>
@@ -587,6 +595,29 @@
   <div id="mig-inhoud"></div>
   <div style="text-align:right;margin-top:var(--sp-3)">
     <button class="btn btn-ghost btn-sm" onclick="sluitMigratieModal()">Venster sluiten</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: HERSTEL UITVOEREN -->
+<div class="modal-overlay" id="modal-uitvoeren">
+<div class="modal" style="width:880px">
+  <h3>Herstel uitvoeren</h3>
+  <div id="uit-inhoud"></div>
+  <div style="text-align:right;margin-top:var(--sp-3)">
+    <button class="btn btn-ghost btn-sm" onclick="sluitUitvoeren()">Venster sluiten</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: GEGEVENSCONTROLE -->
+<div class="modal-overlay" id="modal-gegevenscontrole">
+<div class="modal" style="width:900px">
+  <h3>Gegevenscontrole <span style="font-size:11px;font-weight:500;color:var(--text-muted)">— keuze per afwijking, wijzigt niets</span></h3>
+  <div id="gc-inhoud"></div>
+  <div style="text-align:right;margin-top:var(--sp-3)">
+    <button class="btn btn-ghost btn-sm" onclick="herlaadGegevenscontrole()">Opnieuw controleren</button>
+    <button class="btn btn-ghost btn-sm" onclick="sluitGegevenscontrole()">Venster sluiten</button>
   </div>
 </div>
 </div>
