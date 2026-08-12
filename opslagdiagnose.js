@@ -323,3 +323,131 @@ export function opslagDiagnoseAlsTekst(d) {
 
   return r.join('\n');
 }
+
+// ---------------------------------------------------------------- snapshot
+//
+// Bevriest de opslag op papier: elke sleutel met omvang, aantal records,
+// datumbereik en een checksum, zodat later aantoonbaar is of er iets is
+// veranderd. Ook dit leest alleen.
+
+/** SHA-256 over de rauwe tekst, zodat elke wijziging zichtbaar wordt. */
+async function checksum(tekst) {
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(tekst));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
+  } catch {
+    // Zonder https is crypto.subtle niet beschikbaar; dan een eenvoudige
+    // controlewaarde, die voor vergelijken tussen twee momenten volstaat.
+    let h = 2166136261;
+    for (let i = 0; i < tekst.length; i++) { h ^= tekst.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return 'fnv-' + (h >>> 0).toString(16);
+  }
+}
+
+const datumsVan = lijst => lijst
+  .map(t => String(t && (t.datum ?? t.date) || ''))
+  .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+
+export async function opslagSnapshot() {
+  const sleutels = [];
+  for (let i = 0; i < localStorage.length; i++) sleutels.push(localStorage.key(i));
+  sleutels.sort();
+
+  const regels = [];
+  for (const sleutel of sleutels) {
+    const ruw = localStorage.getItem(sleutel) ?? '';
+    const r = {
+      sleutel,
+      tekens: ruw.length,
+      bytes: new Blob([ruw]).size,
+      som: await checksum(ruw),
+      vorm: 'tekst',
+      records: null,
+      eerste: null,
+      laatste: null,
+      perJaar: null,
+      opmerking: ''
+    };
+    try {
+      const d = JSON.parse(ruw);
+      if (Array.isArray(d)) {
+        r.vorm = 'lijst';
+        r.records = d.length;
+        const dt = datumsVan(d);
+        if (dt.length) {
+          r.eerste = dt[0]; r.laatste = dt[dt.length - 1];
+          const pj = {};
+          dt.forEach(x => { pj[x.slice(0, 4)] = (pj[x.slice(0, 4)] || 0) + 1; });
+          r.perJaar = pj;
+          if (dt.length < d.length) r.opmerking = `${d.length - dt.length} zonder geldige datum`;
+        }
+      } else if (d && typeof d === 'object') {
+        r.vorm = 'object';
+        r.records = Object.keys(d).length;
+        const k = Object.keys(d).sort();
+        if (k.length) { r.eerste = k[0]; r.laatste = k[k.length - 1]; }
+      } else {
+        r.vorm = typeof d;
+        r.opmerking = String(ruw).slice(0, 40);
+      }
+    } catch {
+      r.opmerking = 'geen geldige JSON';
+    }
+    regels.push(r);
+  }
+
+  // Voorraad en HNVI apart uitschrijven: die zijn bij de import vervangen en
+  // we moeten kunnen nagaan wát er staat, niet alleen hoeveel.
+  const lees = s => { try { const d = JSON.parse(localStorage.getItem(s) || 'null'); return Array.isArray(d) ? d : []; } catch { return []; } };
+  const covers = lees('xtenate_covers').map(c => ({
+    id: c.id, artikel: c.artikel, groep: c.groep ?? '', voorraad: c.voorraad,
+    inkoopprijs: c.inkoopprijs ?? null, prijs: c.prijs ?? null
+  }));
+  const loten = lees('xtenate_hnvi').map(l => ({
+    id: l.id, datum: l.datum, omschr: l.omschr, inkoop: l.inkoop, verkoop: l.verkoop, status: l.status
+  }));
+
+  // Sleutels die op een reservekopie lijken: die kunnen de oude stand bevatten.
+  const kopieSleutels = sleutels.filter(s => /backup|kopie|reserve|snapshot|_bak/i.test(s));
+
+  return {
+    moment: new Date().toISOString(),
+    momentLokaal: new Date().toLocaleString('nl-NL'),
+    tijdzone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    aantalSleutels: sleutels.length,
+    totaalBytes: regels.reduce((s, r) => s + r.bytes, 0),
+    regels,
+    covers,
+    loten,
+    kopieSleutels
+  };
+}
+
+export function opslagSnapshotAlsTekst(s) {
+  const r = [];
+  const p = (...a) => r.push(a.join(' '));
+  p('SNAPSHOT OPSLAG XTENATE — ALLEEN LEZEN —', s.momentLokaal, '|', s.tijdzone);
+  p('Er is niets geschreven. Deze momentopname dient als bevriezing.');
+  p('');
+  p(`${s.aantalSleutels} sleutels, samen ${s.totaalBytes} bytes`);
+  p('');
+  p('sleutel'.padEnd(34) + 'vorm'.padEnd(8) + 'records'.padStart(8) + 'bytes'.padStart(9)
+    + '  eerste'.padEnd(14) + 'laatste'.padEnd(13) + 'checksum');
+  s.regels.forEach(x => p(
+    String(x.sleutel).padEnd(34) + String(x.vorm).padEnd(8)
+    + String(x.records ?? '-').padStart(8) + String(x.bytes).padStart(9)
+    + '  ' + String(x.eerste ?? '-').padEnd(12) + String(x.laatste ?? '-').padEnd(13)
+    + x.som + (x.opmerking ? '  ← ' + x.opmerking : '')));
+  p('');
+  s.regels.filter(x => x.perJaar).forEach(x => p(x.sleutel, 'per jaar:', JSON.stringify(x.perJaar)));
+  p('');
+  p('=== RESERVEKOPIE-ACHTIGE SLEUTELS ===');
+  p(s.kopieSleutels.length ? '  ' + s.kopieSleutels.join(', ') : '  geen gevonden');
+  p('');
+  p(`=== VOORRAADARTIKELEN (${s.covers.length}) ===`);
+  s.covers.forEach(c => p(`   id=${c.id} | ${String(c.artikel).slice(0, 40).padEnd(40)} | groep ${c.groep} | voorraad ${c.voorraad} | inkoopprijs ${c.inkoopprijs ?? '-'}`));
+  p('');
+  p(`=== HNVI-LOTEN (${s.loten.length}) ===`);
+  s.loten.forEach(l => p(`   id=${l.id} | ${l.datum || '(geen datum)'} | ${String(l.omschr).slice(0, 34).padEnd(34)} | inkoop ${l.inkoop} | verkoop ${l.verkoop ?? '-'} | ${l.status}`));
+  return r.join('\n');
+}
