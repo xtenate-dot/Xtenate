@@ -33,7 +33,7 @@ import { openZelftestModal, sluitZelftestModal, startZelftest } from './zelftest
 import {
   openMigratieModal, sluitMigratieModal, maakReservekopie, naarDryRun,
   terugNaarVoorbereiden, startDryRun, kopieerDryRun, toonDiagnose,
-  naarHerstel, doeHerstel, herstelReservekopie
+  naarHerstel, kopieerHerstelPreview
 } from './migratie-ui.js?v=20260806a';
 import {
   openOpslagDiagnose, sluitOpslagDiagnose, voerOpslagDiagnoseUit, kopieerOpslagDiagnose
@@ -67,7 +67,7 @@ Object.assign(window, {
   openZelftestModal, sluitZelftestModal, startZelftest,
   openMigratieModal, sluitMigratieModal, maakReservekopie, naarDryRun,
   terugNaarVoorbereiden, startDryRun, kopieerDryRun, toonDiagnose,
-  naarHerstel, doeHerstel, herstelReservekopie,
+  naarHerstel, kopieerHerstelPreview,
   openOpslagDiagnose, sluitOpslagDiagnose, voerOpslagDiagnoseUit, kopieerOpslagDiagnose,
   login, uitloggen, opnieuwVerbinden,
   wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu,
