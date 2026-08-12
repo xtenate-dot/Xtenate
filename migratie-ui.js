@@ -6,9 +6,7 @@
 
 import { maakVolledigeReservekopie, beschikbareJaren } from './export.js?v=20260806a';
 import { alsTekst, diagnose, diagnoseAlsTekst, dryRun } from './migratie.js?v=20260806a';
-import {
-  herstelPreview, maakOpslagReservekopie, reservekopieen, voerHerstelUit, zetReservekopieTerug
-} from './herstel.js?v=20260806a';
+import { herstelPreview } from './herstel.js?v=20260806a';
 
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -236,9 +234,11 @@ export async function kopieerDryRun() {
 }
 
 // ---------------------------------------------------------- 3. herstellen
+//
+// Alleen een voorbeeldweergave. Er is geen knop die iets wegschrijft, en de
+// module erachter bevat geen enkele schrijfactie.
 
-/** Bedrag zonder euroteken, voor de compacte hersteltabellen. */
-const kaal = n => Number(n || 0).toFixed(2);
+const bedrag = n => Number(n || 0).toFixed(2);
 
 export function naarHerstel() {
   fase = 2;
@@ -255,203 +255,190 @@ function renderHerstelPreview() {
       <td style="padding-left:16px">${j.jaar}</td>
       <td style="text-align:right" class="muted">${j.nu}</td>
       <td style="text-align:right" class="muted">${j.inCode}</td>
-      <td style="text-align:right">${j.alleenInApp}${j.dubbelInApp ? ` <span class="neg">(${j.dubbelInApp} dubbel)</span>` : ''}</td>
-      <td style="text-align:right" class="muted">${j.alleenInCode}</td>
-      <td style="text-align:right;font-weight:600;padding-right:16px" class="${j.na >= j.nu ? 'pos' : 'neg'}">${j.na}</td>
+      <td style="text-align:right">${j.gekoppeld}</td>
+      <td style="text-align:right" class="${j.verschoven ? 'neg' : 'muted'}">${
+        j.verschoven ? `${j.verschoven} (${j.verschuiving >= 0 ? '+' : ''}${j.verschuiving} dag)` : '—'}</td>
+      <td style="text-align:right">${j.eigen}</td>
+      <td style="text-align:right" class="muted">${j.ontbrekend}</td>
+      <td style="text-align:right;font-weight:600;padding-right:16px">${j.na}</td>
     </tr>`;
 
-  const totaalRij = `
-    <tr style="border-top:1px solid var(--border-strong)">
-      <td style="padding-left:16px;font-weight:600">Historie</td>
-      <td style="text-align:right" class="muted">${p.jaren.reduce((s, j) => s + j.nu, 0)}</td>
-      <td style="text-align:right" class="muted">${p.jaren.reduce((s, j) => s + j.inCode, 0)}</td>
-      <td style="text-align:right">${p.jaren.reduce((s, j) => s + j.alleenInApp, 0)}</td>
-      <td style="text-align:right" class="muted">${p.jaren.reduce((s, j) => s + j.alleenInCode, 0)}</td>
-      <td style="text-align:right;font-weight:600;padding-right:16px">${p.jaren.reduce((s, j) => s + j.na, 0)}</td>
-    </tr>`;
+  const controleRij = c => `
+    <div class="ctrl-item">
+      <span class="ctrl-item-main" style="cursor:default">
+        <span class="ctrl-item-label">${c.goed === null ? '·' : c.goed ? '✓' : '✕'} ${esc(c.titel)}</span>
+      </span>
+      <span class="${c.goed === false ? 'neg' : 'muted'}" style="font-size:11.5px;padding-right:12px">${esc(c.waarde)}</span>
+    </div>`;
 
   const jtRij = t => `
     <tr>
-      <td style="padding-left:16px">${t.jaar}${t.wijzigt ? '' : ' <span class="muted">ongewijzigd</span>'}</td>
-      <td style="text-align:right" class="muted">${kaal(t.nu.omzet)}</td>
-      <td style="text-align:right" class="muted">${kaal(t.nu.kosten)}</td>
-      <td style="text-align:right" class="${Number(t.nu.priveOp) < 0 ? 'neg' : 'muted'}">${kaal(t.nu.priveOp)}</td>
-      <td style="text-align:right" class="${Number(t.nu.priveSt) < 0 ? 'neg' : 'muted'}">${kaal(t.nu.priveSt)}</td>
-      <td style="text-align:right;padding-right:16px" class="pos">${t.na ? `${kaal(t.na.omzet)} / ${kaal(t.na.kosten)} / ${kaal(t.na.priveOp)} / ${kaal(t.na.priveSt)}` : '—'}</td>
+      <td style="padding-left:16px">${t.jaar}</td>
+      <td style="text-align:right" class="muted">${t.nu ? bedrag(t.nu.priveOp) : '—'}</td>
+      <td style="text-align:right" class="muted">${t.nu ? bedrag(t.nu.priveSt) : '—'}</td>
+      <td style="text-align:right;font-weight:600">${t.na ? bedrag(t.na.priveOp) : '—'}</td>
+      <td style="text-align:right;font-weight:600">${t.na ? bedrag(t.na.priveSt) : '—'}</td>
+      <td style="text-align:right" class="muted">${bedrag(t.berekend.priveOp)}</td>
+      <td style="text-align:right;padding-right:16px" class="${
+        t.afwijking && Math.abs(t.afwijking.priveSt) > 0.01 ? 'neg' : 'muted'}">${bedrag(t.berekend.priveSt)}</td>
     </tr>`;
 
-  const extra2026 = p.huidigJaar.buitenJaar || p.huidigJaar.dubbel;
+  const v22 = p.jaren.find(j => j.jaar === '2022') || {};
+  const mislukt = p.controles.filter(c => c.goed === false).length;
 
   el('mig-inhoud').innerHTML = `
-    <div class="alert alert-info">
-      Dit is een voorbeeldweergave. <strong>Er is nog niets gewijzigd.</strong> De herstelknop staat onderaan en werkt pas nadat je het vinkje hebt gezet.
+    <div class="alert ${mislukt ? 'alert-error' : 'alert-info'}">
+      Dit is een voorbeeldweergave. <strong>Er is niets gewijzigd en er kán hier niets worden gewijzigd</strong> —
+      de uitvoerende stap is nog niet gebouwd. ${mislukt
+        ? `<br><strong>Let op: ${mislukt} controle(s) niet gehaald.</strong> Stuur dit door voordat er iets gebeurt.`
+        : ''}
     </div>
 
-    <div class="section-head"><div class="eyebrow">Historische boekingen 2022 tot en met 2025</div></div>
-    <p class="ctrl-uitleg">Er wordt niets vervangen maar samengevoegd: de boekingen uit de code vormen de basis, en alles wat daarnaast alleen in jouw browser staat blijft behouden. Twee boekingen gelden als dezelfde bij gelijke datum, bedrag, grootboek, rekening, soort, naam en omschrijving.</p>
-    <div class="card card-flush">
-      <div class="table-wrap"><table class="tbl-compact">
-        <thead><tr>
-          <th style="padding-left:16px">Jaar</th>
-          <th style="text-align:right">Nu</th>
-          <th style="text-align:right">In de code</th>
-          <th style="text-align:right">Alleen bij jou</th>
-          <th style="text-align:right">Alleen in de code</th>
-          <th style="text-align:right;padding-right:16px">Na herstel</th>
-        </tr></thead>
-        <tbody>${p.jaren.map(jaarRij).join('')}${totaalRij}</tbody>
-      </table></div>
-    </div>
-    ${p.jaren.some(j => j.alleenInApp) ? `
-      <p class="ctrl-uitleg"><strong>Alleen bij jou aanwezig, blijft dus staan:</strong><br>${
-        p.jaren.filter(j => j.alleenInApp).map(j =>
-          `${j.jaar}: ${j.alleenInAppVoorbeelden.join(' · ')}${j.alleenInApp > 5 ? ` en nog ${j.alleenInApp - 5}` : ''}`).join('<br>')}</p>` : ''}
+    <div class="section-head"><div class="eyebrow">Jouw controlelijst</div></div>
+    <div class="card card-flush">${p.controles.map(controleRij).join('')}</div>
+
+    <div class="section-head"><div class="eyebrow">Boekingen per jaar</div></div>
+    <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
+      <thead><tr>
+        <th style="padding-left:16px">Jaar</th>
+        <th style="text-align:right">Nu</th>
+        <th style="text-align:right">In code</th>
+        <th style="text-align:right">Gekoppeld</th>
+        <th style="text-align:right">Datum gecorrigeerd</th>
+        <th style="text-align:right">Alleen bij jou</th>
+        <th style="text-align:right">Uit code erbij</th>
+        <th style="text-align:right;padding-right:16px">Na herstel</th>
+      </tr></thead>
+      <tbody>${p.jaren.map(jaarRij).join('')}
+        <tr style="border-top:1px solid var(--border-strong)">
+          <td style="padding-left:16px;font-weight:600">Historie</td>
+          <td style="text-align:right" class="muted">${p.jaren.reduce((s, j) => s + j.nu, 0)}</td>
+          <td style="text-align:right" class="muted">${p.jaren.reduce((s, j) => s + j.inCode, 0)}</td>
+          <td colspan="4"></td>
+          <td style="text-align:right;font-weight:600;padding-right:16px">${p.historieNa}</td>
+        </tr>
+      </tbody>
+    </table></div></div>
+    <p class="ctrl-uitleg">De gekoppelde boekingen krijgen de datum uit de code, want die is juist —
+      bevestigd tegen je bankafschrift. De regels die alleen bij jou staan krijgen dezelfde correctie mee,
+      omdat ze uit dezelfde import komen en dus dezelfde fout dragen.</p>
+
+    <div class="section-head"><div class="eyebrow">De 13 regels die alleen bij jou staan</div></div>
+    <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
+      <thead><tr><th style="padding-left:16px">Stond op</th><th>Wordt</th>
+        <th style="text-align:right">Bedrag</th><th>Soort</th><th style="padding-right:16px">Naam</th></tr></thead>
+      <tbody>${(v22.eigenVoorbeelden || []).map(t => `<tr>
+        <td style="padding-left:16px" class="muted">${esc(t.datumWas || t.datum)}</td>
+        <td class="pos">${esc(t.datum)}</td>
+        <td style="text-align:right">${bedrag(t.bedrag)}</td>
+        <td class="muted">${esc(t.type)}</td>
+        <td class="muted" style="font-size:11px;padding-right:16px">${esc(String(t.naam || '').slice(0, 46))}</td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>
+
+    <div class="section-head"><div class="eyebrow">Identieke boekingen die echt meerdere keren bestaan</div></div>
+    <div class="card card-flush">${p.jaren.flatMap(j => j.dubbelen.map(d => `
+      <div class="ctrl-item">
+        <span class="ctrl-item-main" style="cursor:default">
+          <span class="ctrl-item-label">${d.aantal}× ${esc(beschrijfRegel(d.voorbeeld))}</span>
+          <span class="ctrl-item-sub">${j.jaar} · blijft na herstel ${d.na}×</span>
+        </span>
+        <span class="${d.na === d.aantal ? 'pos' : 'neg'}" style="padding-right:12px">${
+          d.na === d.aantal ? 'behouden' : 'LET OP'}</span>
+      </div>`)).join('') || '<p class="ctrl-uitleg" style="margin:0">geen</p>'}</div>
 
     <div class="section-head"><div class="eyebrow">Het lopende jaar blijft ongemoeid</div></div>
-    <div class="card">
-      <p class="ctrl-uitleg" style="margin:0">
-        <strong>${p.huidigJaar.aantal} boekingen</strong> in xtenate_tx worden niet aangeraakt.
-        Verdeling over de jaren: ${Object.entries(p.huidigJaar.perJaar).sort().map(([j, n]) => `${j}: ${n}`).join(' · ')}.
-        ${extra2026 ? `<br><span class="neg">Let op:</span> ${p.huidigJaar.buitenJaar} boekingen hebben geen datum in 2026${p.huidigJaar.dubbel ? `, en ${p.huidigJaar.dubbel} regels komen dubbel voor` : ''}. Die laat ik met rust — daar wil ik eerst met je naar kijken.` : ''}
-      </p>
-    </div>
+    <div class="card"><p class="ctrl-uitleg" style="margin:0">
+      <strong>${p.huidigJaar.aantal} boekingen</strong> in <code>xtenate_tx</code> worden niet aangeraakt.
+      Verdeling: ${Object.entries(p.huidigJaar.perJaar).sort().map(([j, n]) => `${j}: ${n}`).join(' · ')}.
+      ${p.huidigJaar.buitenHuidigJaar.length ? `<br>Daarvan ${p.huidigJaar.buitenHuidigJaar.length} met een datum buiten 2026:
+        ${esc(p.huidigJaar.buitenHuidigJaar.map(t => `${t.datum} ${t.naam} ${bedrag(t.bedrag)}`).join(' · '))}.
+        Die blijft staan waar hij staat; verplaatsen naar de historie is een aparte keuze.` : ''}
+      ${p.huidigJaar.identiek.length ? `<br>${p.huidigJaar.identiek.length} groepen identieke regels
+        (${p.huidigJaar.identiekExtra} boven de eerste) — dat zijn echte boekingen en die blijven allemaal staan.` : ''}
+    </p></div>
 
-    <div class="section-head"><div class="eyebrow">Jaartotalen</div></div>
-    <div class="card card-flush">
-      <div class="table-wrap"><table class="tbl-compact">
-        <thead><tr>
-          <th style="padding-left:16px">Jaar</th>
-          <th style="text-align:right">Omzet nu</th>
-          <th style="text-align:right">Kosten nu</th>
-          <th style="text-align:right">Privé op nu</th>
-          <th style="text-align:right">Privé st nu</th>
-          <th style="text-align:right;padding-right:16px">Na herstel (omzet / kosten / op / st)</th>
-        </tr></thead>
-        <tbody>${p.jaartotalen.map(jtRij).join('')}</tbody>
-      </table></div>
-    </div>
+    <div class="section-head"><div class="eyebrow">Privébedragen per jaar</div></div>
+    <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
+      <thead><tr><th style="padding-left:16px">Jaar</th>
+        <th style="text-align:right">Opname nu</th><th style="text-align:right">Storting nu</th>
+        <th style="text-align:right">Opname na</th><th style="text-align:right">Storting na</th>
+        <th style="text-align:right">Opname uit boekingen</th>
+        <th style="text-align:right;padding-right:16px">Storting uit boekingen</th></tr></thead>
+      <tbody>${p.jaartotalen.map(jtRij).join('')}</tbody>
+    </table></div></div>
+    <p class="ctrl-uitleg">De jaartotalen komen uit je Excel en zijn in de app leidend. De laatste twee kolommen
+      tellen de boekingen zelf op, zodat een verschil zichtbaar blijft in plaats van verstopt.</p>
 
     <div class="section-head"><div class="eyebrow">Overig</div></div>
     <div class="kpi-grid" style="margin-bottom:var(--sp-3)">
-      <div class="kpi kpi--secondary"><div class="kpi-lbl">Maandsaldi</div><div class="kpi-val">${p.maandsaldi.nu} → ${p.maandsaldi.na}</div></div>
-      <div class="kpi kpi--secondary"><div class="kpi-lbl">Voorraadartikelen</div><div class="kpi-val">${p.onaangeroerd.voorraadartikelen}</div><div class="kpi-sub">blijft</div></div>
-      <div class="kpi kpi--secondary"><div class="kpi-lbl">HNVI-loten</div><div class="kpi-val">${p.onaangeroerd.hnviLoten}</div><div class="kpi-sub">blijft</div></div>
-      <div class="kpi kpi--secondary"><div class="kpi-lbl">Genegeerde meldingen</div><div class="kpi-val">${p.onaangeroerd.genegeerdeMeldingen}</div><div class="kpi-sub">blijft</div></div>
+      <div class="kpi kpi--secondary"><div class="kpi-lbl">Maandsaldi</div>
+        <div class="kpi-val">${p.maandsaldi.nu} → ${p.maandsaldi.na}</div></div>
+      <div class="kpi kpi--secondary"><div class="kpi-lbl">Voorraadartikelen</div>
+        <div class="kpi-val">${p.onaangeroerd.voorraadartikelen}</div><div class="kpi-sub">blijft</div></div>
+      <div class="kpi kpi--secondary"><div class="kpi-lbl">HNVI-loten</div>
+        <div class="kpi-val">${p.onaangeroerd.hnviLoten}</div><div class="kpi-sub">blijft</div></div>
+      <div class="kpi kpi--secondary"><div class="kpi-lbl">Totaal boekingen</div>
+        <div class="kpi-val">${p.totaalNu} → ${p.totaalNa}</div></div>
     </div>
-
-    <div class="alert alert-ok">
-      Totaal aantal boekingen: <strong>${p.totaalNu} → ${p.totaalNa}</strong>.
-      Voordat er iets verandert wordt je complete browseropslag als reservekopie weggezet, zodat dit terug te draaien is.
-    </div>
-
-    <label style="display:flex;align-items:center;gap:10px;font-size:12.5px;margin:var(--sp-4) 0">
-      <input type="checkbox" id="mig-akkoord" onchange="document.getElementById('mig-herstel-knop').disabled = !this.checked">
-      Ik heb de bovenstaande cijfers gecontroleerd en ga akkoord met het herstel.
-    </label>
-    <div id="mig-herstel-status"></div>
 
     <div class="modal-actions">
       <button class="btn" onclick="startDryRun()">Terug naar de dry-run</button>
-      <button class="btn btn-primary" id="mig-herstel-knop" disabled onclick="doeHerstel()">Herstel uitvoeren</button>
-    </div>`;
-}
-
-export async function doeHerstel() {
-  if (bezig) return;
-  if (!el('mig-akkoord')?.checked) return;
-  bezig = true;
-  el('mig-herstel-knop').disabled = true;
-  el('mig-herstel-status').innerHTML = '<div class="alert alert-info">Bezig met herstellen…</div>';
-  try {
-    const uit = voerHerstelUit();
-    const na = diagnose();
-    const controle = await dryRun();
-    laatsteUitkomst = controle;
-    fase = 3;
-    renderFasen();
-    renderNaHerstel(uit, na, controle);
-  } catch (e) {
-    el('mig-herstel-status').innerHTML =
-      `<div class="alert alert-error">Het herstel is mislukt: ${esc(e.message)}. Er is een reservekopie gemaakt; die kun je hieronder terugzetten.</div>`;
-    el('mig-herstel-knop').disabled = false;
-  } finally {
-    bezig = false;
-  }
-}
-
-function renderNaHerstel(uit, na, controle) {
-  const kopieen = reservekopieen();
-  el('mig-inhoud').innerHTML = `
-    <div class="alert alert-ok">
-      Herstel uitgevoerd. Reservekopie weggezet onder <code>${esc(uit.reservekopie.naam)}</code> met ${uit.reservekopie.sleutels} opslagsleutels.
+      <button class="btn" id="mig-kopieer" onclick="kopieerHerstelPreview()">Preview kopiëren</button>
+      <button class="btn btn-primary" disabled
+        title="Wordt pas gebouwd nadat je deze preview hebt goedgekeurd">Herstel uitvoeren</button>
     </div>
-
-    <div class="section-head"><div class="eyebrow">Boekingen per jaar na herstel</div></div>
-    <div class="card card-flush">
-      <div class="table-wrap"><table class="tbl-compact">
-        <thead><tr><th style="padding-left:16px">Jaar</th><th style="text-align:right;padding-right:16px">Boekingen</th></tr></thead>
-        <tbody>${controle.plan.perJaar.map(j =>
-          `<tr><td style="padding-left:16px">${j.jaar}</td><td style="text-align:right;padding-right:16px">${j.aantal}</td></tr>`).join('')}
-          <tr style="border-top:1px solid var(--border-strong)">
-            <td style="padding-left:16px;font-weight:600">Totaal</td>
-            <td style="text-align:right;font-weight:600;padding-right:16px">${controle.plan.boekingen.length}</td></tr>
-        </tbody>
-      </table></div>
-    </div>
-
-    <div class="section-head"><div class="eyebrow">Jaartotalen na herstel</div></div>
-    <div class="card card-flush">
-      <div class="table-wrap"><table class="tbl-compact">
-        <thead><tr><th style="padding-left:16px">Jaar</th><th style="text-align:right">Omzet</th><th style="text-align:right">Kosten</th>
-          <th style="text-align:right">Privé op</th><th style="text-align:right;padding-right:16px">Privé st</th></tr></thead>
-        <tbody>${controle.totalen.perJaar.map(j => `
-          <tr><td style="padding-left:16px">${j.jaar}</td>
-            <td style="text-align:right">${kaal(j.excelOmzet ?? j.omzet)}</td>
-            <td style="text-align:right">${kaal(j.excelKosten ?? j.kosten)}</td>
-            <td style="text-align:right" class="${(j.excelPriveOp ?? j.priveOp) < 0 ? 'neg' : ''}">${kaal(j.excelPriveOp ?? j.priveOp)}</td>
-            <td style="text-align:right;padding-right:16px" class="${(j.excelPriveSt ?? j.priveSt) < 0 ? 'neg' : ''}">${kaal(j.excelPriveSt ?? j.priveSt)}</td></tr>`).join('')}
-        </tbody>
-      </table></div>
-    </div>
-
-    <div class="section-head"><div class="eyebrow">Maandsaldi</div></div>
-    <div class="card"><p class="ctrl-uitleg" style="margin:0">${na.maandenTotaal} maanden: ${
-      Object.entries(na.maandenPerJaar).sort().map(([j, m]) => `${j} (${m.length})`).join(' · ')}</p></div>
-
-    ${kopieen.length ? `
-      <div class="section-head"><div class="eyebrow">Reservekopieën in deze browser</div></div>
-      <div class="card card-flush">${kopieen.map(k => `
-        <div class="ctrl-item">
-          <span class="ctrl-item-main" style="cursor:default">
-            <span class="ctrl-item-label">${esc(k.sleutel)}</span>
-            <span class="ctrl-item-sub">${esc(k.gemaakt)} · ${k.sleutels} sleutels</span>
-          </span>
-          <div class="ctrl-item-acties">
-            <button class="btn btn-sm" onclick="herstelReservekopie('${esc(k.sleutel)}')">Terugzetten</button>
-          </div>
-        </div>`).join('')}</div>` : ''}
-
-    <div class="alert alert-info" style="margin-top:var(--sp-4)">
-      Ververs de pagina om alles opnieuw te laten tekenen, en controleer daarna de Bank-pagina per jaar. Er is nog steeds niets naar Supabase geschreven.
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn" onclick="toonDiagnose()">Diagnose opnieuw</button>
-      <button class="btn" onclick="startDryRun()">Dry-run opnieuw</button>
-      <button class="btn" onclick="kopieerDryRun()">Resultaten kopiëren</button>
-    </div>
-    <textarea id="mig-tekst" readonly style="width:100%;height:150px;margin-top:var(--sp-3);display:none;
+    <textarea id="mig-tekst" readonly style="width:100%;height:200px;margin-top:var(--sp-3);display:none;
       font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
       border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)"></textarea>`;
 }
 
-export function herstelReservekopie(sleutel) {
-  if (!window.confirm(`Alles terugzetten zoals het was in ${sleutel}? Wijzigingen sindsdien gaan verloren. Daarna moet je de pagina verversen.`)) return;
+const beschrijfRegel = t =>
+  `${t.datum} · ${t.naam || t.omschr || '(geen naam)'} · ${bedrag(t.bedrag)}`;
+
+/** De preview als platte tekst, om terug te sturen. */
+export function herstelPreviewAlsTekst(p) {
+  const r = [];
+  const q = (...a) => r.push(a.join(' '));
+  q('HERSTELPREVIEW XTENATE —', new Date().toLocaleString('nl-NL'), '— er is niets gewijzigd');
+  q('');
+  q('CONTROLELIJST');
+  p.controles.forEach(c => q('  ', c.goed === null ? '·' : c.goed ? '✓' : '✕', c.titel, '—', c.waarde));
+  q('');
+  q('PER JAAR  jaar | nu | code | gekoppeld | gecorrigeerd | alleen bij jou | uit code erbij | na');
+  p.jaren.forEach(j => q('  ', [j.jaar, j.nu, j.inCode, j.gekoppeld,
+    `${j.verschoven}(${j.verschuiving >= 0 ? '+' : ''}${j.verschuiving})`, j.eigen, j.ontbrekend, j.na].join(' | ')));
+  q('   historie na herstel:', p.historieNa, '| xtenate_tx:', p.huidigJaar.aantal,
+    '| totaal:', p.totaalNu, '->', p.totaalNa);
+  q('');
+  q('ALLEEN BIJ JOU (met datumcorrectie)');
+  p.jaren.forEach(j => j.eigenVoorbeelden.forEach(t =>
+    q('  ', j.jaar, '|', (t.datumWas || t.datum), '->', t.datum, '|', bedrag(t.bedrag), '|', t.type, '|', t.naam)));
+  q('');
+  q('IDENTIEKE ECHTE BOEKINGEN');
+  p.jaren.forEach(j => j.dubbelen.forEach(d =>
+    q('  ', j.jaar, '|', d.aantal + 'x ->', d.na + 'x', '|', beschrijfRegel(d.voorbeeld))));
+  q('');
+  q('PRIVEBEDRAGEN  jaar | opname na | storting na | opname uit boekingen | storting uit boekingen');
+  p.jaartotalen.forEach(t => q('  ', [t.jaar, t.na ? bedrag(t.na.priveOp) : '-', t.na ? bedrag(t.na.priveSt) : '-',
+    bedrag(t.berekend.priveOp), bedrag(t.berekend.priveSt)].join(' | ')));
+  return r.join('\n');
+}
+
+export async function kopieerHerstelPreview() {
+  if (!laatstePreview) return;
+  const tekst = herstelPreviewAlsTekst(laatstePreview);
+  const vak = el('mig-tekst');
+  const knop = el('mig-kopieer');
+  vak.value = tekst;
   try {
-    const aantal = zetReservekopieTerug(sleutel);
-    window.alert(`${aantal} opslagsleutels teruggezet. Ververs de pagina om het resultaat te zien.`);
-  } catch (e) {
-    window.alert('Terugzetten mislukt: ' + e.message);
+    await navigator.clipboard.writeText(tekst);
+    knop.textContent = 'Gekopieerd';
+    setTimeout(() => { knop.textContent = 'Preview kopiëren'; }, 2500);
+  } catch {
+    vak.style.display = '';
+    vak.select();
+    knop.textContent = 'Selecteer en kopieer hieronder';
   }
 }
 

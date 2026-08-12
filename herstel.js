@@ -1,17 +1,27 @@
-// herstel.js — de historische boekingen terughalen die door een import zijn
-// afgedekt, zonder iets kwijt te raken.
+// herstel.js — berekent wat een herstel zou opleveren. Deze versie kán niet
+// wijzigen: er staat geen enkele schrijfactie in.
 //
-// Uitgangspunt: er wordt niets vervangen, er wordt samengevoegd. De standaard
-// uit de code is de basis; alles wat daarnaast alleen in jouw browser staat
-// blijft behouden. Zo kan de herstelactie nooit boekingen verwijderen die jij
-// zelf hebt toegevoegd.
+// Geen setItem, geen removeItem, geen save(), geen aanpassing van `state`,
+// geen Supabase. De uitvoerende helft wordt pas gebouwd nadat de preview is
+// goedgekeurd. Zolang dat niet zo is, is dit bestand met opzet machteloos.
 //
-// Er gebeurt pas iets bij `voerHerstelUit`, en die maakt eerst een volledige
-// reservekopie van alle opslagsleutels.
+// Wat het herstel straks moet doen, en waarom:
+//
+// 1. De historie 2022-2025 uit de code terugzetten. Bij jou staat alleen 2022
+//    nog in de browser; 2023, 2024 en 2025 zijn afgedekt door een import.
+//
+// 2. De datums van 2022 corrigeren. De Excel-import zette elke datum één dag
+//    te vroeg weg (tijdzonefout in `excelDate`), bevestigd tegen het
+//    bankafschrift: de Bol.com-betaling van 98,22 hoort op 2 augustus 2022.
+//
+// 3. De boekingen die alleen in de browser staan behouden — maar mét dezelfde
+//    datumcorrectie. Dat is het gevoelige punt. Die dertien regels van 2022
+//    zijn privé-stortingen die bij een creditcard-uitgave op dezelfde dag
+//    horen. Corrigeer je de uitgave wel en de storting niet, dan vallen de
+//    paren uit elkaar en schuiven Internet en Reiskosten over de jaargrens.
 
-import {
-  HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, MAAND_SALDOS_DEFAULT, save, state
-} from './storage.js?v=20260806a';
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, MAAND_SALDOS_DEFAULT, state }
+  from './storage.js?v=20260806a';
 
 const HISTORISCHE_JAREN = ['2022', '2023', '2024', '2025'];
 const HUIDIG_JAAR = '2026';
@@ -25,208 +35,301 @@ export const OPSLAGSLEUTELS = [
 ];
 
 /**
- * Kenmerk waarop twee boekingen dezelfde zijn. Bewust zonder id: de ids
- * verschillen tussen de code en een import, terwijl het om dezelfde boeking
- * gaat. Zonder deze vergelijking zou samenvoegen alles verdubbelen.
+ * Een verschuiving wordt alleen toegepast als álle gekoppelde boekingen van
+ * dat jaar dezelfde afwijking hebben, en er genoeg zijn om van een patroon te
+ * spreken. Bij twijfel gebeurt er niets en wordt het jaar gemeld.
  */
+const MINIMUM_KOPPELINGEN = 5;
+const MAX_DAGEN = 31;
+
+const jaarVan = t => String(t && t.datum || '').slice(0, 4);
+const geldigeDatum = t => /^\d{4}-\d{2}-\d{2}$/.test(String(t && t.datum || ''));
+
+/** Volledig kenmerk, inclusief datum. */
 const kenmerk = t => [
-  t.datum, Number(t.bedrag).toFixed(2), t.gb, t.rek, t.type,
-  String(t.naam || '').trim().toLowerCase(),
-  String(t.omschr || '').trim().toLowerCase()
+  t.datum, Number(t.bedrag).toFixed(2), String(t.gb), String(t.rek), String(t.type),
+  String(t.naam || '').trim().toLowerCase(), String(t.omschr || '').trim().toLowerCase()
 ].join('|');
 
-const jaarVan = t => String(t.datum || '').slice(0, 4);
+/** Kenmerk zonder datum: hiermee vinden we dezelfde boeking op een andere dag. */
+const kenmerkZonderDatum = t => [
+  Number(t.bedrag).toFixed(2), String(t.gb), String(t.rek), String(t.type),
+  String(t.naam || '').trim().toLowerCase(), String(t.omschr || '').trim().toLowerCase()
+].join('|');
 
-/** Telt hoe vaak elk kenmerk voorkomt. */
-function tel(lijst) {
-  const uit = new Map();
-  lijst.forEach(t => uit.set(kenmerk(t), (uit.get(kenmerk(t)) || 0) + 1));
-  return uit;
-}
+const dagenTussen = (a, b) =>
+  Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 86400000);
 
-// ------------------------------------------------------------------ preview
+const verschuif = (datum, dagen) => {
+  const d = new Date(datum + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + dagen);
+  return d.toISOString().slice(0, 10);
+};
+
+export const beschrijf = t =>
+  `${t.datum} · ${t.naam || t.omschr || '(geen naam)'} · ${Number(t.bedrag).toFixed(2)}`;
 
 /**
- * Rekent uit wat een herstel zou opleveren, zonder iets te wijzigen.
- * Per jaar wordt getoond wat er nu is, wat de code heeft, en wat eruit komt.
+ * Koppelt mijn boekingen aan die uit de code. Binnen een groep met hetzelfde
+ * kenmerk worden beide kanten op datum gesorteerd en op volgorde naast elkaar
+ * gelegd — niet op kortste afstand. Dat laatste gaat mis bij reeksen: vijftien
+ * keer PostNL van 6,75 in één jaar, waarbij de een dan de partner van de ander
+ * inpikt en er verschuivingen van drie of vier dagen uit de lucht komen vallen.
  */
-export function herstelPreview() {
-  const nuHistorisch = state.HIST_TX;
-  const nuHuidig = state.TX;
+function koppel(vanMij, vanCode) {
+  const gekoppeld = [];
+  const mijnOver = [];
+  const codeOver = [];
 
-  const jaren = HISTORISCHE_JAREN.map(jaar => {
-    const inApp = nuHistorisch.filter(t => jaarVan(t) === jaar);
-    const inCode = HIST_TX_DEFAULT.filter(t => jaarVan(t) === jaar);
-
-    const appTelling = tel(inApp);
-    const codeTelling = tel(inCode);
-
-    // Samenvoegen op aantal, niet op aanwezigheid. Twee identieke PostNL-regels
-    // op dezelfde dag zijn allebei echt; die mogen niet tot één worden
-    // samengevouwen. Per kenmerk houden we daarom het hoogste van beide aantallen.
-    const regels = [...inCode];
-    const extra = [];
-    const teVeelInApp = [];
-    appTelling.forEach((aantalApp, k) => {
-      const aantalCode = codeTelling.get(k) || 0;
-      if (aantalApp > aantalCode) {
-        const kandidaten = inApp.filter(t => kenmerk(t) === k).slice(aantalCode);
-        extra.push(...kandidaten);
-        if (aantalCode > 0) teVeelInApp.push(k);
-      }
+  const groepeer = lijst => {
+    const m = new Map();
+    lijst.forEach(t => {
+      const k = kenmerkZonderDatum(t);
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(t);
     });
-    regels.push(...extra);
+    return m;
+  };
+  const opDatum = (a, b) => String(a.datum).localeCompare(String(b.datum));
+  const mijnGroepen = groepeer(vanMij);
+  const codeGroepen = groepeer(vanCode);
 
-    // Alleen ter informatie: regels die in de app vaker voorkomen dan één keer.
-    let dubbelInApp = 0;
-    appTelling.forEach(n => { if (n > 1) dubbelInApp += n - 1; });
-
-    // Alleen in de code: kenmerken die in de app helemaal niet voorkomen.
-    let alleenInCode = 0;
-    codeTelling.forEach((n, k) => { if (!appTelling.has(k)) alleenInCode += n; });
-
-    return {
-      jaar,
-      nu: inApp.length,
-      inCode: inCode.length,
-      dubbelInApp,
-      alleenInApp: extra.length,
-      alleenInAppVoorbeelden: extra.slice(0, 5).map(beschrijf),
-      alleenInCode,
-      na: regels.length,
-      regels
-    };
+  new Set([...mijnGroepen.keys(), ...codeGroepen.keys()]).forEach(k => {
+    const a = (mijnGroepen.get(k) || []).slice().sort(opDatum);
+    const b = (codeGroepen.get(k) || []).slice().sort(opDatum);
+    let i = 0, j = 0;
+    while (i < a.length && j < b.length) {
+      if (!geldigeDatum(a[i])) { mijnOver.push(a[i]); i++; continue; }
+      const dagen = dagenTussen(a[i].datum, b[j].datum);
+      if (Math.abs(dagen) <= MAX_DAGEN) { gekoppeld.push({ mijn: a[i], code: b[j], dagen }); i++; j++; }
+      else if (dagen < 0) { mijnOver.push(a[i]); i++; }
+      else { codeOver.push(b[j]); j++; }
+    }
+    while (i < a.length) mijnOver.push(a[i++]);
+    while (j < b.length) codeOver.push(b[j++]);
   });
 
-  // 2026 blijft ongemoeid, maar we melden wel wat er in die bak staat.
-  const huidigTelling = tel(nuHuidig);
-  let dubbelIn2026 = 0;
-  huidigTelling.forEach(n => { if (n > 1) dubbelIn2026 += n - 1; });
-  const buitenJaar = nuHuidig.filter(t => jaarVan(t) !== HUIDIG_JAAR);
-  const perJaarIn2026Bak = {};
-  nuHuidig.forEach(t => { const j = jaarVan(t) || 'geen datum'; perJaarIn2026Bak[j] = (perJaarIn2026Bak[j] || 0) + 1; });
+  return { gekoppeld, mijnOver, codeOver };
+}
 
-  // Jaartotalen: alleen jaren waar de standaard afwijkt van wat er nu staat.
+/** Rekent één historisch jaar door. Wijzigt niets. */
+function planJaar(jaar, vanMij, vanCode) {
+  const { gekoppeld, mijnOver, codeOver } = koppel(vanMij, vanCode);
+
+  // Is er één systematische verschuiving, of lopen de afwijkingen door elkaar?
+  const afwijkingen = [...new Set(gekoppeld.map(g => g.dagen))];
+  const eenduidig = gekoppeld.length >= MINIMUM_KOPPELINGEN && afwijkingen.length === 1;
+  const verschuiving = eenduidig ? -afwijkingen[0] : 0;   // wat er bij mijn datums op moet
+  const verschoven = gekoppeld.filter(g => g.dagen !== 0);
+
+  // De gekoppelde boekingen komen uit de code, want die heeft de juiste datum.
+  const uitCode = gekoppeld.map(g => ({ ...g.code }));
+
+  // Alles wat alleen bij mij staat blijft behouden. Is er een eenduidige
+  // verschuiving vastgesteld, dan krijgen deze regels dezelfde correctie: ze
+  // komen uit dezelfde import en dragen dus dezelfde fout. Zo blijven de
+  // privé-stortingen op dezelfde dag staan als de uitgave waar ze bij horen.
+  const eigen = mijnOver.map(t => (verschuiving && geldigeDatum(t)
+    ? { ...t, datum: verschuif(t.datum, verschuiving), datumWas: t.datum }
+    : { ...t }));
+
+  const ontbrekend = codeOver.map(t => ({ ...t }));
+  const regels = [...uitCode, ...ontbrekend, ...eigen]
+    .sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
+
+  // Controle: elke regel van mij moet terug te vinden zijn in de uitkomst.
+  const tel = lijst => {
+    const m = new Map();
+    lijst.forEach(t => m.set(kenmerk(t), (m.get(kenmerk(t)) || 0) + 1));
+    return m;
+  };
+  const naTelling = tel(regels);
+  const verwachtVanMij = tel(vanMij.map(t => (verschuiving && geldigeDatum(t)
+    ? { ...t, datum: verschuif(t.datum, verschuiving) } : t)));
+  let kwijt = 0;
+  verwachtVanMij.forEach((n, k) => { if ((naTelling.get(k) || 0) < n) kwijt += n - (naTelling.get(k) || 0); });
+  const codeTelling = tel(vanCode);
+  let codeKwijt = 0;
+  codeTelling.forEach((n, k) => { if ((naTelling.get(k) || 0) < n) codeKwijt += n - (naTelling.get(k) || 0); });
+
+  // Identieke boekingen die echt meerdere keren bestaan, met hun aantal na afloop.
+  const dubbelen = [];
+  tel(vanMij).forEach((n, k) => {
+    if (n < 2) return;
+    const voorbeeld = vanMij.find(t => kenmerk(t) === k);
+    const naK = verschuiving && geldigeDatum(voorbeeld)
+      ? kenmerk({ ...voorbeeld, datum: verschuif(voorbeeld.datum, verschuiving) }) : k;
+    dubbelen.push({ aantal: n, na: naTelling.get(naK) || 0, voorbeeld });
+  });
+
+  return {
+    jaar,
+    nu: vanMij.length,
+    inCode: vanCode.length,
+    gekoppeld: gekoppeld.length,
+    verschoven: verschoven.length,
+    verschuiving,
+    eenduidig,
+    afwijkingen,
+    eigen: eigen.length,
+    eigenVoorbeelden: eigen.slice(0, 15),
+    ontbrekend: ontbrekend.length,
+    na: regels.length,
+    kwijt,
+    codeKwijt,
+    dubbelen,
+    regels
+  };
+}
+
+const OMZET_GB = ['8000', '8010', '8020'];
+/** Telt de hoofdcijfers van een lijst boekingen, zoals de app dat ook doet. */
+function metrics(lijst) {
+  const som = f => lijst.filter(f).reduce((s, t) => s + Number(t.bedrag), 0);
+  return {
+    omzet: som(t => t.type === 'inkomst' && OMZET_GB.includes(String(t.gb))),
+    kosten: som(t => t.type === 'uitgave'),
+    priveOp: som(t => t.type === 'prive_opname'),
+    priveSt: som(t => t.type === 'prive_storting')
+  };
+}
+
+/**
+ * De volledige preview. Leest en rekent; verandert niets.
+ */
+export function herstelPreview() {
+  const nuHistorisch = Array.isArray(state.HIST_TX) ? state.HIST_TX : [];
+  const nuHuidig = Array.isArray(state.TX) ? state.TX : [];
+
+  const jaren = HISTORISCHE_JAREN.map(jaar => planJaar(
+    jaar,
+    nuHistorisch.filter(t => jaarVan(t) === jaar),
+    HIST_TX_DEFAULT.filter(t => jaarVan(t) === jaar)
+  ));
+
+  // Boekingen in de historie die buiten 2022-2025 vallen, blijven ongemoeid.
+  const buitenBereik = nuHistorisch.filter(t => !HISTORISCHE_JAREN.includes(jaarVan(t)));
+  const nieuweHistorie = [...jaren.flatMap(j => j.regels), ...buitenBereik];
+
+  // Het lopende jaar wordt niet aangeraakt, maar we melden wel wat erin zit.
+  const perJaarInTx = {};
+  nuHuidig.forEach(t => {
+    const j = jaarVan(t) || 'geen datum';
+    perJaarInTx[j] = (perJaarInTx[j] || 0) + 1;
+  });
+  const buitenHuidigJaar = nuHuidig.filter(t => jaarVan(t) !== HUIDIG_JAAR);
+  const telTx = new Map();
+  nuHuidig.forEach(t => telTx.set(kenmerk(t), (telTx.get(kenmerk(t)) || 0) + 1));
+  const identiekInTx = [...telTx.entries()].filter(([, n]) => n > 1)
+    .map(([k, n]) => ({ aantal: n, voorbeeld: nuHuidig.find(t => kenmerk(t) === k) }));
+
+  // Jaartotalen: de Excel-waarden zijn leidend in de app. We tonen erbij wat de
+  // boekingen zelf opleveren, zodat een verschil zichtbaar is in plaats van
+  // verstopt.
   const jaartotalen = [...new Set([...Object.keys(HOME_TOTALS), ...Object.keys(HOME_TOTALS_DEFAULT)])]
     .sort().map(jaar => {
-      const nu = HOME_TOTALS[jaar] || {};
-      const na = HOME_TOTALS_DEFAULT[jaar];
+      const na = HOME_TOTALS_DEFAULT[jaar] || null;
+      const regelsVanJaar = jaar === HUIDIG_JAAR
+        ? nuHuidig.filter(t => jaarVan(t) === jaar)
+        : nieuweHistorie.filter(t => jaarVan(t) === jaar);
+      const berekend = metrics(regelsVanJaar);
       const velden = ['omzet', 'kosten', 'priveOp', 'priveSt'];
       return {
         jaar,
-        heeftStandaard: !!na,
-        nu: Object.fromEntries(velden.map(v => [v, nu[v] ?? null])),
-        na: na ? Object.fromEntries(velden.map(v => [v, na[v] ?? null])) : null,
-        wijzigt: !!na && velden.some(v => Math.abs((nu[v] ?? 0) - (na[v] ?? 0)) > 0.01)
+        nu: HOME_TOTALS[jaar] || null,
+        na,
+        berekend,
+        afwijking: na ? Object.fromEntries(velden.map(v => [v, +(berekend[v] - (na[v] ?? 0)).toFixed(2)])) : null
       };
     });
 
-  const maandenNu = Object.keys(MAAND_SALDOS).length;
+  const totaalNu = nuHistorisch.length + nuHuidig.length;
+  const totaalNa = nieuweHistorie.length + nuHuidig.length;
 
   return {
     jaren,
-    totaalNu: nuHistorisch.length + nuHuidig.length,
-    totaalNa: jaren.reduce((s, j) => s + j.na, 0) + nuHuidig.length,
+    perJaarNa: Object.fromEntries(jaren.map(j => [j.jaar, j.na])),
+    historieNa: nieuweHistorie.length,
+    totaalNu,
+    totaalNa,
     huidigJaar: {
       aantal: nuHuidig.length,
-      dubbel: dubbelIn2026,
-      buitenJaar: buitenJaar.length,
-      buitenJaarVoorbeelden: buitenJaar.slice(0, 5).map(beschrijf),
-      perJaar: perJaarIn2026Bak
+      perJaar: perJaarInTx,
+      buitenHuidigJaar,
+      identiek: identiekInTx,
+      identiekExtra: identiekInTx.reduce((s, x) => s + x.aantal - 1, 0)
     },
     jaartotalen,
-    maandsaldi: { nu: maandenNu, na: Object.keys(MAAND_SALDOS_DEFAULT).length },
+    maandsaldi: { nu: Object.keys(MAAND_SALDOS).length, na: Object.keys(MAAND_SALDOS_DEFAULT).length },
     onaangeroerd: {
-      voorraadartikelen: state.COVERS.length,
-      productgroepen: state.GROEPEN.length,
-      hnviLoten: state.HNVI_LOTS.length,
-      genegeerdeMeldingen: aantalNegeerRegels()
-    }
+      voorraadartikelen: (state.COVERS || []).length,
+      productgroepen: (state.GROEPEN || []).length,
+      hnviLoten: (state.HNVI_LOTS || []).length
+    },
+    // De uitkomsten van de ingebouwde controles, zodat het scherm ze kan tonen
+    // in plaats van dat je ze op mijn woord moet geloven.
+    controles: bouwControles(jaren, nieuweHistorie, nuHuidig, totaalNa)
   };
 }
 
-const beschrijf = t => `${t.datum} · ${t.naam || t.omschr || '(geen naam)'} · ${Number(t.bedrag).toFixed(2)}`;
-
-function aantalNegeerRegels() {
-  try {
-    const ruw = localStorage.getItem('xtenate_controle_negeer');
-    if (!ruw) return 0;
-    const d = JSON.parse(ruw);
-    return Object.keys(d.meldingen || {}).length + Object.keys(d.controles || {}).length;
-  } catch { return 0; }
-}
-
-// ------------------------------------------------------------- reservekopie
-
-/** Zet alle opslagsleutels weg onder één sleutel met tijdstempel. */
-export function maakOpslagReservekopie() {
-  const inhoud = {};
-  OPSLAGSLEUTELS.forEach(s => {
-    const waarde = localStorage.getItem(s);
-    if (waarde !== null) inhoud[s] = waarde;
-  });
-  const naam = 'xtenate_backup_' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '');
-  localStorage.setItem(naam, JSON.stringify({ gemaakt: new Date().toISOString(), inhoud }));
-  return { naam, sleutels: Object.keys(inhoud).length, tekens: JSON.stringify(inhoud).length };
-}
-
-/** Alle reservekopieën die in deze browser staan. */
-export function reservekopieen() {
+function bouwControles(jaren, nieuweHistorie, nuHuidig, totaalNa) {
+  const j = jaar => jaren.find(x => x.jaar === jaar) || {};
   const uit = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const sleutel = localStorage.key(i);
-    if (!sleutel?.startsWith('xtenate_backup_')) continue;
-    try {
-      const d = JSON.parse(localStorage.getItem(sleutel));
-      uit.push({ sleutel, gemaakt: d.gemaakt, sleutels: Object.keys(d.inhoud || {}).length });
-    } catch { uit.push({ sleutel, gemaakt: '?', sleutels: 0 }); }
-  }
-  return uit.sort((a, b) => b.sleutel.localeCompare(a.sleutel));
-}
+  const zet = (titel, goed, waarde) => uit.push({ titel, goed, waarde });
 
-/** Zet een eerdere reservekopie helemaal terug. */
-export function zetReservekopieTerug(sleutel) {
-  const ruw = localStorage.getItem(sleutel);
-  if (!ruw) throw new Error('Deze reservekopie bestaat niet meer.');
-  const { inhoud } = JSON.parse(ruw);
-  OPSLAGSLEUTELS.forEach(s => localStorage.removeItem(s));
-  Object.entries(inhoud).forEach(([s, waarde]) => localStorage.setItem(s, waarde));
-  return Object.keys(inhoud).length;
-}
+  zet('2022 komt uit op 71 boekingen', j('2022').na === 71, String(j('2022').na));
+  zet('2023 komt uit op 86 boekingen', j('2023').na === 86, String(j('2023').na));
+  zet('2024 komt uit op 107 boekingen', j('2024').na === 107, String(j('2024').na));
+  zet('2025 komt uit op 222 boekingen', j('2025').na === 222, String(j('2025').na));
+  zet('2026 blijft op 219 boekingen',
+    (nuHuidig.filter(t => jaarVan(t) === HUIDIG_JAAR)).length === 219,
+    String(nuHuidig.filter(t => jaarVan(t) === HUIDIG_JAAR).length));
+  zet('Totaal komt uit op 706 boekingen', totaalNa === 706, String(totaalNa));
 
-// --------------------------------------------------------------- uitvoeren
+  const v22 = j('2022');
+  zet('De 58 verschoven regels van 2022 worden één dag gecorrigeerd',
+    v22.verschoven === 58 && v22.verschuiving === 1,
+    `${v22.verschoven} regels, correctie ${v22.verschuiving >= 0 ? '+' : ''}${v22.verschuiving} dag`);
+  zet('De 13 eigen privé-stortingen blijven behouden',
+    v22.eigen === 13, `${v22.eigen} regels`);
 
-/**
- * Voert het herstel uit. Maakt eerst een reservekopie, past dan de historie,
- * de jaartotalen en de maandsaldi aan. Raakt 2026, de voorraad, de HNVI-loten
- * en de genegeerde meldingen niet aan.
- */
-export function voerHerstelUit() {
-  const reservekopie = maakOpslagReservekopie();
-  const preview = herstelPreview();
+  const nullen = nieuweHistorie.filter(t =>
+    Number(t.bedrag) === 0 && String(t.datum).startsWith('2022-08'));
+  zet('De vier €0,00-boekingen blijven alle vier bestaan',
+    nullen.length === 4 && nullen.every(t => t.datum === '2022-08-02'),
+    `${nullen.length} stuks op ${[...new Set(nullen.map(t => t.datum))].join(', ') || '—'}`);
 
-  // Historie: de samengevoegde regels uit de preview.
-  const nieuweHistorie = preview.jaren.flatMap(j => j.regels);
-  state.HIST_TX = nieuweHistorie;
-  save('xtenate_hist_tx_override', state.HIST_TX);
+  const dub = jaren.flatMap(x => x.dubbelen);
+  zet('Identieke echte boekingen worden niet samengevoegd',
+    dub.length > 0 && dub.every(d => d.na === d.aantal),
+    dub.map(d => `${d.aantal}× blijft ${d.na}×`).join(', ') || 'geen gevonden');
 
-  // Jaartotalen terug naar de standaard, met positieve privébedragen.
-  Object.keys(HOME_TOTALS).forEach(k => delete HOME_TOTALS[k]);
-  Object.assign(HOME_TOTALS, JSON.parse(JSON.stringify(HOME_TOTALS_DEFAULT)));
-  save('xtenate_home_totals_override', HOME_TOTALS);
+  zet('Er raakt geen enkele boeking van jou kwijt',
+    jaren.every(x => x.kwijt === 0), String(jaren.reduce((s, x) => s + x.kwijt, 0)) + ' kwijt');
+  zet('Er ontbreekt geen enkele boeking uit de code',
+    jaren.every(x => x.codeKwijt === 0), String(jaren.reduce((s, x) => s + x.codeKwijt, 0)) + ' ontbreekt');
 
-  // Maandsaldi: terug naar de volledige standaard. De sleutel weghalen is niet
-  // genoeg — MAAND_SALDOS is al ingeladen, dus die moet ook in het geheugen
-  // worden bijgewerkt, anders zie je de oude vier maanden tot je herlaadt.
-  Object.keys(MAAND_SALDOS).forEach(k => delete MAAND_SALDOS[k]);
-  Object.assign(MAAND_SALDOS, JSON.parse(JSON.stringify(MAAND_SALDOS_DEFAULT)));
-  localStorage.removeItem('xtenate_maand_saldos_override');
+  const st22 = nieuweHistorie.filter(t => t.datum.startsWith('2022') && t.type === 'prive_storting');
+  const op22 = nieuweHistorie.filter(t => t.datum.startsWith('2022') && t.type === 'prive_opname');
+  const somSt = st22.reduce((s, t) => s + Number(t.bedrag), 0);
+  const somOp = op22.reduce((s, t) => s + Number(t.bedrag), 0);
+  zet('2022 privé-opnames volgens de boekingen: € 250,00',
+    Math.abs(somOp - 250) < 0.01, '€ ' + somOp.toFixed(2));
+  zet('2022 privé-stortingen volgens het jaartotaal: € 2.187,38',
+    Math.abs((HOME_TOTALS_DEFAULT['2022']?.priveSt ?? 0) - 2187.38) < 0.01,
+    '€ ' + Number(HOME_TOTALS_DEFAULT['2022']?.priveSt ?? 0).toFixed(2));
+  zet('2022 privé-stortingen volgens de 13 boekingen', null, '€ ' + somSt.toFixed(2));
 
-  return {
-    reservekopie,
-    historie: state.HIST_TX.length,
-    perJaar: preview.jaren.map(j => ({ jaar: j.jaar, aantal: j.na })),
-    jaartotalen: Object.keys(HOME_TOTALS).length,
-    maandsaldi: Object.keys(MAAND_SALDOS).length
-  };
+  // Elke privé-storting van 2022 moet op dezelfde dag staan als de uitgave
+  // waar hij bij hoort; dat is de reden dat de correctie ook op deze regels valt.
+  let los = 0;
+  st22.forEach(st => {
+    const partner = nieuweHistorie.find(t => t.type === 'uitgave' && String(t.rek) === '1030'
+      && t.datum === st.datum && Math.abs(Number(t.bedrag) - Number(st.bedrag)) < 0.005);
+    if (!partner) los++;
+  });
+  zet('Elke privé-storting staat op dezelfde dag als zijn uitgave',
+    los === 0, `${st22.length - los} van ${st22.length} gekoppeld`);
+
+  return uit;
 }
