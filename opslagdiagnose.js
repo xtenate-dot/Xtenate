@@ -7,7 +7,8 @@
 // je ziet wat er écht staat en niet wat de app er in het geheugen van gemaakt
 // heeft. Deze module mag na het onderzoek weer weg.
 
-import { HIST_TX_DEFAULT } from './storage.js?v=20260806a';
+import { HIST_TX_DEFAULT, HOME_TOTALS_DEFAULT, MAAND_SALDOS_DEFAULT }
+  from './storage.js?v=20260806a';
 
 const JAREN = ['2022', '2023', '2024', '2025', '2026'];
 
@@ -449,5 +450,144 @@ export function opslagSnapshotAlsTekst(s) {
   p('');
   p(`=== HNVI-LOTEN (${s.loten.length}) ===`);
   s.loten.forEach(l => p(`   id=${l.id} | ${l.datum || '(geen datum)'} | ${String(l.omschr).slice(0, 34).padEnd(34)} | inkoop ${l.inkoop} | verkoop ${l.verkoop ?? '-'} | ${l.status}`));
+  return r.join('\n');
+}
+
+// -------------------------------------------------- de twee overrides voluit
+//
+// Checksums uit de snapshot van 12-8-2026 14:48. Ze staan hier zodat de app
+// zelf kan aantonen dat er sindsdien niets aan die vier sleutels is veranderd,
+// in plaats van dat je twee uitdraaien naast elkaar moet leggen.
+const VORIGE_SNAPSHOT = {
+  xtenate_tx: '13c524dc6c5d7c6f2c1cc00f560bfdca',
+  xtenate_hist_tx_override: '24ffa564b17b1924f2ae5423a64582c9',
+  xtenate_covers: 'e5891f96e6b2734dca30b9a2a7d95e4c',
+  xtenate_hnvi: 'ea1cb0b02385968d823e3f780bcef348'
+};
+
+const HT_VELDEN = ['omzet', 'kosten', 'omzXt', 'omzBol', 'omzHC', 'priveOp', 'priveSt', 'hnviInv'];
+const gelijk = (a, b) => Math.abs(Number(a || 0) - Number(b || 0)) < 0.005;
+
+/** Leest de twee overrides voluit en legt ze naast de standaard uit de code. */
+export async function overrideDetail() {
+  const lees = async sleutel => {
+    const ruw = localStorage.getItem(sleutel);
+    return {
+      sleutel,
+      aanwezig: ruw !== null,
+      ruw: ruw ?? '',
+      tekens: (ruw ?? '').length,
+      som: ruw === null ? '—' : await checksum(ruw),
+      waarde: (() => { try { return ruw === null ? null : JSON.parse(ruw); } catch { return 'ONLEESBAAR'; } })()
+    };
+  };
+
+  const ht = await lees('xtenate_home_totals_override');
+  const ms = await lees('xtenate_maand_saldos_override');
+
+  // Jaartotalen: per jaar en per veld naast de code-standaard.
+  const htRegels = [];
+  const jaren = [...new Set([
+    ...Object.keys(ht.waarde && typeof ht.waarde === 'object' ? ht.waarde : {}),
+    ...Object.keys(HOME_TOTALS_DEFAULT)
+  ])].sort();
+  jaren.forEach(jaar => {
+    const mijn = (ht.waarde || {})[jaar] || null;
+    const std = HOME_TOTALS_DEFAULT[jaar] || null;
+    htRegels.push({
+      jaar, mijn, std,
+      afwijkend: HT_VELDEN.filter(v => !gelijk(mijn?.[v], std?.[v])),
+      alleenBijMij: !!mijn && !std,
+      alleenInCode: !mijn && !!std
+    });
+  });
+
+  // Maandsaldi: per maand begin en eind naast de code-standaard.
+  const msRegels = [];
+  const maanden = [...new Set([
+    ...Object.keys(ms.waarde && typeof ms.waarde === 'object' ? ms.waarde : {}),
+    ...Object.keys(MAAND_SALDOS_DEFAULT)
+  ])].sort();
+  maanden.forEach(maand => {
+    const mijn = (ms.waarde || {})[maand] || null;
+    const std = MAAND_SALDOS_DEFAULT[maand] || null;
+    msRegels.push({
+      maand, mijn, std,
+      afwijkend: ['begin', 'eind'].filter(v => !gelijk(mijn?.[v], std?.[v])),
+      alleenBijMij: !!mijn && !std,
+      alleenInCode: !mijn && !!std
+    });
+  });
+
+  // Ontbrekende maanden binnen de reeks die in jouw opslag staat. Bewust niet
+  // over de samenvoeging met de code, want dan vult de standaard de gaten op
+  // en zie je juist niet wat er in je eigen opslag mist.
+  const eigenMaanden = Object.keys(ms.waarde && typeof ms.waarde === 'object' ? ms.waarde : {}).sort();
+  const gaten = [];
+  if (eigenMaanden.length) {
+    const [j0, m0] = eigenMaanden[0].split('-').map(Number);
+    const [j1, m1] = eigenMaanden[eigenMaanden.length - 1].split('-').map(Number);
+    for (let j = j0, m = m0; j < j1 || (j === j1 && m <= m1); m === 12 ? (m = 1, j++) : m++) {
+      const sleutel = `${j}-${String(m).padStart(2, '0')}`;
+      if (!eigenMaanden.includes(sleutel)) gaten.push(sleutel);
+    }
+  }
+
+  // Controle op de vier sleutels uit de vorige snapshot.
+  const controle = [];
+  for (const [sleutel, verwacht] of Object.entries(VORIGE_SNAPSHOT)) {
+    const ruw = localStorage.getItem(sleutel);
+    const nu = ruw === null ? '—' : await checksum(ruw);
+    controle.push({ sleutel, verwacht, nu, gelijk: nu === verwacht });
+  }
+
+  return { ht, ms, htRegels, msRegels, gaten, controle };
+}
+
+export function overrideDetailAlsTekst(d) {
+  const r = [];
+  const p = (...a) => r.push(a.join(' '));
+  const g = n => (n === null || n === undefined ? '—' : Number(n).toFixed(2));
+
+  p('OVERRIDES VOLUIT — ALLEEN LEZEN —', new Date().toLocaleString('nl-NL'));
+  p('Er is niets geschreven, gecorrigeerd of overschreven.');
+  p('');
+
+  p('=== CONTROLE TEGEN DE VORIGE SNAPSHOT (12-8-2026 14:48) ===');
+  d.controle.forEach(c => p('  ', (c.gelijk ? 'GELIJK  ' : 'AFWIJKEND'), c.sleutel.padEnd(28),
+    'verwacht', c.verwacht, '| nu', c.nu));
+  p('  ', d.controle.every(c => c.gelijk)
+    ? 'Alle vier de sleutels zijn onveranderd.'
+    : 'LET OP: er is iets veranderd sinds de vorige snapshot.');
+  p('');
+
+  p('=== xtenate_home_totals_override ===');
+  p('  aanwezig:', d.ht.aanwezig, '| tekens:', d.ht.tekens, '| checksum:', d.ht.som);
+  p('  RUWE WAARDE:');
+  p('  ' + d.ht.ruw);
+  p('');
+  p('  jaar | veld     | in mijn opslag | in de code   | gelijk');
+  d.htRegels.forEach(x => {
+    if (x.alleenInCode) { p(`  ${x.jaar} | (staat niet in mijn opslag, wel in de code)`); return; }
+    if (!x.mijn) return;
+    HT_VELDEN.forEach(v => {
+      const zelfde = !x.afwijkend.includes(v);
+      p(`  ${x.jaar} | ${v.padEnd(8)} | ${g(x.mijn?.[v]).padStart(14)} | ${g(x.std?.[v]).padStart(12)} | ${zelfde ? 'ja' : 'NEE'}`);
+    });
+  });
+  p('');
+
+  p('=== xtenate_maand_saldos_override ===');
+  p('  aanwezig:', d.ms.aanwezig, '| tekens:', d.ms.tekens, '| checksum:', d.ms.som);
+  p('  RUWE WAARDE:');
+  p('  ' + d.ms.ruw);
+  p('');
+  p('  maand   | begin (mij) | eind (mij) | begin (code) | eind (code) | gelijk');
+  d.msRegels.forEach(x => p(
+    `  ${x.maand} | ${g(x.mijn?.begin).padStart(11)} | ${g(x.mijn?.eind).padStart(10)} | ` +
+    `${g(x.std?.begin).padStart(12)} | ${g(x.std?.eind).padStart(11)} | ` +
+    (x.alleenBijMij ? 'alleen bij mij' : x.alleenInCode ? 'alleen in code' : x.afwijkend.length ? 'NEE: ' + x.afwijkend.join(',') : 'ja')));
+  p('');
+  p('  ontbrekende maanden binnen de reeks:', d.gaten.length ? d.gaten.join(', ') : 'geen');
   return r.join('\n');
 }

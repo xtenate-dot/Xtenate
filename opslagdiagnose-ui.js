@@ -3,8 +3,8 @@
 // Toont alleen. Er wordt niets opgeslagen, hersteld of gemigreerd; ook geen
 // voorkeur over welk tabblad open stond. Na het onderzoek mag dit bestand weg.
 
-import { opslagDiagnose, opslagDiagnoseAlsTekst, opslagSnapshot, opslagSnapshotAlsTekst }
-  from './opslagdiagnose.js?v=20260806a';
+import { opslagDiagnose, opslagDiagnoseAlsTekst, opslagSnapshot, opslagSnapshotAlsTekst,
+  overrideDetail, overrideDetailAlsTekst } from './opslagdiagnose.js?v=20260806a';
 
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -22,6 +22,7 @@ export function openOpslagDiagnose() {
     <div class="modal-actions">
       <button class="btn btn-primary" id="diag-knop" onclick="voerOpslagDiagnoseUit()">Diagnose opslag uitvoeren</button>
       <button class="btn" id="diag-snap" onclick="maakOpslagSnapshot()">Snapshot maken (bevriezen)</button>
+      <button class="btn" id="diag-ovr" onclick="toonOverrides()">Overrides voluit tonen</button>
     </div>`;
   el('modal-opslagdiagnose').classList.add('open');
 }
@@ -199,6 +200,97 @@ export async function maakOpslagSnapshot() {
   } catch (e) {
     el('diag-inhoud').innerHTML =
       `<div class="alert alert-error">De snapshot liep vast: ${esc(e.message)}. Er is niets gewijzigd.</div>`;
+  }
+}
+
+/** Toont de twee overrides voluit. Leest alleen. */
+export async function toonOverrides() {
+  const knop = el('diag-ovr');
+  if (knop) knop.disabled = true;
+  try {
+    const d = await overrideDetail();
+    laatsteTekst = overrideDetailAlsTekst(d);
+    const g = n => (n === null || n === undefined ? '—' : Number(n).toFixed(2));
+    const velden = ['omzet', 'kosten', 'omzXt', 'omzBol', 'omzHC', 'priveOp', 'priveSt', 'hnviInv'];
+    const allesGelijk = d.controle.every(c => c.gelijk);
+
+    el('diag-inhoud').innerHTML = `
+      <div class="alert ${allesGelijk ? 'alert-ok' : 'alert-error'}">
+        ${allesGelijk
+          ? 'De vier sleutels uit de vorige snapshot zijn <strong>onveranderd</strong>. Er is niets geschreven.'
+          : '<strong>Let op:</strong> er is iets veranderd sinds de vorige snapshot.'}
+      </div>
+
+      <div class="section-head"><div class="eyebrow">Controle tegen de snapshot van 12-8 14:48</div></div>
+      <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
+        <thead><tr><th style="padding-left:16px">Sleutel</th><th>Toen</th><th>Nu</th>
+          <th style="padding-right:16px">Uitkomst</th></tr></thead>
+        <tbody>${d.controle.map(c => `<tr>
+          <td style="padding-left:16px"><code>${esc(c.sleutel)}</code></td>
+          <td class="muted" style="font-size:10px">${esc(c.verwacht)}</td>
+          <td class="muted" style="font-size:10px">${esc(c.nu)}</td>
+          <td class="${c.gelijk ? 'pos' : 'neg'}" style="padding-right:16px">${c.gelijk ? 'gelijk' : 'AFWIJKEND'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div></div>
+
+      <div class="section-head"><div class="eyebrow">xtenate_home_totals_override</div></div>
+      <div class="card">
+        <p class="ctrl-uitleg" style="margin:0 0 var(--sp-2)">
+          ${d.ht.aanwezig ? `${d.ht.tekens} tekens · checksum <code>${esc(d.ht.som)}</code>` : 'staat niet in de opslag'}</p>
+        <textarea readonly style="width:100%;height:90px;font-family:ui-monospace,monospace;font-size:10px;
+          padding:8px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+          background:var(--surface-2);color:var(--text)">${esc(d.ht.ruw)}</textarea>
+      </div>
+      <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
+        <thead><tr><th style="padding-left:16px">Jaar</th>${velden.map(v => `<th style="text-align:right">${v}</th>`).join('')}
+          <th style="padding-right:16px">Bron</th></tr></thead>
+        <tbody>${d.htRegels.filter(x => x.mijn || x.std).map(x => `
+          <tr>
+            <td style="padding-left:16px">${x.jaar}</td>
+            ${velden.map(v => `<td style="text-align:right" class="${x.afwijkend.includes(v) ? 'neg' : ''}">${
+              g(x.mijn?.[v])}${x.afwijkend.includes(v) ? `<br><span class="muted" style="font-size:10px">code ${g(x.std?.[v])}</span>` : ''}</td>`).join('')}
+            <td class="muted" style="padding-right:16px;font-size:11px">${
+              x.alleenBijMij ? 'alleen bij jou' : x.alleenInCode ? 'alleen in code' :
+              x.afwijkend.length ? x.afwijkend.length + ' velden anders' : 'gelijk aan code'}</td>
+          </tr>`).join('')}</tbody>
+      </table></div></div>
+
+      <div class="section-head"><div class="eyebrow">xtenate_maand_saldos_override</div></div>
+      <div class="card">
+        <p class="ctrl-uitleg" style="margin:0 0 var(--sp-2)">
+          ${d.ms.aanwezig ? `${d.ms.tekens} tekens · checksum <code>${esc(d.ms.som)}</code>` : 'staat niet in de opslag'}
+          ${d.gaten.length ? `<br>Ontbrekende maanden binnen de reeks: <span class="neg">${esc(d.gaten.join(', '))}</span>` : '<br>Geen gaten binnen de reeks.'}</p>
+        <textarea readonly style="width:100%;height:90px;font-family:ui-monospace,monospace;font-size:10px;
+          padding:8px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+          background:var(--surface-2);color:var(--text)">${esc(d.ms.ruw)}</textarea>
+      </div>
+      <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
+        <thead><tr><th style="padding-left:16px">Maand</th>
+          <th style="text-align:right">Begin</th><th style="text-align:right">Eind</th>
+          <th style="text-align:right">Begin (code)</th><th style="text-align:right">Eind (code)</th>
+          <th style="padding-right:16px">Uitkomst</th></tr></thead>
+        <tbody>${d.msRegels.map(x => `<tr>
+          <td style="padding-left:16px">${esc(x.maand)}</td>
+          <td style="text-align:right" class="${x.afwijkend.includes('begin') ? 'neg' : ''}">${g(x.mijn?.begin)}</td>
+          <td style="text-align:right" class="${x.afwijkend.includes('eind') ? 'neg' : ''}">${g(x.mijn?.eind)}</td>
+          <td style="text-align:right" class="muted">${g(x.std?.begin)}</td>
+          <td style="text-align:right" class="muted">${g(x.std?.eind)}</td>
+          <td class="muted" style="padding-right:16px;font-size:11px">${
+            x.alleenBijMij ? 'alleen bij jou' : x.alleenInCode ? 'alleen in code' :
+            x.afwijkend.length ? 'anders' : 'gelijk'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div></div>
+
+      <div class="modal-actions">
+        <button class="btn" onclick="maakOpslagSnapshot()">Terug naar de snapshot</button>
+        <button class="btn btn-primary" id="diag-kopieer" onclick="kopieerOpslagDiagnose()">Resultaten kopiëren</button>
+      </div>
+      <textarea id="diag-tekst" readonly style="width:100%;height:300px;margin-top:var(--sp-3);
+        font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
+        border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">${esc(laatsteTekst)}</textarea>`;
+  } catch (e) {
+    el('diag-inhoud').innerHTML =
+      `<div class="alert alert-error">Het uitlezen liep vast: ${esc(e.message)}. Er is niets gewijzigd.</div>`;
   }
 }
 
