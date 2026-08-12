@@ -4,7 +4,7 @@
 // voorkeur over welk tabblad open stond. Na het onderzoek mag dit bestand weg.
 
 import { opslagDiagnose, opslagDiagnoseAlsTekst, opslagSnapshot, opslagSnapshotAlsTekst,
-  overrideDetail, overrideDetailAlsTekst } from './opslagdiagnose.js?v=20260806a';
+  overrideDetail, overrideDetailAlsTekst } from './opslagdiagnose.js?v=20260812c';
 
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>

@@ -1,10 +1,10 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260806a';
+import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260812c';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260806a';
-import { maakSorteerbaar } from './tables.js?v=20260806a';
+} from './storage.js?v=20260812c';
+import { maakSorteerbaar } from './tables.js?v=20260812c';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';

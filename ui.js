@@ -1,12 +1,12 @@
 // ui.js — navigatie tussen pagina's en het onthouden van de actieve pagina.
 
-import { renderBank } from './bank.js?v=20260806a';
-import { renderBelasting } from './belasting.js?v=20260806a';
-import { renderHome } from './dashboard.js?v=20260806a';
-import { renderGrootboek } from './grootboek.js?v=20260806a';
-import { renderHNVI } from './hnvi.js?v=20260806a';
-import { renderControle } from './controle.js?v=20260806a';
-import { renderCovers } from './voorraad.js?v=20260806a';
+import { renderBank } from './bank.js?v=20260812c';
+import { renderBelasting } from './belasting.js?v=20260812c';
+import { renderHome } from './dashboard.js?v=20260812c';
+import { renderGrootboek } from './grootboek.js?v=20260812c';
+import { renderHNVI } from './hnvi.js?v=20260812c';
+import { renderControle } from './controle.js?v=20260812c';
+import { renderCovers } from './voorraad.js?v=20260812c';
 
 const RENDERS = {
   home: renderHome,
