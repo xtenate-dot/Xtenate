@@ -4,7 +4,9 @@
 // voorkeur over welk tabblad open stond. Na het onderzoek mag dit bestand weg.
 
 import { opslagDiagnose, opslagDiagnoseAlsTekst, opslagSnapshot, opslagSnapshotAlsTekst,
-  overrideDetail, overrideDetailAlsTekst } from './opslagdiagnose.js?v=20260812c';
+  overrideDetail, overrideDetailAlsTekst, negeerDetail, backupBestand,
+  negeerAnalyse, downloadNegeerlijst }
+  from './opslagdiagnose.js?v=20260812c';
 
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -23,6 +25,8 @@ export function openOpslagDiagnose() {
       <button class="btn btn-primary" id="diag-knop" onclick="voerOpslagDiagnoseUit()">Diagnose opslag uitvoeren</button>
       <button class="btn" id="diag-snap" onclick="maakOpslagSnapshot()">Snapshot maken (bevriezen)</button>
       <button class="btn" id="diag-ovr" onclick="toonOverrides()">Overrides voluit tonen</button>
+      <button class="btn" id="diag-neg" onclick="toonNegeerlijst()">Negeerlijst + D1-gevolgen</button>
+      <button class="btn btn-primary" id="diag-backup" onclick="downloadBackup()">Volledige backup downloaden</button>
     </div>`;
   el('modal-opslagdiagnose').classList.add('open');
 }
@@ -291,6 +295,139 @@ export async function toonOverrides() {
   } catch (e) {
     el('diag-inhoud').innerHTML =
       `<div class="alert alert-error">Het uitlezen liep vast: ${esc(e.message)}. Er is niets gewijzigd.</div>`;
+  }
+}
+
+/** Toont de negeerlijst met wat D1 ermee doet, en biedt JSON + CSV aan. */
+export async function toonNegeerlijst() {
+  const knop = el('diag-neg');
+  if (knop) knop.disabled = true;
+  try {
+    const a = await negeerAnalyse();
+    const kol = ['soort','sleutel','huidigId','controleId','controleTitel','label','reden','wanneer',
+      'vinger','entiteit','wijstNaar','d1','nieuwId','oordeel','toelichting'];
+    laatsteTekst = ['NEGEERLIJST + D1-GEVOLGEN — ALLEEN LEZEN — ' + a.momentLokaal,
+      'checksum xtenate_controle_negeer: ' + a.som,
+      `meldingen: ${a.aantalMeldingen ?? 0} | controles: ${a.aantalControles ?? 0} | totaal: ${a.aantalTotaal ?? 0}`,
+      `geraakt door D1: ${a.geraakt ?? 0} | oordeel: ` +
+        Object.entries(a.perOordeel || {}).map(([k, v]) => `${k}=${v}`).join(', '),
+      '', 'RUWE WAARDE:', a.ruw, '', kol.join(' | '),
+      ...a.regels.map(r => kol.map(k =>
+        Array.isArray(r[k]) ? r[k].join(' ') : String(r[k] ?? '')).join(' | '))].join('\n');
+
+    const kleur = o => o === 'JA' ? 'pos' : o === 'ONBESLIST' ? 'neg' : o === 'NEE' ? 'neg' : 'muted';
+
+    el('diag-inhoud').innerHTML = `
+      <div class="alert alert-info">
+        Er is niets geschreven. Niet-eenduidige koppelingen staan op <strong>ONBESLIST</strong>; daar wordt niets geraden.
+      </div>
+
+      <div class="kpi-grid" style="margin-bottom:var(--sp-3)">
+        <div class="kpi kpi--secondary"><div class="kpi-lbl">Meldingen</div>
+          <div class="kpi-val">${a.aantalMeldingen ?? 0}</div></div>
+        <div class="kpi kpi--secondary"><div class="kpi-lbl">Uitgezette controles</div>
+          <div class="kpi-val">${a.aantalControles ?? 0}</div></div>
+        <div class="kpi kpi--secondary"><div class="kpi-lbl">Totaal records</div>
+          <div class="kpi-val">${a.aantalTotaal ?? 0}</div></div>
+        <div class="kpi kpi--secondary"><div class="kpi-lbl">Geraakt door D1</div>
+          <div class="kpi-val ${a.geraakt ? 'neg' : ''}">${a.geraakt ?? 0}</div>
+          <div class="kpi-sub">${Object.entries(a.perOordeel || {}).map(([k, v]) => `${k}: ${v}`).join(' · ') || '—'}</div></div>
+      </div>
+
+      ${a.regels.length ? `
+      <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
+        <thead><tr>
+          <th style="padding-left:16px">Huidig ID</th><th>Type</th><th>Vingerafdruk</th>
+          <th>Gekoppelde entiteit</th><th>Door D1</th><th>Nieuw ID</th>
+          <th style="padding-right:16px">Oordeel</th></tr></thead>
+        <tbody>${a.regels.map(r => `<tr>
+          <td style="padding-left:16px"><code>${esc(r.huidigId)}</code></td>
+          <td class="muted">${esc(r.soort)}</td>
+          <td class="muted" style="font-size:10px">${esc(String(r.vinger || '—').slice(0, 28))}</td>
+          <td class="muted" style="font-size:11px">${esc(r.entiteit)}${
+            r.wijstNaar ? '<br><span style="font-size:10px">' + esc(String(r.wijstNaar).slice(0, 44)) + '</span>' : ''}</td>
+          <td class="${r.d1 === 'JA' ? 'neg' : 'muted'}">${esc(r.d1)}</td>
+          <td>${r.nieuwId ? '<code>' + esc(r.huidigId) + ' → ' + esc(r.nieuwId) + '</code>' : '—'}</td>
+          <td style="padding-right:16px"><span class="${kleur(r.oordeel)}" style="font-weight:600">${esc(r.oordeel)}</span>
+            <br><span class="muted" style="font-size:10px">${esc(String(r.toelichting).slice(0, 46))}</span></td>
+        </tr>`).join('')}</tbody>
+      </table></div></div>`
+      : '<div class="card"><p class="ctrl-uitleg" style="margin:0">De negeerlijst is leeg. Er is niets dat D1 kan raken.</p></div>'}
+
+      <div class="modal-actions">
+        <button class="btn" onclick="maakOpslagSnapshot()">Terug naar de snapshot</button>
+        <button class="btn" id="diag-kopieer" onclick="kopieerOpslagDiagnose()">Resultaten kopiëren</button>
+        <button class="btn btn-primary" onclick="downloadNegeerBestanden()">Negeerlijst downloaden (JSON + CSV)</button>
+      </div>
+      <textarea id="diag-tekst" readonly style="width:100%;height:240px;margin-top:var(--sp-3);
+        font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
+        border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">${esc(laatsteTekst)}</textarea>`;
+  } catch (e) {
+    el('diag-inhoud').innerHTML = `<div class="alert alert-error">Uitlezen mislukt: ${esc(e.message)}. Er is niets gewijzigd.</div>`;
+  } finally {
+    if (knop) knop.disabled = false;
+  }
+}
+
+export async function downloadNegeerBestanden() {
+  try {
+    const uit = await downloadNegeerlijst();
+    const b = el('diag-inhoud').querySelector('.alert');
+    if (b) b.innerHTML += `<br>Twee bestanden gedownload: JSON en CSV, ${uit.csvRegels} regels. Er is niets geschreven.`;
+  } catch (e) {
+    const b = el('diag-inhoud').querySelector('.alert');
+    if (b) b.innerHTML += `<br><strong>Downloaden mislukt:</strong> ${esc(e.message)}`;
+  }
+}
+
+/** Zet de volledige opslag als bestand op je schijf. Schrijft niets terug. */
+export async function downloadBackup() {
+  const knop = el('diag-backup');
+  if (knop) { knop.disabled = true; knop.textContent = 'Bezig…'; }
+  try {
+    const uit = await backupBestand();
+    const r = ['VOLLEDIGE RESERVEKOPIE — ' + new Date().toLocaleString('nl-NL'),
+      'bestand: ' + uit.naam, 'sleutels: ' + uit.sleutels, 'omvang: ' + uit.tekens + ' tekens',
+      'TOTALE CHECKSUM: ' + uit.som, '',
+      'sleutel'.padEnd(32) + 'structuur'.padEnd(18) + 'records'.padStart(8) + 'tekens'.padStart(9) + '  SHA-256'];
+    Object.entries(uit.per).forEach(([s, x]) =>
+      r.push('   ' + s.padEnd(32) + String(x.vorm).padEnd(18) + String(x.records ?? '-').padStart(8)
+        + String(x.tekens).padStart(9) + '  ' + x.som));
+    laatsteTekst = r.join('\n');
+
+    el('diag-inhoud').innerHTML = `
+      <div class="alert alert-ok">
+        Reservekopie gedownload als <code>${esc(uit.naam)}</code> —
+        <strong>${uit.sleutels} sleutels</strong>, ${(uit.tekens / 1024).toFixed(1)} kB.
+        <strong>Er is niets naar de opslag geschreven.</strong>
+        <br>Totale checksum van het bestand: <code>${esc(uit.som)}</code>
+        <br>Controleer je downloadmap voordat je verdergaat. Dit bestand bevat élke sleutel,
+        ook de zeven die buiten de normale reservekopie vallen.
+      </div>
+      <div class="section-head"><div class="eyebrow">Wat er in het bestand zit</div></div>
+      <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
+        <thead><tr><th style="padding-left:16px">Sleutel</th><th>Structuur</th>
+          <th style="text-align:right">Records</th><th style="text-align:right">Tekens</th>
+          <th style="padding-right:16px">SHA-256</th></tr></thead>
+        <tbody>${Object.entries(uit.per).map(([s, x]) => `<tr>
+          <td style="padding-left:16px"><code>${esc(s)}</code></td>
+          <td class="muted">${esc(x.vorm)}</td>
+          <td style="text-align:right">${x.records ?? '—'}</td>
+          <td style="text-align:right" class="muted">${x.tekens}</td>
+          <td class="muted" style="font-size:10px;padding-right:16px">${esc(x.som)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="downloadBackup()">Opnieuw downloaden</button>
+        <button class="btn btn-primary" id="diag-kopieer" onclick="kopieerOpslagDiagnose()">Overzicht kopiëren</button>
+      </div>
+      <textarea id="diag-tekst" readonly style="width:100%;height:260px;margin-top:var(--sp-3);
+        font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
+        border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">${esc(laatsteTekst)}</textarea>`;
+  } catch (e) {
+    el('diag-inhoud').innerHTML = `<div class="alert alert-error">De reservekopie kon niet worden gemaakt: ${esc(e.message)}. Er is niets gewijzigd.</div>`;
+  } finally {
+    if (knop) { knop.disabled = false; knop.textContent = 'Volledige backup downloaden'; }
   }
 }
 
