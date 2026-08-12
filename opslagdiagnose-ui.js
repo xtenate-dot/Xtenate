@@ -3,7 +3,8 @@
 // Toont alleen. Er wordt niets opgeslagen, hersteld of gemigreerd; ook geen
 // voorkeur over welk tabblad open stond. Na het onderzoek mag dit bestand weg.
 
-import { opslagDiagnose, opslagDiagnoseAlsTekst } from './opslagdiagnose.js?v=20260806a';
+import { opslagDiagnose, opslagDiagnoseAlsTekst, opslagSnapshot, opslagSnapshotAlsTekst }
+  from './opslagdiagnose.js?v=20260806a';
 
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -20,6 +21,7 @@ export function openOpslagDiagnose() {
     </div>
     <div class="modal-actions">
       <button class="btn btn-primary" id="diag-knop" onclick="voerOpslagDiagnoseUit()">Diagnose opslag uitvoeren</button>
+      <button class="btn" id="diag-snap" onclick="maakOpslagSnapshot()">Snapshot maken (bevriezen)</button>
     </div>`;
   el('modal-opslagdiagnose').classList.add('open');
 }
@@ -141,6 +143,63 @@ function render(d) {
     <textarea id="diag-tekst" readonly style="width:100%;height:340px;margin-top:var(--sp-3);
       font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
       border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">${esc(laatsteTekst)}</textarea>`;
+}
+
+/** Bevriest de opslag op papier. Leest alleen. */
+export async function maakOpslagSnapshot() {
+  const knop = el('diag-snap');
+  if (knop) knop.disabled = true;
+  try {
+    const s = await opslagSnapshot();
+    laatsteTekst = opslagSnapshotAlsTekst(s);
+    el('diag-inhoud').innerHTML = `
+      <div class="alert alert-ok">
+        Snapshot gemaakt. <strong>Er is niets geschreven.</strong>
+        ${s.aantalSleutels} sleutels, ${s.totaalBytes} bytes.
+        ${s.kopieSleutels.length
+          ? `<br><strong>Let op:</strong> er staan sleutels die op een reservekopie lijken: <code>${
+              s.kopieSleutels.map(esc).join('</code>, <code>')}</code>. Die kunnen de oude stand bevatten.`
+          : '<br>Er zijn geen reservekopie-sleutels gevonden.'}
+      </div>
+      <div class="section-head"><div class="eyebrow">Alle opslagsleutels</div></div>
+      <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
+        <thead><tr><th style="padding-left:16px">Sleutel</th><th>Vorm</th>
+          <th style="text-align:right">Records</th><th style="text-align:right">Bytes</th>
+          <th>Eerste</th><th>Laatste</th><th style="padding-right:16px">Checksum</th></tr></thead>
+        <tbody>${s.regels.map(x => `<tr>
+          <td style="padding-left:16px"><code>${esc(x.sleutel)}</code></td>
+          <td class="muted">${esc(x.vorm)}</td>
+          <td style="text-align:right">${x.records ?? '—'}</td>
+          <td style="text-align:right" class="muted">${x.bytes}</td>
+          <td class="muted">${esc(x.eerste ?? '—')}</td>
+          <td class="muted">${esc(x.laatste ?? '—')}</td>
+          <td class="muted" style="font-size:10px;padding-right:16px">${esc(x.som)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div></div>
+      <p class="ctrl-uitleg">De checksum verandert zodra ook maar één teken in die sleutel wijzigt.
+        Draai deze snapshot later opnieuw om te bewijzen dat er niets is aangeraakt.</p>
+      <div class="kpi-grid" style="margin-bottom:var(--sp-3)">
+        <div class="kpi kpi--secondary"><div class="kpi-lbl">Voorraadartikelen</div>
+          <div class="kpi-val">${s.covers.length}</div></div>
+        <div class="kpi kpi--secondary"><div class="kpi-lbl">HNVI-loten</div>
+          <div class="kpi-val">${s.loten.length}</div></div>
+        <div class="kpi kpi--secondary"><div class="kpi-lbl">Sleutels</div>
+          <div class="kpi-val">${s.aantalSleutels}</div></div>
+        <div class="kpi kpi--secondary"><div class="kpi-lbl">Totale omvang</div>
+          <div class="kpi-val">${(s.totaalBytes / 1024).toFixed(1)} kB</div></div>
+      </div>
+      <p class="ctrl-uitleg">De volledige lijst met voorraadartikelen en HNVI-loten staat in de tekst hieronder.</p>
+      <div class="modal-actions">
+        <button class="btn" onclick="voerOpslagDiagnoseUit()">Terug naar de diagnose</button>
+        <button class="btn btn-primary" id="diag-kopieer" onclick="kopieerOpslagDiagnose()">Resultaten kopiëren</button>
+      </div>
+      <textarea id="diag-tekst" readonly style="width:100%;height:340px;margin-top:var(--sp-3);
+        font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
+        border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">${esc(laatsteTekst)}</textarea>`;
+  } catch (e) {
+    el('diag-inhoud').innerHTML =
+      `<div class="alert alert-error">De snapshot liep vast: ${esc(e.message)}. Er is niets gewijzigd.</div>`;
+  }
 }
 
 export async function kopieerOpslagDiagnose() {
