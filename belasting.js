@@ -1,8 +1,8 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc , palette } from './charts.js?v=20260806a';
-import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260806a';
-import { state } from './storage.js?v=20260806a';
+import { charts, dc , palette } from './charts.js?v=20260812c';
+import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260812c';
+import { state } from './storage.js?v=20260812c';
 
 export function renderBelasting() {
   const jaar = document.getElementById('f-jaar-bel') ? document.getElementById('f-jaar-bel').value : '2026';

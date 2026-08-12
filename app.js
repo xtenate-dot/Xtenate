@@ -2,45 +2,45 @@
 // attributen in index.html blijven werken, regelt de globale interacties
 // (detailpaneel, zoeken, sneltoetsen) en start de app op.
 
-import { nav, gaNaar, hertekenHuidigePagina } from './ui.js?v=20260806a';
-import { wisselJaar, renderHome } from './dashboard.js?v=20260806a';
-import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking } from './bank.js?v=20260806a';
-import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260806a';
-import { renderBelasting } from './belasting.js?v=20260806a';
+import { nav, gaNaar, hertekenHuidigePagina } from './ui.js?v=20260812c';
+import { wisselJaar, renderHome } from './dashboard.js?v=20260812c';
+import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking } from './bank.js?v=20260812c';
+import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260812c';
+import { renderBelasting } from './belasting.js?v=20260812c';
 import {
   renderControle, klapControleUit, toonAlleControleRegels, verbergControleMelding,
   zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen
-} from './controle.js?v=20260806a';
+} from './controle.js?v=20260812c';
 import {
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie,
   draaiActieTerug, openGroepenModal, sluitGroepenModal, voegGroepToe, verwijderGroep, bewaarGroepen,
   kiesVoorraadJaar, legVoorraadVast, verwijderArtikel, verwijderVoorraadSelectie
-} from './voorraad.js?v=20260806a';
+} from './voorraad.js?v=20260812c';
 import {
   renderHNVI, berekenHNVIInkoop, openHNVIModal, openHNVISell, closeHNVIModal, saveHNVI,
   wisHNVIVerkoop, verwijderHNVIItem, toggleAllHNVI, updateHNVIDeleteBtn, verwijderGeselecteerdeHNVI,
   importHNVIFactuur, bevestigHNVIImport
-} from './hnvi.js?v=20260806a';
+} from './hnvi.js?v=20260812c';
 import {
   importExcel, openWisModal, doWis, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
   openApiKeyModal, saveApiKey
-} from './modals.js?v=20260806a';
-import { initUiVoorkeuren, wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu } from './theme.js?v=20260806a';
-import { initZoek, focusZoek, sluitZoek } from './search.js?v=20260806a';
-import { openExportModal, sluitExportModal, toonExportSamenvatting, doeExport } from './excel-ui.js?v=20260806a';
-import { openZelftestModal, sluitZelftestModal, startZelftest } from './zelftest-ui.js?v=20260806a';
+} from './modals.js?v=20260812c';
+import { initUiVoorkeuren, wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu } from './theme.js?v=20260812c';
+import { initZoek, focusZoek, sluitZoek } from './search.js?v=20260812c';
+import { openExportModal, sluitExportModal, toonExportSamenvatting, doeExport } from './excel-ui.js?v=20260812c';
+import { openZelftestModal, sluitZelftestModal, startZelftest } from './zelftest-ui.js?v=20260812c';
 import {
   openMigratieModal, sluitMigratieModal, maakReservekopie, naarDryRun,
   terugNaarVoorbereiden, startDryRun, kopieerDryRun, toonDiagnose,
   naarHerstel, kopieerHerstelPreview
-} from './migratie-ui.js?v=20260806a';
+} from './migratie-ui.js?v=20260812c';
 import {
   openOpslagDiagnose, sluitOpslagDiagnose, voerOpslagDiagnoseUit, kopieerOpslagDiagnose, maakOpslagSnapshot, toonOverrides
-} from './opslagdiagnose-ui.js?v=20260806a';
-import { vertraag } from './helpers.js?v=20260806a';
-import { toonBoeking, sluitDrawer, openBoeking } from './drawer.js?v=20260806a';
-import { start as startAuth, login, uitloggen, opnieuwVerbinden } from './auth.js?v=20260806a';
+} from './opslagdiagnose-ui.js?v=20260812c';
+import { vertraag } from './helpers.js?v=20260812c';
+import { toonBoeking, sluitDrawer, openBoeking } from './drawer.js?v=20260812c';
+import { start as startAuth, login, uitloggen, opnieuwVerbinden } from './auth.js?v=20260812c';
 
 // Zoeken tijdens typen wacht kort: anders wordt bij elke aanslag de hele
 // tabel opnieuw opgebouwd, wat bij honderden regels merkbaar hapert.

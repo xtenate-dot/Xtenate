@@ -3,9 +3,9 @@
 import {
   GBNM, REKNM, bedragUit, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, maandLabel, rekBadge,
   typeBadge, vulMaandSelect, weergaveNaam
-} from './helpers.js?v=20260806a';
-import { MAAND_SALDOS, saveHistTxData, saveTxData, state } from './storage.js?v=20260806a';
-import { maakSorteerbaar } from './tables.js?v=20260806a';
+} from './helpers.js?v=20260812c';
+import { MAAND_SALDOS, saveHistTxData, saveTxData, state } from './storage.js?v=20260812c';
+import { maakSorteerbaar } from './tables.js?v=20260812c';
 
 const el = id => document.getElementById(id);
 
