@@ -70,36 +70,54 @@ const geld = n => '€ ' + Number(n || 0).toFixed(2);
  */
 function koppelHistorie() {
   const mijn = (Array.isArray(state.HIST_TX) ? state.HIST_TX : []).filter(geldigeDatum);
-  const codePer = new Map();
-  HIST_TX_DEFAULT.forEach(t => {
-    const k = t.datum + '#' + kenmerkZonderDatum(t);
-    if (!codePer.has(k)) codePer.set(k, []);
-    codePer.get(k).push(t);
-  });
 
-  const verschoven = [];   // datum wijkt af, verder alles gelijk
-  const soortAnders = [];  // datum wijkt af én de soort verschilt
+  // Groeperen op inhoud zonder datum en zonder soort, en binnen elke groep
+  // beide kanten op datum sorteren en op volgorde naast elkaar leggen.
+  //
+  // Per record de "dichtstbijzijnde" tegenhanger zoeken werkt hier niet. Bij
+  // reeksen van dezelfde boeking — vijftien keer PostNL van 6,75 op
+  // opeenvolgende dagen — pikt de een dan de tegenhanger van de ander in. Dat
+  // gaat twee kanten op mis: op verschoven gegevens vindt hij er te weinig, en
+  // op al herstelde gegevens ziet hij verschuivingen die er niet zijn, zodat
+  // een tweede herstel de boekingen nóg een dag vooruit zou zetten. Koppelen op
+  // volgorde houdt de reeks intact en geeft in beide gevallen het juiste beeld.
+  const groepeer = lijst => {
+    const m = new Map();
+    lijst.forEach(t => {
+      const k = kenmerkZonderDatum(t);
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(t);
+    });
+    return m;
+  };
+  const opDatum = (a, b) => String(a.datum).localeCompare(String(b.datum));
+  const mijnGroepen = groepeer(mijn);
+  const codeGroepen = groepeer(HIST_TX_DEFAULT);
+
+  const verschoven = [];
+  const soortAnders = [];
+  const alGoed = [];
   const rest = [];
 
-  mijn.forEach(t => {
-    const doel = dagen(t.datum, 1);
-    // De sleutel bevat bewust niet de soort, zodat een boeking waarvan alleen de
-    // soort is omgewisseld toch zijn tegenhanger vindt. Daarna kijken we apart
-    // of de soort verschilt; anders zou zo'n geval stilzwijgend meeliften in de
-    // datumcorrectie en niet als eigen melding verschijnen.
-    const zelfde = codePer.get(doel + '#' + kenmerkZonderDatum(t)) || [];
-    if (!zelfde.length) { rest.push(t); return; }
-
-    const gelijkeSoort = zelfde.filter(c => c.type === t.type);
-    if (gelijkeSoort.length) {
-      verschoven.push({ mijn: t, code: gelijkeSoort[0], eenduidig: gelijkeSoort.length === 1,
-                        kandidaten: gelijkeSoort.length });
-    } else {
-      soortAnders.push({ mijn: t, code: zelfde[0], eenduidig: zelfde.length === 1 });
+  new Set([...mijnGroepen.keys(), ...codeGroepen.keys()]).forEach(k => {
+    const a = (mijnGroepen.get(k) || []).slice().sort(opDatum);
+    const b = (codeGroepen.get(k) || []).slice().sort(opDatum);
+    const n = Math.min(a.length, b.length);
+    for (let i = 0; i < n; i++) {
+      const verschil = Math.round(
+        (Date.parse(b[i].datum + 'T00:00:00Z') - Date.parse(a[i].datum + 'T00:00:00Z')) / 86400000);
+      const paar = { mijn: a[i], code: b[i], eenduidig: true, kandidaten: 1 };
+      if (verschil === 0 && a[i].type === b[i].type) alGoed.push(paar);
+      else if (verschil === 0) soortAnders.push(paar);
+      else if (verschil === 1) {
+        if (a[i].type === b[i].type) verschoven.push(paar);
+        else soortAnders.push(paar);
+      } else rest.push(a[i]);
     }
+    for (let i = n; i < a.length; i++) rest.push(a[i]);
   });
 
-  return { verschoven, soortAnders, rest, aantalMijn: mijn.length };
+  return { verschoven, soortAnders, rest, alGoed, aantalMijn: mijn.length };
 }
 
 /** Bouwt alle meldingen op basis van de gegevens die nu in de browser staan. */
