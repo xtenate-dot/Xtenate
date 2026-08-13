@@ -5,6 +5,12 @@ import { renderHome } from './dashboard.js?v=20260812c';
 
 /** Rekeningnummers die de app kent; gebruikt bij het inlezen van kolom G. */
 const REKENINGEN = new Set(Object.keys(REKNM));
+
+// De omzetrekeningen. Deze stond eerder binnen `reader.onload`, maar wordt ook
+// door `bevestigImport` gebruikt — een andere functie, dus een ander bereik.
+// Daardoor viel elke bevestigde import om met "OMZET_GB is not defined", ná het
+// wegschrijven van de boekingen en vóór het toepassen van de jaartotalen.
+const OMZET_GB = ['8000', '8010', '8020'];
 import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260812c';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
@@ -76,12 +82,25 @@ export function importExcel(input) {
       let newCovers = [];
       let tid = 500;
 
+      // Een boekhouddatum is een kalenderdatum, geen tijdstip. Eerder liep dit
+      // via toISOString(), en dat rekent om naar UTC: middernacht in Amsterdam
+      // is de avond ervoor in UTC, dus elke datumcel kwam er een dag te vroeg
+      // uit. Dat gebeurde alleen bij een positieve UTC-afwijking, waardoor het
+      // in een testomgeving op UTC nooit opviel.
       function excelDate(val) {
-        if (!val) return null;
-        if (val instanceof Date) return val.toISOString().split('T')[0];
+        if (val === 0 || !val) return null;
+        // SheetJS levert met cellDates:true een Date in lokale tijd. We lezen
+        // dag, maand en jaar zoals ze lokaal in de cel staan en rekenen niet om.
+        if (val instanceof Date) {
+          const j = val.getFullYear(), m = val.getMonth() + 1, d = val.getDate();
+          return `${j}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        }
+        // Excel telt dagen vanaf 30-12-1899. In hele dagen rekenen vanaf een
+        // UTC-referentie, zodat zomertijd er niet tussen kan komen.
         if (typeof val === 'number') {
-          const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-          return d.toISOString().split('T')[0];
+          const d = new Date(Date.UTC(1899, 11, 30));
+          d.setUTCDate(d.getUTCDate() + Math.floor(val));
+          return d.toISOString().slice(0,10);
         }
         if (typeof val === 'string' && val.match(/\d{4}-\d{2}-\d{2}/)) return val.slice(0,10);
         if (typeof val === 'string' && val.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
@@ -91,7 +110,6 @@ export function importExcel(input) {
         return null;
       }
 
-      const OMZET_GB = ['8000','8010','8020'];
       // Herken automatisch alle "Bank JJJJ-MM" tabs, welk jaar dan ook
       const bankSheets = wb.SheetNames.filter(n => /^Bank \d{4}-\d{2}$/.test(n));
 
@@ -121,7 +139,9 @@ export function importExcel(input) {
             const isPrive = ['600','601'].includes(gbStr);
             const isInk = OMZET_GB.includes(gbStr);
             let type;
-            if (isPrive) type = bedrag > 0 ? 'prive_storting' : 'prive_opname';
+            // Soort uit het grootboek: 600 is een storting, 601 een opname. Het
+            // teken van het bedrag is hiervoor niet betrouwbaar gebleken.
+            if (isPrive) type = gbStr === '600' ? 'prive_storting' : 'prive_opname';
             else if (isInk && bedrag > 0) type = 'inkomst';
             else if (bedrag > 0 && !isPrive) type = 'inkomst';
             else type = 'uitgave';
@@ -134,10 +154,17 @@ export function importExcel(input) {
 
       // Creditkaart Prive
       let ccCount = 0;
+      const ccProblemen = [];
+      let ccConventie = null;
       const ccSheetName = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g, '').includes('creditkaartprive'));
       if (ccSheetName) {
         const ws = wb.Sheets[ccSheetName];
         const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+
+        // Eerst alles inlezen zonder te oordelen, want het teken had betekenis.
+        // Math.abs gooide dat weg, waardoor een terugstorting als uitgave werd
+        // geboekt en het jaartotaal er tweemaal het bedrag naast zat.
+        const ruweRegels = [];
         rows.slice(2).forEach(row => {
           const datum = excelDate(row[7]);
           const gb = row[8];
@@ -146,10 +173,39 @@ export function importExcel(input) {
           if (!datum) return;
           if (typeof bedrag !== 'number') return;
           const gbStr = gb ? String(Math.round(parseFloat(gb))) : '7010';
-          const isPrive = ['600','601'].includes(gbStr);
-          const ccType = isPrive ? (bedrag > 0 ? 'prive_storting' : 'prive_opname') : 'uitgave';
-          newTx.push({id:tid++, datum, gb:gbStr, bedrag:Math.abs(bedrag),
-            naam: omschr ? String(omschr) : 'Creditkaart Privé', omschr: omschr ? String(omschr) : '', rek:'1030', type:ccType});
+          ruweRegels.push({ datum, gbStr, bedrag, omschr });
+        });
+
+        // Welk teken staat in dit bestand voor een uitgave? Dat leiden we af uit
+        // de meerderheid, in plaats van het te veronderstellen. De uitkomst komt
+        // in de preview te staan, zodat je het kunt nakijken.
+        const gewoon = ruweRegels.filter(r => !['600','601'].includes(r.gbStr));
+        const negatief = gewoon.filter(r => r.bedrag < 0).length;
+        const positief = gewoon.filter(r => r.bedrag > 0).length;
+        ccConventie = negatief > positief ? 'negatief' : 'positief';
+
+        ruweRegels.forEach(r => {
+          const isPrive = ['600','601'].includes(r.gbStr);
+          let ccType;
+          if (isPrive) {
+            // De soort volgt uit het grootboek, niet uit het teken van het
+            // bedrag. In de hele historie hoort 600 bij een storting en 601 bij
+            // een opname, zonder uitzondering; het teken bleek onbetrouwbaar.
+            ccType = r.gbStr === '600' ? 'prive_storting' : 'prive_opname';
+          } else {
+            const isUitgave = ccConventie === 'negatief' ? r.bedrag < 0 : r.bedrag > 0;
+            ccType = isUitgave ? 'uitgave' : 'inkomst';
+            if (!isUitgave) {
+              ccProblemen.push({
+                datum: r.datum, bedrag: r.bedrag, gb: r.gbStr,
+                omschr: r.omschr ? String(r.omschr) : '',
+                uitleg: 'tegengesteld teken — gelezen als terugstorting, niet als uitgave'
+              });
+            }
+          }
+          newTx.push({id:tid++, datum: r.datum, gb:r.gbStr, bedrag:Math.abs(r.bedrag),
+            naam: r.omschr ? String(r.omschr) : 'Creditkaart Privé',
+            omschr: r.omschr ? String(r.omschr) : '', rek:'1030', type:ccType});
           ccCount++;
           // Let op: er wordt HIER GEEN automatische gekoppelde privé-storting meer aangemaakt.
           // Dat bleek bij analyse van de echte boekhouding structureel niet te kloppen met de
@@ -189,10 +245,10 @@ export function importExcel(input) {
       // HNVI-loten uit onze eigen export terughalen, zodat het Excel-bestand een
       // volledige reservekopie is en niet alleen de bankmutaties bevat.
       let lotCount = 0;
+      let nieuweLoten = [];
       const lotBlad = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g,'') === 'hnviloten');
       if (lotBlad) {
         const rows = XLSX.utils.sheet_to_json(wb.Sheets[lotBlad], {header:1, defval:null});
-        const nieuweLoten = [];
         rows.slice(1).forEach(row => {
           const datum = excelDate(row[0]);
           const omschr = row[1];
@@ -210,7 +266,10 @@ export function importExcel(input) {
           });
           lotCount++;
         });
-        if (nieuweLoten.length) { state.HNVI_LOTS = nieuweLoten; saveHnviData(); }
+        // Hier wordt bewust NIET geschreven. De loten werden eerder al bij het
+        // lezen van het bestand opgeslagen, dus vóór de preview en zonder weg
+        // te komen met Annuleren. Ze gaan nu mee in `wachtendeImport` en worden
+        // pas in `bevestigImport` toegepast.
       }
 
       // Vastgelegde voorraadstanden per jaar
@@ -258,56 +317,181 @@ export function importExcel(input) {
         return;
       }
 
-      const is2026 = gevondenJaren.includes('2026');
-      const jaarLabel = gevondenJaren.join(', ') || 'onbekend jaar';
+      // ---------------------------------------------------------------
+      // Vanaf hier wordt er NIETS meer automatisch weggeschreven. Het gelezen
+      // bestand gaat eerst als plan naar het scherm; pas na bevestiging wordt
+      // het toegepast. Een import overschreef eerder ongemerkt hele jaren,
+      // inclusief voorraad en HNVI-loten.
+      wachtendeImport = {
+        wb, newTx, newCovers, newSaldos, nieuweLoten, gevondenJaren, tid,
+        bankCount, ccCount, lotCount, coverCount,
+        ccProblemen, ccConventie, bestandsnaam: file.name
+      };
+      toonImportPreview();
+    } catch(err) {
+      document.getElementById('import-title').textContent = 'Fout bij importeren';
+      document.getElementById('import-body').innerHTML = 'Er ging iets mis: ' + err.message + '<br><br>Controleer of je het juiste Excel bestand hebt geselecteerd.';
+      document.getElementById('import-actions').style.display = 'flex';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ------------------------------------------------- import: eerst tonen, dan pas schrijven
+
+let wachtendeImport = null;
+
+const _esc = t => String(t ?? '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/** Wat de import zou doen, zonder het te doen. */
+export function bouwImportPlan(p) {
+  const is2026 = p.gevondenJaren.includes('2026');
+  const jarenMetRegels = [...new Set(p.newTx.map(t => t.datum.slice(0,4)))].sort();
+  const legeJaren = p.gevondenJaren.filter(j => !jarenMetRegels.includes(j));
+
+  // Welke bestaande records verdwijnen? Bij een historische import worden de
+  // jaren met regels volledig vervangen; bij 2026 de hele lijst.
+  const bestaandHist = Array.isArray(state.HIST_TX) ? state.HIST_TX : [];
+  const bestaandTx = Array.isArray(state.TX) ? state.TX : [];
+  const vervangen = is2026
+    ? bestaandTx.length
+    : bestaandHist.filter(t => jarenMetRegels.some(j => String(t.datum).startsWith(j))).length;
+
+  // Boekingen waarvan de datum buiten het tabblad valt waar ze vandaan komen:
+  // dat wijst op een verschoven datum of een jaargrensprobleem.
+  const buitenJaar = p.newTx.filter(t => !p.gevondenJaren.includes(t.datum.slice(0,4)));
+
+  const covers = Array.isArray(state.COVERS) ? state.COVERS : [];
+  const loten = Array.isArray(state.HNVI_LOTS) ? state.HNVI_LOTS : [];
+
+  return {
+    is2026, jarenMetRegels, legeJaren, vervangen, buitenJaar,
+    nieuw: p.newTx.length,
+    doelSleutel: is2026 ? 'xtenate_tx' : 'xtenate_hist_tx_override',
+    voorraadVervangen: p.newCovers.length > 0 ? { van: covers.length, naar: p.newCovers.length } : null,
+    lotenVervangen: p.lotCount > 0 ? { van: loten.length, naar: p.lotCount } : null,
+    saldoMaanden: Object.keys(p.newSaldos || {}).length,
+    ccProblemen: p.ccProblemen || [],
+    ccConventie: p.ccConventie
+  };
+}
+
+function toonImportPreview() {
+  const p = wachtendeImport;
+  const plan = bouwImportPlan(p);
+  const waarschuwing = plan.buitenJaar.length || plan.ccProblemen.length
+    || (plan.voorraadVervangen && plan.voorraadVervangen.naar < plan.voorraadVervangen.van);
+
+  document.getElementById('import-title').textContent = 'Controleer de import';
+  document.getElementById('import-body').innerHTML =
+    `<div class="alert ${waarschuwing ? 'alert-error' : 'alert-info'}" style="margin-bottom:12px">
+       <strong>Er is nog niets opgeslagen.</strong> Dit is wat de import zou doen met
+       <code>${_esc(p.bestandsnaam || 'het bestand')}</code>.
+     </div>
+     <table class="tbl-compact" style="width:100%">
+       <tbody>
+         <tr><td class="muted" style="width:210px">Doelsleutel</td>
+             <td><code>${_esc(plan.doelSleutel)}</code></td></tr>
+         <tr><td class="muted">Jaren die worden geraakt</td>
+             <td><strong>${_esc(plan.jarenMetRegels.join(', ') || 'geen')}</strong>
+             ${plan.legeJaren.length ? `<br><span class="muted">tabbladen zonder boekingen, worden overgeslagen: ${_esc(plan.legeJaren.join(', '))}</span>` : ''}</td></tr>
+         <tr><td class="muted">Bestaande records die verdwijnen</td>
+             <td class="${plan.vervangen ? 'neg' : ''}"><strong>${plan.vervangen}</strong></td></tr>
+         <tr><td class="muted">Nieuwe records die erbij komen</td>
+             <td><strong>${plan.nieuw}</strong> — ${p.bankCount} bank, ${p.ccCount} creditcard</td></tr>
+         <tr><td class="muted">Maandsaldi</td><td>${plan.saldoMaanden}</td></tr>
+         ${plan.voorraadVervangen ? `<tr><td class="muted">Voorraad wordt vervangen</td>
+             <td class="${plan.voorraadVervangen.naar < plan.voorraadVervangen.van ? 'neg' : ''}">
+             ${plan.voorraadVervangen.van} → ${plan.voorraadVervangen.naar} artikelen</td></tr>` : ''}
+         ${plan.lotenVervangen ? `<tr><td class="muted">HNVI-loten worden vervangen</td>
+             <td>${plan.lotenVervangen.van} → ${plan.lotenVervangen.naar} loten</td></tr>` : ''}
+         <tr><td class="muted">Datums buiten hun eigen jaar</td>
+             <td class="${plan.buitenJaar.length ? 'neg' : 'pos'}">${plan.buitenJaar.length}
+             ${plan.buitenJaar.length ? `<br><span class="muted">${_esc(plan.buitenJaar.slice(0,5).map(t => t.datum + ' ' + (t.naam||'')).join(' · '))}</span>` : ''}</td></tr>
+         <tr><td class="muted">Tekens op de creditcard</td>
+             <td>${plan.ccConventie ? `uitgaven staan ${_esc(plan.ccConventie)} in dit bestand` : 'geen creditcardblad'}
+             ${plan.ccProblemen.length ? `<br><span class="neg">${plan.ccProblemen.length} regel(s) met een tegengesteld teken, gelezen als terugstorting:</span>
+             <br><span class="muted">${_esc(plan.ccProblemen.slice(0,5).map(r => r.datum + ' ' + r.bedrag + ' ' + r.omschr).join(' · '))}</span>` : ''}</td></tr>
+       </tbody>
+     </table>
+     <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
+       <button class="btn" onclick="annuleerImport()">Annuleren</button>
+       <button class="btn btn-primary" onclick="bevestigImport()">Importeren en opslaan</button>
+     </div>`;
+  document.getElementById('import-actions').style.display = 'none';
+}
+
+export function annuleerImport() {
+  wachtendeImport = null;
+  document.getElementById('modal-import').classList.remove('open');
+}
+
+/** Past de gelezen import toe. Dit is de enige plek die daarbij schrijft. */
+export function bevestigImport() {
+  const p = wachtendeImport;
+  if (!p) return;
+  wachtendeImport = null;
+  try {
+      const is2026 = p.gevondenJaren.includes('2026');
+      const jaarLabel = p.gevondenJaren.join(', ') || 'onbekend jaar';
+
+      // HNVI-loten: gelezen in de leesfase, maar pas hier toegepast.
+      if (p.nieuweLoten && p.nieuweLoten.length) {
+        state.HNVI_LOTS = p.nieuweLoten;
+        saveHnviData();
+      }
 
       if (is2026) {
         // Sla op als huidige (2026) data
-        state.TX = newTx;
-        state.nxtTx = tid;
-        if (newCovers.length > 0) { state.COVERS = normaliseerVoorraad(newCovers, state.COVERS); state.nxtCover = 300; }
+        state.TX = p.newTx;
+        state.nxtTx = p.tid;
+        if (p.newCovers.length > 0) { state.COVERS = normaliseerVoorraad(p.newCovers, state.COVERS); state.nxtCover = 300; }
         Object.keys(MAAND_SALDOS).filter(m=>m.startsWith('2026')).forEach(m=>delete MAAND_SALDOS[m]);
-        Object.assign(MAAND_SALDOS, newSaldos);
+        Object.assign(MAAND_SALDOS, p.newSaldos);
         saveTxData();
         saveCoversData();
+        // De maandsaldi stonden hier alleen in het geheugen; na een herlaadbeurt
+        // waren ze weg. De historische tak sloeg ze al wel op.
+        save('xtenate_maand_saldos_override', MAAND_SALDOS);
       } else {
         // Sla op als historische data: vervang alleen de jaren die in dit bestand voorkomen
         // Alleen jaren vervangen waarvoor het bestand ook werkelijk boekingen
         // bevat. Een leeg tabblad "Bank 2023-05" maakte anders het hele jaar
         // 2023 leeg zonder dat er iets voor terugkwam.
-        const jarenMetRegels = [...new Set(newTx.map(t => t.datum.slice(0,4)))];
-        const legeJaren = gevondenJaren.filter(j => !jarenMetRegels.includes(j));
+        const jarenMetRegels = [...new Set(p.newTx.map(t => t.datum.slice(0,4)))];
+        const legeJaren = p.gevondenJaren.filter(j => !jarenMetRegels.includes(j));
         state.HIST_TX = state.HIST_TX.filter(t => !jarenMetRegels.some(j => t.datum.startsWith(j)));
-        state.HIST_TX = [...state.HIST_TX, ...newTx.map(t => ({...t, id: 'h' + jaarLabel.replace(/, /g,'_') + '_' + t.id}))];
+        state.HIST_TX = [...state.HIST_TX, ...p.newTx.map(t => ({...t, id: 'h' + jaarLabel.replace(/, /g,'_') + '_' + t.id}))];
         jarenMetRegels.forEach(j => {
           Object.keys(MAAND_SALDOS).filter(m=>m.startsWith(j)).forEach(m=>delete MAAND_SALDOS[m]);
         });
         if (legeJaren.length) console.warn('Overgeslagen: tabbladen zonder boekingen voor', legeJaren.join(', '));
-        Object.assign(MAAND_SALDOS, newSaldos);
+        Object.assign(MAAND_SALDOS, p.newSaldos);
         save('xtenate_hist_tx_override', state.HIST_TX);
         save('xtenate_maand_saldos_override', MAAND_SALDOS);
       }
 
       // Jaartotalen uit "Per Periode" (indien aanwezig) — leidend voor de Home-cijfers.
-      // Terugval per rekening: optellen uit de zojuist ingelezen losse boekingen (newTx),
+      // Terugval per rekening: optellen uit de zojuist ingelezen losse boekingen (p.newTx),
       // voor het geval een deel van het "Per Periode"-tabblad #N/A-fouten bevat.
       const fallbackTotals = {
-        omzXt: newTx.filter(t => t.type==='inkomst' && t.gb==='8000').reduce((s,t)=>s+t.bedrag,0),
-        omzBol: newTx.filter(t => t.type==='inkomst' && t.gb==='8010').reduce((s,t)=>s+t.bedrag,0),
-        omzHC: newTx.filter(t => t.type==='inkomst' && t.gb==='8020').reduce((s,t)=>s+t.bedrag,0),
-        omzet: newTx.filter(t => t.type==='inkomst' && OMZET_GB.includes(t.gb)).reduce((s,t)=>s+t.bedrag,0),
-        kosten: newTx.filter(t => t.type==='uitgave').reduce((s,t)=>s+t.bedrag,0),
-        priveOp: newTx.filter(t => t.type==='prive_opname').reduce((s,t)=>s+t.bedrag,0),
-        priveSt: newTx.filter(t => t.type==='prive_storting').reduce((s,t)=>s+t.bedrag,0),
-        hnviInv: newTx.filter(t => t.gb==='7010').reduce((s,t)=>s+t.bedrag,0)
+        omzXt: p.newTx.filter(t => t.type==='inkomst' && t.gb==='8000').reduce((s,t)=>s+t.bedrag,0),
+        omzBol: p.newTx.filter(t => t.type==='inkomst' && t.gb==='8010').reduce((s,t)=>s+t.bedrag,0),
+        omzHC: p.newTx.filter(t => t.type==='inkomst' && t.gb==='8020').reduce((s,t)=>s+t.bedrag,0),
+        omzet: p.newTx.filter(t => t.type==='inkomst' && OMZET_GB.includes(t.gb)).reduce((s,t)=>s+t.bedrag,0),
+        kosten: p.newTx.filter(t => t.type==='uitgave').reduce((s,t)=>s+t.bedrag,0),
+        priveOp: p.newTx.filter(t => t.type==='prive_opname').reduce((s,t)=>s+t.bedrag,0),
+        priveSt: p.newTx.filter(t => t.type==='prive_storting').reduce((s,t)=>s+t.bedrag,0),
+        hnviInv: p.newTx.filter(t => t.gb==='7010').reduce((s,t)=>s+t.bedrag,0)
       };
       // Staat er een blad "Jaartotalen" in (dat schrijft onze eigen export weg),
       // dan zijn die cijfers per jaar leidend. Per Periode is een berekend
       // overzicht en levert voor kosten en prive-stortingen andere bedragen op.
-      const jtBlad = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g,'') === 'jaartotalen');
+      const jtBlad = p.wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g,'') === 'jaartotalen');
       let uitJaartotalen = 0;
       if (jtBlad) {
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[jtBlad], {header:1, defval:null});
+        const rows = XLSX.utils.sheet_to_json(p.wb.Sheets[jtBlad], {header:1, defval:null});
         rows.slice(1).forEach(row => {
           const jaar = row[0];
           if (!jaar || typeof row[1] !== 'number') return;
@@ -320,33 +504,32 @@ export function importExcel(input) {
         if (uitJaartotalen) save('xtenate_home_totals_override', HOME_TOTALS);
       }
 
-      const perPeriodeTotals = uitJaartotalen ? null : parsePerPeriode(wb, fallbackTotals);
+      const perPeriodeTotals = uitJaartotalen ? null : parsePerPeriode(p.wb, fallbackTotals);
       if (perPeriodeTotals) {
-        gevondenJaren.forEach(j => { HOME_TOTALS[j] = perPeriodeTotals; });
+        p.gevondenJaren.forEach(j => { HOME_TOTALS[j] = perPeriodeTotals; });
         save('xtenate_home_totals_override', HOME_TOTALS);
       }
 
-      const saldoCount = Object.keys(newSaldos).length;
+      const saldoCount = Object.keys(p.newSaldos).length;
       document.getElementById('import-title').textContent = 'Import geslaagd!';
       document.getElementById('import-body').innerHTML =
         `📅 Jaar: <strong>${jaarLabel}</strong><br>` +
-        `✅ <strong>${bankCount}</strong> banktransacties ingelezen<br>` +
-        `✅ <strong>${ccCount}</strong> creditkaart boekingen ingelezen<br>` +
+        `✅ <strong>${p.bankCount}</strong> banktransacties ingelezen<br>` +
+        `✅ <strong>${p.ccCount}</strong> creditkaart boekingen ingelezen<br>` +
         (saldoCount > 0 ? `✅ <strong>${saldoCount}</strong> maandsaldos ingelezen<br>` : '') +
-        (lotCount > 0 ? `✅ <strong>${lotCount}</strong> HNVI-loten ingelezen<br>` : '') +
-        (newCovers.length > 0 ? `✅ <strong>${coverCount}</strong> covers artikelen ingelezen<br>` : '') +
+        (p.lotCount > 0 ? `✅ <strong>${p.lotCount}</strong> HNVI-loten ingelezen<br>` : '') +
+        (p.newCovers.length > 0 ? `✅ <strong>${p.coverCount}</strong> covers artikelen ingelezen<br>` : '') +
         (perPeriodeTotals ? `✅ Jaartotalen (omzet/kosten/privé) ingelezen uit "Per Periode" — dit is nu leidend voor de Home-cijfers van dit jaar<br>` : `⚠️ Geen "Per Periode" tabblad gevonden — Home-cijfers worden voor dit jaar nog berekend uit losse boekingen<br>`) +
         `<br>Je data is opgeslagen. HNVI-loten blijven bewaard.`;
       document.getElementById('import-actions').style.display = 'flex';
 
+
       renderHome();
-    } catch(err) {
-      document.getElementById('import-title').textContent = 'Fout bij importeren';
-      document.getElementById('import-body').innerHTML = 'Er ging iets mis: ' + err.message + '<br><br>Controleer of je het juiste Excel bestand hebt geselecteerd.';
-      document.getElementById('import-actions').style.display = 'flex';
-    }
-  };
-  reader.readAsArrayBuffer(file);
+  } catch (err) {
+    document.getElementById('import-title').textContent = 'Fout bij importeren';
+    document.getElementById('import-body').innerHTML = 'Er ging iets mis: ' + err.message;
+    document.getElementById('import-actions').style.display = 'flex';
+  }
 }
 
 export function herstelHistorischeData() {

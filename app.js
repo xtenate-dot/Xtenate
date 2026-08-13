@@ -24,7 +24,7 @@ import {
 } from './hnvi.js?v=20260812c';
 import {
   importExcel, openWisModal, doWis, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
-  openApiKeyModal, saveApiKey
+  openApiKeyModal, saveApiKey, bevestigImport, annuleerImport
 } from './modals.js?v=20260812c';
 import { initUiVoorkeuren, wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu } from './theme.js?v=20260812c';
 import { initZoek, focusZoek, sluitZoek } from './search.js?v=20260812c';
@@ -81,6 +81,7 @@ Object.assign(window, {
   kiesGc, annuleerGc, bevestigGc, maakKeuzeOngedaan,
   exporteerGcMeldingen, controleerGcSchrijfacties,
   openUitvoeren, sluitUitvoeren, doeStapBackup, zetBegrepen, doeStapUitvoeren,
+  bevestigImport, annuleerImport,
   openOpslagDiagnose, sluitOpslagDiagnose, voerOpslagDiagnoseUit, kopieerOpslagDiagnose, maakOpslagSnapshot, toonOverrides, toonNegeerlijst, downloadBackup, downloadNegeerBestanden,
   login, uitloggen, opnieuwVerbinden,
   wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu,
