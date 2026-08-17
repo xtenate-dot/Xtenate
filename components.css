@@ -106,7 +106,8 @@ label { color: var(--text-muted); }
 .btn:hover { background: var(--surface-hover); border-color: var(--text-hint); }
 .btn-primary { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
 .btn-primary:hover { background: var(--accent); border-color: var(--accent); filter: brightness(1.08); }
-.btn-danger { color: var(--red); border-color: var(--red); }
+.btn-danger { color: var(--red); border-color: var(--red); background: rgba(255, 59, 48, 0.1); }
+.btn-danger:hover { background: rgba(255, 59, 48, 0.2); border-color: var(--red); }
 .btn-ghost { border-color: transparent; background: none; }
 .btn-ghost:hover { background: var(--surface-hover); border-color: transparent; }
 .btn-ml { margin-left: auto; }
@@ -183,7 +184,7 @@ label { color: var(--text-muted); }
 .form-group.full { grid-column: 1 / -1; }
 .form-group label { font-size: 11px; font-weight: 500; color: var(--text-muted); }
 .form-group select, .form-group input { width: 100%; }
-.modal-actions { display: flex; gap: var(--sp-2); justify-content: flex-end; margin-top: var(--sp-4); }
+.modal-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: flex-end; margin-top: var(--sp-4); }
 
 /* ---------- MELDINGEN ---------- */
 .alert { border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; margin-bottom: var(--sp-4); display: flex; gap: 8px; align-items: flex-start; line-height: 1.5; }

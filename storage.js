@@ -64,7 +64,25 @@ const COVERS_INIT = [
 
 export function load(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
-export function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
+export function save(key, val) {
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch (e) {
+    if (e.name === 'QuotaExceededError') {
+      console.error(`Opslag is vol: kan niet meer opslaan. (${e.message})`);
+      showStorageError('Opslagruimte vol', 'De browser kan niet meer opslaan. Verwijder oude data of maak ruimte vrij.');
+    } else {
+      console.error(`Fout bij opslaan: ${e.message}`, e);
+      showStorageError('Opslagfout', 'Er is een fout opgetreden bij het opslaan. Herlaad de pagina en probeer opnieuw.');
+    }
+  }
+}
+
+function showStorageError(titel, boodschap) {
+  if (typeof window !== 'undefined' && window.alert) {
+    alert(`⚠️ ${titel}\n\n${boodschap}`);
+  }
+}
 
 /** Diepe kopie, zodat werkgegevens en standaardwaarden nooit hetzelfde object zijn. */
 export const kopie = v => JSON.parse(JSON.stringify(v));
