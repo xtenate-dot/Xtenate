@@ -4,7 +4,7 @@
 
 import { nav, gaNaar, hertekenHuidigePagina } from './ui.js?v=20260812c';
 import { wisselJaar, renderHome } from './dashboard.js?v=20260812c';
-import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking } from './bank.js?v=20260812c';
+import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking, deleteTx } from './bank.js?v=20260812c';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260812c';
 import { renderBelasting } from './belasting.js?v=20260812c';
 import {
@@ -59,7 +59,7 @@ const zoekVoorraadVertraagd = vertraag(renderCovers);
 Object.assign(window, {
   zoekGrootboekVertraagd, zoekVoorraadVertraagd,
   nav, gaNaar, wisselJaar, hertekenHuidigePagina,
-  renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking,
+  renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking, deleteTx,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
   renderBelasting, renderControle, klapControleUit, toonAlleControleRegels,
   verbergControleMelding, zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen,

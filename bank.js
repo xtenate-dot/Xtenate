@@ -125,6 +125,7 @@ export function bewerkBoeking(id) {
   state.editTxId = tx.id;
   el('tx-modal-title').textContent = historisch ? `Boeking bewerken (${tx.datum.slice(0, 4)})` : 'Boeking bewerken';
   el('tx-save-btn').textContent = 'Opslaan';
+  el('tx-delete-btn').style.display = 'block'; // Toon delete-knop in edit mode
   el('tx-d').value = tx.datum || '';
   el('tx-b').value = tx.bedrag != null ? String(tx.bedrag).replace('.', ',') : '';
   el('tx-n').value = tx.naam || '';
@@ -150,6 +151,7 @@ export function openTxModal() {
   state.editTxId = null;
   el('tx-modal-title').textContent = 'Transactie toevoegen';
   el('tx-save-btn').textContent = 'Opslaan';
+  el('tx-delete-btn').style.display = 'none'; // Verberg delete-knop in add mode
   el('tx-d').value = new Date().toISOString().split('T')[0];
   el('tx-b').value = '';
   el('tx-n').value = '';
@@ -160,6 +162,55 @@ export function openTxModal() {
 }
 
 export function closeTx() { el('modal-tx').classList.remove('open'); }
+
+/**
+ * Verwijdert een bestaande boeking na bevestiging.
+ * Alleen beschikbaar wanneer je een boeking aan het bewerken bent (state.editTxId is ingesteld).
+ */
+export function deleteTx() {
+  if (state.editTxId == null) {
+    console.warn('Geen boeking geselecteerd voor verwijdering');
+    return;
+  }
+
+  const gevonden = vindTx(state.editTxId);
+  if (!gevonden) {
+    el('tx-fout').textContent = 'Boeking niet gevonden. Vernieuw de pagina.';
+    return;
+  }
+
+  const { tx, historisch } = gevonden;
+  const berichtDatum = tx.datum ? ` (${tx.datum})` : '';
+  const berichtBedrag = tx.bedrag ? ` – €${tx.bedrag}` : '';
+  
+  // Vraag duidelijke bevestiging
+  const bevestiging = window.confirm(
+    `⚠️ BOEKING VERWIJDEREN\n\n` +
+    `${tx.naam}${berichtBedrag}${berichtDatum}\n\n` +
+    `Deze actie kan niet ongedaan gemaakt worden.\n` +
+    `Weet je zeker dat je deze boeking wilt verwijderen?`
+  );
+
+  if (!bevestiging) {
+    return; // Gebruiker heeft geannuleerd
+  }
+
+  // Verwijder uit TX of HIST_TX
+  if (historisch) {
+    state.HIST_TX = state.HIST_TX.filter(t => String(t.id) !== String(state.editTxId));
+    saveHistTxData();
+  } else {
+    state.TX = state.TX.filter(t => String(t.id) !== String(state.editTxId));
+    saveTxData();
+  }
+
+  // Reset modal state
+  state.editTxId = null;
+  closeTx();
+
+  // Herlaad de tabel zodat totalen direct kloppen
+  renderBank();
+}
 
 // Voorkomt dat type (privé storting/opname) en grootboek (600/601) uit elkaar
 // kunnen lopen — dat was de oorzaak van een foutieve privé-boeking in de data
