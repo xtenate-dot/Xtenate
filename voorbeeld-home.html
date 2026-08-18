@@ -1,0 +1,1290 @@
+<!doctype html>
+<html lang="nl" data-theme="light"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>Xtenate Administratie</title>
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+
+
+
+
+
+
+
+<style>:root { --bg: #f4f5f7; --surface: #ffffff; --surface-2: #fafbfc; --surface-hover: #f4f5f7; --border: rgba(16,22,32,0.10); --border-strong: rgba(16,22,32,0.20); --text: #16191f; --text-muted: #5c6470; --text-hint: #949bA6; --accent: #1f4b99; --accent-bg: #ecf1fa; --accent-contrast: #ffffff; --green: #0e7a52; --green-bg: #e8f4ef; --red: #b23a2f; --red-bg: #fbeeec; --blue: #1f4b99; --blue-bg: #ecf1fa; --amber: #8a5a06; --amber-bg: #fbf2e2; --purple: #5245b8; --purple-bg: #eeecfa; --gray-bg: #eef0f3; --ch-1: #1f4b99; --ch-2: #0e7a52; --ch-3: #c2672a; --ch-4: #5245b8; --ch-5: #a03a6b; --ch-6: #4a7a94; --ch-grid: rgba(16,22,32,0.08); --radius: 10px; --radius-sm: 6px; --radius-lg: 14px; --shadow-sm: 0 1px 2px rgba(16,22,32,.05); --shadow-md: 0 4px 16px rgba(16,22,32,.10); --shadow-lg: -8px 0 32px rgba(16,22,32,.14); --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sidebar-w: 216px; --sidebar-w-collapsed: 60px; --topbar-h: 56px; --content-max: 1180px; font-size: 14px; color-scheme: light; }
+[data-theme="dark"] { --bg: #0e1116; --surface: #161a21; --surface-2: #1b2029; --surface-hover: #1f242e; --border: rgba(255,255,255,0.10); --border-strong: rgba(255,255,255,0.22); --text: #e6e9ee; --text-muted: #98a1ae; --text-hint: #6d7684; --accent: #7ba3e8; --accent-bg: #1a2435; --accent-contrast: #0e1116; --green: #4fc08d; --green-bg: #12271f; --red: #f08579; --red-bg: #2b1815; --blue: #7ba3e8; --blue-bg: #1a2435; --amber: #e0a94e; --amber-bg: #2a2010; --purple: #a89bf0; --purple-bg: #1f1b33; --gray-bg: #232935; --ch-1: #6f9ae8; --ch-2: #4fc08d; --ch-3: #e0955c; --ch-4: #a89bf0; --ch-5: #e07fae; --ch-6: #6fb1cc; --ch-grid: rgba(255,255,255,0.08); --shadow-sm: 0 1px 2px rgba(0,0,0,.4); --shadow-md: 0 4px 16px rgba(0,0,0,.45); --shadow-lg: -8px 0 32px rgba(0,0,0,.55); color-scheme: dark; }
+* { box-sizing: border-box; margin: 0px; padding: 0px; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; font-feature-settings: "tnum", "cv05"; }
+.num, .val, td, th, .metric .val, .kpi-val, table { font-variant-numeric: tabular-nums; }
+.gbnr { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace; font-size: 11px; letter-spacing: -0.2px; color: var(--text-muted); }
+.eyebrow { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.9px; color: var(--text-hint); }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background-image: ; background-position-x: ; background-position-y: ; background-size: ; background-repeat: ; background-attachment: ; background-origin: ; background-color: ; border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { transition: none !important; animation: auto ease 0s 1 normal none running none !important; }
+}
+.app { display: flex; min-height: 100vh; }
+.sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); padding: var(--sp-4) 0 var(--sp-5); flex-shrink: 0; position: fixed; top: 0px; left: 0px; height: 100vh; overflow: hidden auto; z-index: 40; transition: width 0.18s; display: flex; flex-direction: column; }
+body.nav-collapsed .sidebar { width: var(--sidebar-w-collapsed); }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 14px var(--sp-4); }
+.brand-mark { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; background: var(--accent); color: var(--accent-contrast); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; letter-spacing: -0.5px; }
+.brand-text { min-width: 0px; }
+.brand-name { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; white-space: nowrap; }
+.brand-sub { font-size: 10.5px; color: var(--text-hint); white-space: nowrap; }
+body.nav-collapsed .brand-text { display: none; }
+.nav-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.9px; color: var(--text-hint); padding: var(--sp-4) 14px var(--sp-1); white-space: nowrap; }
+body.nav-collapsed .nav-section { font-size: 0px; padding: var(--sp-3) 14px var(--sp-1); position: relative; }
+body.nav-collapsed .nav-section::after { content: ""; display: block; height: 1px; background: var(--border); }
+.nav-item { display: flex; align-items: center; gap: 10px; margin: 1px 8px; padding: 7px 8px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-muted); font-size: 13px; user-select: none; transition: background 0.12s, color 0.12s; white-space: nowrap; }
+.nav-item:hover { color: var(--text); background: var(--surface-hover); }
+.nav-item.active { color: var(--accent); background: var(--accent-bg); font-weight: 500; }
+.nav-item svg { flex-shrink: 0; opacity: 0.75; }
+.nav-item.active svg { opacity: 1; }
+.nav-label { overflow: hidden; text-overflow: ellipsis; }
+body.nav-collapsed .nav-label { display: none; }
+body.nav-collapsed .nav-item { justify-content: center; padding: 8px; }
+.nav-spacer { flex: 1 1 0%; }
+.nav-collapse-btn { display: flex; align-items: center; gap: 10px; margin: var(--sp-2) 8px 0; padding: 7px 8px; border: none; background: none; cursor: pointer; color: var(--text-hint); font-size: 12px; font-family: inherit; border-radius: var(--radius-sm); width: calc(100% - 16px); }
+.nav-collapse-btn:hover { background: var(--surface-hover); color: var(--text); }
+.nav-collapse-btn svg { transition: transform 0.18s; flex-shrink: 0; }
+body.nav-collapsed .nav-collapse-btn svg { transform: rotate(180deg); }
+body.nav-collapsed .nav-collapse-btn { justify-content: center; }
+body.nav-collapsed .nav-collapse-btn span { display: none; }
+.main { margin-left: var(--sidebar-w); flex: 1 1 0%; min-width: 0px; transition: margin-left 0.18s; }
+body.nav-collapsed .main { margin-left: var(--sidebar-w-collapsed); }
+.topbar { position: sticky; top: 0px; z-index: 30; height: var(--topbar-h); background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-5); }
+.topbar-title { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; white-space: nowrap; }
+.topbar-spacer { flex: 1 1 0%; }
+.menu-toggle { display: none; background: none; border: none; cursor: pointer; color: var(--text); padding: 6px; border-radius: var(--radius-sm); }
+.menu-toggle:hover { background: var(--surface-hover); }
+.page-wrap { padding: var(--sp-5); max-width: var(--content-max); }
+.page { display: none; }
+.page.active { display: block; }
+.page-head { display: flex; align-items: baseline; gap: var(--sp-3); margin-bottom: var(--sp-4); flex-wrap: wrap; }
+.page-title { font-size: 21px; font-weight: 600; letter-spacing: -0.5px; }
+.page-sub { font-size: 12.5px; color: var(--text-muted); }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); margin: var(--sp-5) 0 var(--sp-3); }
+.section-head:first-child { margin-top: 0px; }
+.nav-backdrop { display: none; position: fixed; inset: 0px; background: rgba(0, 0, 0, 0.45); z-index: 35; }
+.nav-backdrop.open { display: block; }
+.page > .page-title { margin-bottom: var(--sp-4); }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-4); box-shadow: var(--shadow-sm); min-width: 0px; }
+.kpi-lbl { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+.kpi-val { font-size: 24px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.15; }
+.kpi-sub { font-size: 11px; color: var(--text-hint); margin-top: 5px; }
+.kpi--secondary { padding: var(--sp-3) var(--sp-4); }
+.kpi--secondary .kpi-val { font-size: 17px; letter-spacing: -0.4px; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-3) var(--sp-4); box-shadow: var(--shadow-sm); min-width: 0px; }
+.metric .lbl { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+.metric .val { font-size: 19px; font-weight: 600; letter-spacing: -0.4px; line-height: 1.15; }
+.metric .sub { font-size: 11px; color: var(--text-hint); margin-top: 5px; }
+.pos { color: var(--green); }
+.neg { color: var(--red); }
+.muted { color: var(--text-muted); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-4); margin-bottom: var(--sp-3); box-shadow: var(--shadow-sm); }
+.card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: var(--sp-4); }
+.card-flush { padding: 0px; }
+.card-flush .card-title { padding: var(--sp-4) var(--sp-4) 0; margin-bottom: var(--sp-3); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.grid3 { display: grid; grid-template-columns: 2fr 1fr; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.chart-box { position: relative; height: 220px; }
+.chart-box.sm { height: 180px; }
+.badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-purple { background: var(--purple-bg); color: var(--purple); }
+.badge-gray { background: var(--gray-bg); color: var(--text-muted); }
+.table-wrap { overflow-x: auto; }
+.table-scroll { max-height: 560px; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th { text-align: left; color: var(--text-muted); font-weight: 500; font-size: 11px; padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0px; z-index: 2; background: var(--surface-2); }
+.table-scroll th { box-shadow: inset 0 -1px 0 var(--border); }
+td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--surface-hover); }
+.td-trunc { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-click { cursor: pointer; }
+.row-click.is-selected td { background: var(--accent-bg); }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--text); }
+th.sortable::after { content: "↕"; opacity: 0.28; margin-left: 5px; font-size: 10px; }
+th.sortable.sort-asc::after { content: "↑"; opacity: 1; color: var(--accent); }
+th.sortable.sort-desc::after { content: "↓"; opacity: 1; color: var(--accent); }
+.empty { text-align: center; padding: var(--sp-7) var(--sp-4); color: var(--text-muted); }
+.empty-icon { width: 40px; height: 40px; margin: 0 auto var(--sp-3); border-radius: var(--radius); background: var(--gray-bg); display: flex; align-items: center; justify-content: center; color: var(--text-hint); }
+.empty-title { font-size: 13.5px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+.empty-text { font-size: 12.5px; max-width: 340px; margin: 0px auto; line-height: 1.55; }
+.empty-text + .btn { margin-top: var(--sp-4); }
+.toolbar { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4); align-items: center; flex-wrap: wrap; }
+select, input[type="text"], input[type="number"], input[type="date"], input[type="search"], input[type="password"] { font-size: 12.5px; padding: 7px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; font-family: inherit; }
+select:hover, input:hover { border-color: var(--text-hint); }
+select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+label { color: var(--text-muted); }
+.btn { font-size: 12.5px; padding: 7px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; transition: background 0.12s, border-color 0.12s; }
+.btn:hover { background: var(--surface-hover); border-color: var(--text-hint); }
+.btn-primary { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent); border-color: var(--accent); filter: brightness(1.08); }
+.btn-danger { color: var(--red); border-color: var(--red); background: rgba(255, 59, 48, 0.1); }
+.btn-danger:hover { background: rgba(255, 59, 48, 0.2); border-color: var(--red); }
+.btn-ghost { border-color: transparent; background: none; }
+.btn-ghost:hover { background: var(--surface-hover); border-color: transparent; }
+.btn-ml { margin-left: auto; }
+.btn-sm { font-size: 11px; padding: 4px 9px; }
+.btn-icon { padding: 7px; }
+.icon-btn { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: var(--radius-sm); background: none; color: var(--text-muted); cursor: pointer; flex-shrink: 0; }
+.icon-btn:hover { background: var(--surface-hover); color: var(--text); }
+.search-wrap { position: relative; flex: 1 1 0%; max-width: 440px; }
+.search-field { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0px 10px; }
+.search-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.search-field svg { color: var(--text-hint); flex-shrink: 0; }
+#global-search { flex: 1 1 0%; border: none; background: none; padding: 8px 0px; font-size: 13px; color: var(--text); outline: none; min-width: 0px; }
+#global-search:hover, #global-search:focus { border: none; box-shadow: none; }
+#global-search::placeholder { color: var(--text-hint); }
+.kbd { font-size: 10px; font-family: inherit; color: var(--text-hint); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; background: var(--surface); white-space: nowrap; flex-shrink: 0; }
+.search-results { display: none; position: absolute; top: calc(100% + 6px); left: 0px; right: 0px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); max-height: 60vh; overflow-y: auto; z-index: 50; padding: 6px; }
+.search-results.open { display: block; }
+.sr-group { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-hint); padding: 8px 10px 4px; }
+.sr-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer; }
+.sr-item:hover, .sr-item.is-active { background: var(--surface-hover); }
+.sr-main { flex: 1 1 0%; min-width: 0px; }
+.sr-title { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sr-meta { font-size: 10.5px; color: var(--text-muted); margin-top: 1px; }
+.sr-amount { font-size: 12.5px; font-weight: 600; flex-shrink: 0; }
+.sr-empty { padding: var(--sp-4) 10px; font-size: 12.5px; color: var(--text-muted); text-align: center; }
+.drawer-backdrop { display: none; position: fixed; inset: 0px; background: rgba(0, 0, 0, 0.3); z-index: 60; }
+.drawer-backdrop.open { display: block; }
+.drawer { position: fixed; top: 0px; right: 0px; height: 100vh; width: 380px; max-width: 92vw; background: var(--surface); border-left: 1px solid var(--border); box-shadow: var(--shadow-lg); z-index: 61; transform: translateX(100%); transition: transform 0.2s; display: flex; flex-direction: column; }
+.drawer.open { transform: translateX(0px); }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-4) var(--sp-4); border-bottom: 1px solid var(--border); }
+.drawer-head h3 { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; }
+.drawer-body { padding: var(--sp-4); overflow-y: auto; flex: 1 1 0%; }
+.drawer-amount { font-size: 26px; font-weight: 600; letter-spacing: -0.8px; margin-bottom: 2px; }
+.drawer-when { font-size: 12px; color: var(--text-muted); margin-bottom: var(--sp-5); }
+.dl-row { display: flex; justify-content: space-between; gap: var(--sp-4); padding: 9px 0px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+.dl-row:last-child { border-bottom: none; }
+.dl-key { color: var(--text-muted); flex-shrink: 0; }
+.dl-val { text-align: right; word-break: break-word; }
+.modal-overlay { display: none; position: fixed; inset: 0px; background: rgba(0, 0, 0, 0.4); z-index: 100; align-items: center; justify-content: center; padding: var(--sp-4); }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: var(--sp-5); width: 460px; max-width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-md); }
+.modal h3 { font-size: 15px; font-weight: 600; margin-bottom: var(--sp-4); letter-spacing: -0.3px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+.form-group select, .form-group input { width: 100%; }
+.modal-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: flex-end; margin-top: var(--sp-4); }
+.alert { border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; margin-bottom: var(--sp-4); display: flex; gap: 8px; align-items: flex-start; line-height: 1.5; }
+.alert-warn { background: var(--amber-bg); color: var(--amber); border: 1px solid color-mix(in srgb, var(--amber) 25%, transparent); }
+.alert-info { background: var(--blue-bg); color: var(--blue); border: 1px solid color-mix(in srgb, var(--blue) 25%, transparent); }
+.alert-ok { background: var(--green-bg); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 25%, transparent); }
+.alert-error { background: var(--red-bg); color: var(--red); border: 1px solid color-mix(in srgb, var(--red) 25%, transparent); }
+.vtabs { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4); border-bottom: 1px solid var(--border); }
+.vtab { padding: 8px 14px; cursor: pointer; font-size: 13px; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.vtab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+.uitsch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.uitsch-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 14px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-sm); }
+.uitsch-icon { width: 32px; height: 32px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.uitsch-info { flex: 1 1 0%; min-width: 0px; }
+.uitsch-naam { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uitsch-meta { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+.uitsch-bedrag { font-size: 12.5px; font-weight: 600; flex-shrink: 0; }
+.ib-row { display: flex; justify-content: space-between; padding: 7px 0px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+.ib-row:last-child { border-bottom: none; }
+.ib-total { display: flex; justify-content: space-between; padding: 10px 0px 0px; font-size: 13.5px; font-weight: 600; border-top: 1px solid var(--border-strong); margin-top: 4px; letter-spacing: -0.2px; }
+.stock-ok { background: var(--green-bg); color: var(--green); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
+.stock-uit { background: var(--red-bg); color: var(--red); font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
+.sell-link { color: var(--accent); cursor: pointer; font-size: 11px; text-decoration: underline; }
+.tbl-compact { font-size: 12.5px; }
+.tbl-compact td { padding: 7px 10px; }
+.tbl-compact th { padding: 8px 10px; }
+.gb-rij { cursor: pointer; }
+.gb-rij:focus-visible { outline-offset: -2px; }
+.table-totaal { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-top: 1px solid var(--border-strong); font-size: 12px; color: var(--text-muted); background: var(--surface-2); border-radius: 0 0 var(--radius) var(--radius); }
+.table-totaal:empty { display: none; }
+.vtab { border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+.vtabs { overflow-x: auto; scrollbar-width: none; }
+.vtabs::-webkit-scrollbar { display: none; }
+.vtab { white-space: nowrap; }
+.bulkbar { display: flex; align-items: center; gap: var(--sp-2); background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: var(--radius); padding: 9px var(--sp-4); margin-bottom: var(--sp-3); font-size: 12.5px; color: var(--text); flex-wrap: wrap; }
+.meldbar { display: flex; align-items: center; gap: var(--sp-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 9px var(--sp-4); margin-bottom: var(--sp-3); font-size: 12.5px; box-shadow: var(--shadow-sm); }
+.meldbar span { flex: 1 1 0%; }
+.vtab-actie { color: var(--accent); font-weight: 500; }
+.vtab-actie:hover { background: var(--accent-bg); }
+.groep-rij { display: flex; align-items: center; gap: var(--sp-2); }
+.groep-rij input { flex: 1 1 0%; min-width: 0px; }
+.ctrl-regel { border-bottom: 1px solid var(--border); }
+.ctrl-regel:last-child { border-bottom: none; }
+.ctrl-kop { display: flex; align-items: center; gap: var(--sp-3); width: 100%; padding: 11px var(--sp-4); background: none; border: none; font-family: inherit; font-size: 13px; color: var(--text); text-align: left; cursor: pointer; }
+.ctrl-kop[disabled] { cursor: default; }
+.ctrl-kop:not([disabled]):hover { background: var(--surface-hover); }
+.ctrl-icoon { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.ctrl-titel { flex: 1 1 0%; min-width: 0px; }
+.ctrl-goed { font-size: 11px; color: var(--text-hint); flex-shrink: 0; }
+.ctrl-pijl { color: var(--text-hint); display: flex; flex-shrink: 0; transition: transform 0.15s; }
+.ctrl-regel.is-open .ctrl-pijl { transform: rotate(180deg); }
+.ctrl-detail { padding: 0 var(--sp-4) var(--sp-4) 50px; }
+.ctrl-uitleg { font-size: 12px; color: var(--text-muted); line-height: 1.55; margin-bottom: var(--sp-3); max-width: 62ch; }
+.ctrl-items { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-item { display: flex; align-items: center; gap: var(--sp-3); width: 100%; padding: 8px 10px; text-align: left; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-family: inherit; color: var(--text); }
+.ctrl-item:hover { border-color: var(--accent); background: var(--accent-bg); }
+.ctrl-item-main { flex: 1 1 0%; min-width: 0px; }
+.ctrl-item-label { display: block; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctrl-item-sub { display: block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.ctrl-item-ga { font-size: 11px; color: var(--accent); flex-shrink: 0; white-space: nowrap; }
+.ctrl-meer { font-size: 11.5px; color: var(--text-hint); padding: 6px 10px; }
+@media (max-width: 720px) {
+  .ctrl-detail { padding-left: var(--sp-4); }
+  .ctrl-item-ga { display: none; }
+}
+.ctrl-ok .ctrl-icoon { background: var(--green-bg); color: var(--green); }
+.ctrl-waarschuwing .ctrl-icoon { background: var(--amber-bg); color: var(--amber); }
+.ctrl-fout .ctrl-icoon { background: var(--red-bg); color: var(--red); }
+.ctrl-fout .ctrl-titel { font-weight: 500; }
+.ctrl-item { flex-wrap: wrap; padding: 0px; overflow: hidden; }
+.ctrl-item-main { flex: 1 1 0%; min-width: 0px; display: block; text-align: left; background: none; border: none; font-family: inherit; color: inherit; padding: 9px 10px; cursor: pointer; }
+.ctrl-item-main:hover { background: var(--surface-hover); }
+.ctrl-item-acties { display: flex; gap: 2px; align-items: center; padding: 0px 8px 0px 0px; flex-shrink: 0; }
+.ctrl-item-acties .btn { color: var(--text-muted); }
+.ctrl-item-acties .btn:hover { color: var(--text); }
+.ctrl-item-ga { display: block; font-size: 11px; color: var(--accent); margin-top: 3px; }
+.ctrl-controle-acties { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+@media (max-width: 720px) {
+  .ctrl-item-acties { padding: 0px 8px 8px; width: 100%; justify-content: flex-end; }
+  .ctrl-item-ga { display: none; }
+}
+.auth-scherm { position: fixed; inset: 0px; z-index: 200; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: var(--sp-4); }
+body.niet-ingelogd .app { visibility: hidden; }
+.auth-kaart { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: var(--sp-6); width: 380px; max-width: 100%; }
+.auth-merk { display: flex; align-items: center; gap: 12px; margin-bottom: var(--sp-6); }
+.auth-naam { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+.auth-sub { font-size: 11.5px; color: var(--text-hint); }
+.auth-tekst { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; }
+.auth-tekst code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11.5px; background: var(--gray-bg); padding: 1px 5px; border-radius: 4px; }
+.auth-herstel { margin-top: var(--sp-3); }
+.auth-probleem-titel { font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--red); }
+.auth-voet { font-size: 11px; color: var(--text-hint); text-align: center; margin-top: var(--sp-4); }
+.auth-kaart .form-group input { width: 100%; padding: 9px 11px; font-size: 13px; }
+.account-blok { margin: var(--sp-2) 8px 0; padding: var(--sp-3) 8px 0; border-top: 1px solid var(--border); }
+.account-info { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px; min-width: 0px; }
+.account-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-blok .btn { width: 100%; justify-content: flex-start; color: var(--text-muted); }
+.account-blok .btn:hover { color: var(--text); }
+body.nav-collapsed .account-email, body.nav-collapsed .account-uitlog-tekst { display: none; }
+body.nav-collapsed .account-info { justify-content: center; }
+body.nav-collapsed .account-blok .btn { justify-content: center; }
+@media (max-width: 720px) {
+  body.nav-collapsed .account-email, body.nav-collapsed .account-uitlog-tekst { display: inline; }
+  .auth-kaart { padding: var(--sp-5); }
+}
+.mig-fasen { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: var(--sp-3) 0 var(--sp-4); margin-bottom: var(--sp-3); border-bottom: 1px solid var(--border); }
+.mig-fase { display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.mig-bol { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+.mig-fase.klaar { color: var(--green); }
+.mig-fase.klaar .mig-bol { background: var(--green-bg); color: var(--green); }
+.mig-fase.bezig { color: var(--accent); font-weight: 500; }
+.mig-fase.bezig .mig-bol { background: var(--accent); color: var(--accent-contrast); }
+.mig-fase.wacht { color: var(--text-hint); }
+.mig-fase.wacht .mig-bol { background: var(--gray-bg); color: var(--text-hint); }
+.mig-pijl { color: var(--text-hint); font-size: 12px; }
+.home-welkom { margin-bottom: var(--sp-5, 20px); }
+.home-titel { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; margin: 0px 0px 4px; line-height: 1.2; }
+.home-sub { font-size: 13px; color: var(--text-muted); margin: 0px; }
+.home-tegels { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: var(--sp-3); }
+.home-tegel { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; width: 100%; min-width: 0px; padding: var(--sp-4); min-height: 132px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font: inherit; color: inherit; transition: border-color 0.12s, background 0.12s, transform 0.12s; }
+.home-tegel:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+.home-tegel:active { transform: translateY(1px); }
+.home-tegel:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.home-tegel-kop { display: flex; align-items: flex-start; justify-content: space-between; width: 100%; min-width: 0px; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.home-tegel-icoon { color: var(--accent); display: flex; }
+.home-tegel-icoon svg { width: 22px; height: 22px; }
+.home-tegel-merk { font-size: 10.5px; font-weight: 600; line-height: 1.4; padding: 2px 7px; border-radius: 999px; white-space: nowrap; background: var(--gray-bg, var(--surface-hover)); color: var(--text-muted); min-width: 0px; overflow-wrap: anywhere; }
+.home-tegel-merk-fout { background: var(--red-bg); color: var(--red); }
+.home-tegel-merk-waarschuwing { background: var(--amber-bg); color: var(--amber); }
+.home-tegel-merk-info { background: var(--accent-bg); color: var(--accent); }
+.home-tegel-titel { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; overflow-wrap: anywhere; }
+.home-tegel-uitleg { font-size: 11.5px; color: var(--text-muted); line-height: 1.45; }
+.home-tegel-regels { margin-top: auto; padding-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--text-hint); }
+@media (max-width: 400px) {
+  .home-tegels { grid-template-columns: repeat(2, minmax(0px, 1fr)); gap: var(--sp-2); }
+  .home-tegel { min-height: 118px; padding: var(--sp-3); }
+  .home-tegel-titel { font-size: 14px; }
+  .home-tegel-uitleg { display: none; }
+}
+.beheer-groep { margin-bottom: var(--sp-5, 20px); }
+.beheer-groep-kop { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: var(--sp-3); }
+.home-tegel-gevaar .home-tegel-icoon { color: var(--red); }
+.home-tegel-gevaar:hover { border-color: var(--red); background: var(--red-bg); }
+@media (max-width: 1080px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .uitsch-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .sidebar { transform: translateX(-100%); transition: transform 0.2s; width: var(--sidebar-w); }
+  body.nav-open .sidebar { transform: translateX(0px); }
+  body.nav-collapsed .sidebar { width: var(--sidebar-w); }
+  .main, body.nav-collapsed .main { margin-left: 0px; }
+  .menu-toggle { display: inline-flex; }
+  .nav-collapse-btn { display: none; }
+  body.nav-collapsed .nav-label, body.nav-collapsed .brand-text { display: block; }
+  body.nav-collapsed .nav-item { justify-content: flex-start; padding: 7px 8px; }
+  body.nav-collapsed .nav-section { font-size: 10px; }
+  body.nav-collapsed .nav-section::after { display: none; }
+  .topbar { padding: 0 var(--sp-3); gap: var(--sp-2); }
+  .topbar-title { display: none; }
+  .page-wrap { padding: var(--sp-4) var(--sp-3); }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
+  .kpi { padding: var(--sp-3); }
+  .kpi-val { font-size: 19px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-group.full { grid-column: 1; }
+  .modal { padding: var(--sp-4); }
+  .drawer { width: 100%; }
+  .search-wrap { max-width: none; }
+  .kbd { display: none; }
+  .chart-box { height: 190px; }
+}
+@media (max-width: 460px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .toolbar { gap: 6px; }
+  .toolbar select, .toolbar input { flex: 1 1 44%; min-width: 0px; }
+  .btn-ml { margin-left: 0px; flex: 1 1 100%; justify-content: center; }
+}
+
+      /* Alleen voor dit voorbeeldbestand */
+      .voorbeeld-balk { position:fixed; bottom:0; left:0; right:0; z-index:9999;
+        background:#111; color:#fff; font:12px/1.5 system-ui,sans-serif;
+        padding:8px 14px; text-align:center; opacity:.92; }
+      .voorbeeld-balk b { color:#ffd479; }
+    </style></head>
+<body class="">
+
+<!-- INLOGSCHERM -->
+
+
+<div class="app">
+
+<div class="nav-backdrop" id="nav-backdrop" data-onclick="sluitMobielMenu()"></div>
+
+<nav class="sidebar" aria-label="Hoofdmenu">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">X</div>
+    <div class="brand-text">
+      <div class="brand-name">Xtenate</div>
+      <div class="brand-sub">Administratie</div>
+    </div>
+  </div>
+
+  <div class="nav-section">Start</div>
+  <div class="nav-item active" data-page="home" title="Home" data-onclick="nav('home',this)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+    <span class="nav-label">Home</span>
+  </div>
+
+  <div class="nav-section">Boekhouding</div>
+  <div class="nav-item" data-page="overzicht" title="Overzicht" data-onclick="nav('overzicht',this)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+    <span class="nav-label">Overzicht</span>
+  </div>
+  <div class="nav-item" data-page="bank" title="Bank" data-onclick="nav('bank',this)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 10h18"></path></svg>
+    <span class="nav-label">Bank</span>
+  </div>
+  <div class="nav-item" data-page="facturen" title="Facturen" data-onclick="nav('facturen',this)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 3 2 3-2 3 2V8z"></path><path d="M14 2v6h6"></path><path d="M8 12h6M8 16h4"></path></svg>
+    <span class="nav-label">Facturen</span>
+  </div>
+  <div class="nav-item" data-page="grootboek" title="Grootboek" data-onclick="nav('grootboek',this)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"></path></svg>
+    <span class="nav-label">Grootboek</span>
+  </div>
+  <div class="nav-item" data-page="belasting" title="Belasting" data-onclick="nav('belasting',this)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+    <span class="nav-label">Belasting</span>
+  </div>
+
+
+  <div class="nav-section">Magazijn</div>
+  <div class="nav-item" data-page="voorraad" title="Voorraad" data-onclick="nav('voorraad',this)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"></path></svg>
+    <span class="nav-label">Voorraad</span>
+  </div>
+  <div class="nav-item" data-page="hnvi" title="HNVI / Xtenate" data-onclick="nav('hnvi',this)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l9-4 9 4-9 4-9-4z"></path><path d="M3 12l9 4 9-4"></path><path d="M3 17l9 4 9-4"></path></svg>
+    <span class="nav-label">HNVI / Xtenate</span>
+  </div>
+
+  <div class="nav-section">Beheer</div>
+  <div class="nav-item" data-page="beheer" title="Beheer" data-onclick="nav('beheer',this)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+    <span class="nav-label">Beheer</span>
+  </div>
+  <div class="nav-item" data-page="controle" title="Controle" data-onclick="nav('controle',this)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path></svg>
+    <span class="nav-label">Controle</span>
+  </div>
+  <div class="nav-item" title="Importeer Excel" data-onclick="document.getElementById('import-file').click()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+    <span class="nav-label">Importeer Excel</span>
+  </div>
+  <input type="file" id="import-file" accept=".xlsx" style="display:none">
+  <div class="nav-item" title="Migratie naar Supabase" data-onclick="openMigratieModal()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6a8 3 0 1016 0 8 3 0 10-16 0"></path><path d="M4 6v6a8 3 0 0016 0V6"></path><path d="M4 12v6a8 3 0 0016 0v-6"></path></svg>
+    <span class="nav-label">Migratie</span>
+  </div>
+  <div class="nav-item" title="Gegevenscontrole (keuze per afwijking)" data-onclick="openGegevenscontrole()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"></path><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"></path></svg>
+    <span class="nav-label">Gegevenscontrole</span>
+  </div>
+  <div class="nav-item" title="Herstel uitvoeren (met reservekopie en controle)" data-onclick="openUitvoeren()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12"></path><path d="m8 11 4 4 4-4"></path><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path></svg>
+    <span class="nav-label">Herstel uitvoeren</span>
+  </div>
+  <div class="nav-item" title="Opslagdiagnose (tijdelijk, alleen lezen)" data-onclick="openOpslagDiagnose()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+    <span class="nav-label">Opslagdiagnose</span>
+  </div>
+  <div class="nav-item" title="Supabase testen" data-onclick="openZelftestModal()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3h6M10 3v6.5L5.5 18a2 2 0 001.7 3h9.6a2 2 0 001.7-3L14 9.5V3"></path></svg>
+    <span class="nav-label">Supabase testen</span>
+  </div>
+  <div class="nav-item" title="Exporteer Excel" data-onclick="openExportModal()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+    <span class="nav-label">Exporteer Excel</span>
+  </div>
+  <div class="nav-item" title="Cloud sync" data-onclick="openSyncModal()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg>
+    <span class="nav-label">Cloud sync</span>
+  </div>
+  <div class="nav-item" title="API sleutel" data-onclick="openApiKeyModal()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg>
+    <span class="nav-label">API sleutel</span>
+  </div>
+  <div class="nav-item" title="Data wissen" style="color:var(--red)" data-onclick="openWisModal()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg>
+    <span class="nav-label">Data wissen</span>
+  </div>
+
+  <div class="nav-spacer"></div>
+
+  <div class="account-blok" id="account-blok" style="display:none">
+    <div class="account-info">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"></path></svg>
+      <span class="account-email" id="account-email"></span>
+    </div>
+    <button class="btn btn-ghost btn-sm" title="Uitloggen" data-onclick="uitloggen()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      <span class="account-uitlog-tekst">Uitloggen</span>
+    </button>
+  </div>
+
+  <button class="nav-collapse-btn" aria-label="Menu in- of uitklappen" data-onclick="wisselMenu()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    <span>Menu inklappen</span>
+  </button>
+</nav>
+
+<main class="main">
+
+<header class="topbar">
+  <button class="menu-toggle" aria-label="Menu openen" data-onclick="wisselMobielMenu()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"></path></svg>
+  </button>
+  <div class="topbar-title" id="topbar-title">Home</div>
+
+  <div class="search-wrap">
+    <div class="search-field">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <input type="search" id="global-search" placeholder="Zoek op naam, bedrag, grootboek of product" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="search-results">
+      <span class="kbd">Ctrl K</span>
+    </div>
+    <div class="search-results" id="search-results" role="listbox" aria-label="Zoekresultaten"></div>
+  </div>
+
+  <div class="topbar-spacer"></div>
+
+  <select id="jaar-selector" aria-label="Boekjaar" style="font-size:12px">
+    <option value="all">Alle jaren</option>
+    <option value="2026" selected="">2026</option>
+    <option value="2025">2025</option>
+    <option value="2024">2024</option>
+    <option value="2023">2023</option>
+    <option value="2022">2022</option>
+  </select>
+
+  <button class="icon-btn" id="thema-knop" aria-label="Naar donkere modus" title="Donkere modus" data-onclick="wisselThema()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"></path></svg></button>
+</header>
+
+<div class="page-wrap">
+
+<!-- HOME (startpagina / portaal) -->
+<div id="p-home" class="page active">
+  <div id="home-inhoud">
+    <div class="home-welkom">
+      <h1 class="home-titel">Welkom bij Xtenate Administratie</h1>
+      <p class="home-sub">Kies waar je heen wilt.</p>
+    </div>
+    <div class="home-tegels">
+    <button type="button" class="home-tegel" aria-label="Boekhouding — Overzicht, bank, grootboek en boekingen" data-onclick="gaNaar('overzicht')">
+      <span class="home-tegel-kop">
+        <span class="home-tegel-icoon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 10h18"></path></svg></span>
+        
+      </span>
+      <span class="home-tegel-titel">Boekhouding</span>
+      <span class="home-tegel-uitleg">Overzicht, bank, grootboek en boekingen</span>
+      <div class="home-tegel-regels"><span>161 boekingen dit jaar</span><span>473 historisch</span></div>
+    </button>
+    <button type="button" class="home-tegel" aria-label="Beheer — Controle, import, export en onderhoud" data-onclick="gaNaar('beheer')">
+      <span class="home-tegel-kop">
+        <span class="home-tegel-icoon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 110-4h.09A1.65 1.65 0 004.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 3.68 1.65 1.65 0 0010 2.17V2a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0020.32 8v0a1.65 1.65 0 001.51 1H22a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg></span>
+        <span class="home-tegel-merk home-tegel-merk-fout">1 te doen</span>
+      </span>
+      <span class="home-tegel-titel">Beheer</span>
+      <span class="home-tegel-uitleg">Controle, import, export en onderhoud</span>
+      <div class="home-tegel-regels"><span>Controle: 1 fout · 5 waarschuwing</span></div>
+    </button>
+    <button type="button" class="home-tegel" aria-label="Facturen — Debiteuren en crediteuren" data-onclick="gaNaar('facturen')">
+      <span class="home-tegel-kop">
+        <span class="home-tegel-icoon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 3 2 3-2 3 2V8z"></path><path d="M14 2v6h6"></path><path d="M8 12h6M8 16h4"></path></svg></span>
+        <span class="home-tegel-merk home-tegel-merk-fout">2 te laat</span>
+      </span>
+      <span class="home-tegel-titel">Facturen</span>
+      <span class="home-tegel-uitleg">Debiteuren en crediteuren</span>
+      <div class="home-tegel-regels"><span>Te ontvangen € 367,63</span><span>Te betalen € 98,40</span></div>
+    </button>
+    <button type="button" class="home-tegel" aria-label="Voorraad — Artikelen, groepen en voorraadstanden" data-onclick="gaNaar('voorraad')">
+      <span class="home-tegel-kop">
+        <span class="home-tegel-icoon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"></path></svg></span>
+        <span class="home-tegel-merk home-tegel-merk-waarschuwing">10 op</span>
+      </span>
+      <span class="home-tegel-titel">Voorraad</span>
+      <span class="home-tegel-uitleg">Artikelen, groepen en voorraadstanden</span>
+      <div class="home-tegel-regels"><span>21 artikelen</span><span>10 op · 9 bijna op</span></div>
+    </button>
+    <button type="button" class="home-tegel" aria-label="Belasting — Inkomstenbelasting en aftrekposten" data-onclick="gaNaar('belasting')">
+      <span class="home-tegel-kop">
+        <span class="home-tegel-icoon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></span>
+        
+      </span>
+      <span class="home-tegel-titel">Belasting</span>
+      <span class="home-tegel-uitleg">Inkomstenbelasting en aftrekposten</span>
+      <div class="home-tegel-regels"><span>Boekjaar 2026</span></div>
+    </button>
+    <button type="button" class="home-tegel" aria-label="HNVI / Xtenate — Loten inkopen, verkopen en marge" data-onclick="gaNaar('hnvi')">
+      <span class="home-tegel-kop">
+        <span class="home-tegel-icoon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7l9-4 9 4-9 4-9-4z"></path><path d="M3 12l9 4 9-4"></path><path d="M3 17l9 4 9-4"></path></svg></span>
+        
+      </span>
+      <span class="home-tegel-titel">HNVI / Xtenate</span>
+      <span class="home-tegel-uitleg">Loten inkopen, verkopen en marge</span>
+      <div class="home-tegel-regels"><span>0 in voorraad</span><span>0 loten totaal</span></div>
+    </button></div></div>
+</div>
+
+<!-- OVERZICHT (het financiële dashboard, voorheen Home) -->
+<div id="p-overzicht" class="page">
+  <div class="page-head">
+    <div class="page-title">Overzicht</div>
+    <div class="page-sub">Hoe je onderneming ervoor staat</div>
+  </div>
+
+  <div class="kpi-grid" id="home-kpi"></div>
+  <div class="kpi-grid" id="home-kpi2" style="margin-bottom:var(--sp-5)"></div>
+
+  <div class="section-head"><div class="eyebrow">Grootste posten</div></div>
+  <div class="uitsch-grid" id="home-uitsch" style="margin-bottom:var(--sp-5)"></div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Omzet en kosten per maand</div>
+      <div class="chart-box"><canvas id="c-ie" role="img" aria-label="Omzet en kosten per maand"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Winstontwikkeling</div>
+      <div class="chart-box"><canvas id="c-net" role="img" aria-label="Winst opgeteld per maand"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <div class="card card-flush">
+      <div class="card-title">Laatste boekingen</div>
+      <div class="table-wrap"><table id="tbl-home-recent" class="js-sorteerbaar">
+        <thead><tr>
+          <th style="width:72px;padding-left:16px" data-sort="datum">Datum</th>
+          <th data-sort="tekst">Naam</th>
+          <th style="width:170px" data-sort="tekst">Grootboek</th>
+          <th style="width:84px">Rekening</th>
+          <th style="width:100px;text-align:right;padding-right:16px" data-sort="getal">Bedrag</th>
+        </tr></thead>
+        <tbody id="home-recent"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Kostenverdeling</div>
+      <div class="chart-box sm"><canvas id="c-kosten" role="img" aria-label="Kosten per categorie"></canvas></div>
+      <div id="c-kosten-leeg" style="display:flex;flex-direction:column;gap:6px;margin-top:14px;font-size:11px;color:var(--text-muted)"></div>
+    </div>
+  </div>
+
+  <div class="card card-flush">
+    <div class="card-title">Laatste voorraadmutaties</div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th style="width:72px;padding-left:16px">Datum</th>
+        <th>Lot</th>
+        <th style="width:110px">Status</th>
+        <th style="width:110px;text-align:right;padding-right:16px">Inkoop</th>
+      </tr></thead>
+      <tbody id="home-voorraad"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- BANK -->
+<div id="p-bank" class="page">
+  <div class="page-head">
+    <div class="page-title">Bank</div>
+    <div class="page-sub">Alle mutaties per rekening</div>
+  </div>
+  <div class="toolbar">
+    <select id="f-jaar-bank" aria-label="Jaar">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+      <option value="2022">2022</option>
+      <option value="all">Alle jaren</option>
+    </select>
+    <select id="f-maand" aria-label="Maand"></select>
+    <select id="f-rek" aria-label="Rekening">
+      <option value="">Alle rekeningen</option>
+      <option value="1010">Bank</option>
+      <option value="1009">Revolut</option>
+      <option value="1030">Creditkaart</option>
+      <option value="1020">Paypal</option>
+    </select>
+    <select id="f-type" aria-label="Soort mutatie">
+      <option value="">Alles</option>
+      <option value="inkomst">Inkomsten</option>
+      <option value="uitgave">Uitgaven</option>
+      <option value="prive">Privé</option>
+    </select>
+    <button class="btn btn-primary btn-ml" data-onclick="openTxModal()">+ Transactie toevoegen</button>
+  </div>
+  <div class="metrics" id="bank-metrics"></div>
+  <div class="card card-flush">
+    <div class="table-wrap"><table id="tbl-bank" class="js-sorteerbaar">
+      <thead><tr>
+        <th style="width:78px;padding-left:16px" data-sort="datum">Datum</th>
+        <th data-sort="tekst">Naam</th>
+        <th style="width:180px" data-sort="tekst">Grootboek</th>
+        <th style="width:86px" data-sort="tekst">Rekening</th>
+        <th style="width:104px;text-align:right;padding-right:16px" data-sort="getal">Bedrag</th>
+      </tr></thead>
+      <tbody id="bank-body"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- FACTUREN (debiteuren + crediteuren) -->
+<div id="p-facturen" class="page">
+  <div class="page-head">
+    <div class="page-title">Facturen</div>
+    <div class="page-sub">Openstaande verkoop- en inkoopfacturen</div>
+  </div>
+  <div class="vtabs" id="facturen-tabs" role="tablist"></div>
+  <div id="facturen-inhoud"></div>
+</div>
+
+<!-- BEHEER -->
+<div id="p-beheer" class="page">
+  <div class="page-head">
+    <div class="page-title">Beheer</div>
+    <div class="page-sub">Gegevens, onderhoud en systeem</div>
+  </div>
+  <div id="beheer-inhoud"></div>
+</div>
+
+<!-- GROOTBOEK -->
+<div id="p-grootboek" class="page">
+  <div class="page-head">
+    <div class="page-title">Grootboek</div>
+    <div class="page-sub">Saldo per rekening, met doorklik naar de boekingen</div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-field" id="gb-zoek-wrap" style="flex:1;min-width:180px;max-width:300px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <input type="search" id="gb-zoek" placeholder="Zoek op code of omschrijving" style="flex:1;border:none;background:none;padding:8px 0;font-size:12.5px;color:var(--text);outline:none;min-width:0">
+    </div>
+    <select id="f-jaar-gb" aria-label="Jaar">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+      <option value="2022">2022</option>
+      <option value="all">Alle jaren</option>
+    </select>
+    <select id="f-maand-gb" aria-label="Maand">
+      <option value="">Alle maanden</option>
+    </select>
+    <select id="f-rubriek-gb" aria-label="Rubriek">
+      <option value="">Alle rubrieken</option>
+      <option value="omzet">Omzet</option>
+      <option value="inkoop">Inkoop</option>
+      <option value="kosten">Kosten</option>
+      <option value="prive">Privé</option>
+      <option value="overig">Overig</option>
+    </select>
+    <button class="btn btn-ghost btn-sm btn-ml" data-onclick="wisFiltersGrootboek()">Filters wissen</button>
+  </div>
+
+  <div class="metrics" id="gb-metrics"></div>
+
+  <!-- Overzicht: saldo per grootboekrekening -->
+  <div id="gb-overzicht">
+    <div class="card card-flush">
+      <div class="table-wrap"><table id="tbl-grootboek" class="js-sorteerbaar tbl-compact">
+        <thead><tr>
+          <th style="width:72px;padding-left:16px" data-sort="tekst">Code</th>
+          <th data-sort="tekst">Omschrijving</th>
+          <th style="width:96px" data-sort="tekst">Rubriek</th>
+          <th style="width:88px;text-align:right" data-sort="getal">Boekingen</th>
+          <th style="width:120px;text-align:right;padding-right:16px" data-sort="getal">Saldo</th>
+        </tr></thead>
+        <tbody id="gb-body"></tbody>
+      </table></div>
+      <div class="table-totaal" id="gb-totaal"></div>
+    </div>
+  </div>
+
+  <!-- Detail: boekingen van één rekening -->
+  <div id="gb-detail" style="display:none">
+    <div class="card" style="display:flex;align-items:center;gap:var(--sp-4)" id="gb-detail-kop"></div>
+    <div class="card card-flush">
+      <div class="table-wrap"><table id="tbl-gb-detail" class="js-sorteerbaar tbl-compact">
+        <thead><tr>
+          <th style="width:78px;padding-left:16px" data-sort="datum">Datum</th>
+          <th data-sort="tekst">Naam</th>
+          <th style="width:200px" data-sort="tekst">Omschrijving</th>
+          <th style="width:86px" data-sort="tekst">Rekening</th>
+          <th style="width:104px;text-align:right;padding-right:16px" data-sort="getal">Bedrag</th>
+        </tr></thead>
+        <tbody id="gb-detail-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- BELASTING -->
+<div id="p-belasting" class="page">
+  <div class="page-head">
+    <div class="page-title">Belasting</div>
+    <div class="page-sub">Wat je over dit jaar aan inkomstenbelasting kunt verwachten</div>
+  </div>
+  <div class="toolbar">
+    <select id="f-jaar-bel" aria-label="Jaar">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+      <option value="2022">2022</option>
+      <option value="all">Alle jaren</option>
+    </select>
+  </div>
+  <div class="alert alert-warn">⚠ Indicatie op basis van ingevoerde data. Raadpleeg een belastingadviseur voor definitieve aangifte.</div>
+  <div class="metrics" id="bel-metrics"></div>
+  <div class="grid2">
+    <div class="card"><div class="card-title" id="bel-card-title">Berekening box 1 — indicatie 2026</div><div id="bel-calc"></div></div>
+    <div class="card"><div class="card-title">Omzet per kanaal</div>
+      <div style="position:relative;height:170px"><canvas id="c-bel" role="img" aria-label="Omzet per kanaal"></canvas></div>
+      <div id="bel-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:11px;color:var(--text-muted)"></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">Fiscale verwerking per grootboekrekening</div>
+    <table><thead><tr><th style="width:44px">Nr.</th><th>Omschrijving</th><th style="width:130px">Fiscale behandeling</th><th style="width:92px;text-align:right">Bedrag</th></tr></thead>
+    <tbody id="bel-kosten"></tbody></table>
+  </div>
+</div>
+
+<!-- CONTROLE -->
+<div id="p-controle" class="page">
+  <div class="page-head">
+    <div class="page-title">Controle</div>
+    <div class="page-sub">Wat er nog aandacht nodig heeft in je administratie</div>
+  </div>
+
+  <div class="toolbar">
+    <select id="f-controle-jaar" aria-label="Periode">
+      <option value="all">Alle jaren</option>
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+      <option value="2022">2022</option>
+    </select>
+    <button class="btn btn-ml" data-onclick="renderControle()">Opnieuw controleren</button>
+  </div>
+
+  <div class="kpi-grid" id="controle-kpi" style="margin-bottom:var(--sp-4)"></div>
+  <div id="controle-notitie"></div>
+  <div id="controle-lijst"></div>
+  <div id="controle-verborgen" style="margin-top:var(--sp-6)"></div>
+</div>
+
+<!-- VOORRAAD -->
+<div id="p-voorraad" class="page">
+  <div class="page-head">
+    <div class="page-title">Voorraad</div>
+    <div class="page-sub">Wat er ligt, wat het waard is en wat bijna op is</div>
+  </div>
+
+  <div class="kpi-grid" id="voorraad-kpi" style="margin-bottom:var(--sp-5)"></div>
+
+  <div class="vtabs" id="voorraad-tabs" role="tablist"></div>
+
+  <div class="toolbar">
+    <div class="search-field" style="flex:1;min-width:180px;max-width:280px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <input type="search" id="voorraad-zoek" placeholder="Zoek op artikelnaam" style="flex:1;border:none;background:none;padding:8px 0;font-size:12.5px;color:var(--text);outline:none;min-width:0">
+    </div>
+    <select id="f-voorraad-jaar" aria-label="Periode"></select>
+    <select id="f-covers-status" aria-label="Status">
+      <option value="">Alle statussen</option>
+      <option value="ok">Op voorraad</option>
+      <option value="laag">Lage voorraad</option>
+      <option value="uit">Uitverkocht</option>
+      <option value="onbekend">Niet vastgelegd</option>
+    </select>
+    <button class="btn btn-primary btn-ml" data-onclick="openCoverModal()">+ Artikel toevoegen</button>
+  </div>
+
+  <div class="meldbar" id="voorraad-jaarbalk" style="display:none">
+    <span id="voorraad-jaar-tekst"></span>
+    <button class="btn btn-sm" id="voorraad-vastleg-knop" data-onclick="legVoorraadVast()"></button>
+  </div>
+
+  <div class="meldbar" id="voorraad-melding" style="display:none"></div>
+
+  <div class="bulkbar" id="voorraad-bulk" style="display:none">
+    <span id="bulk-aantal"></span>
+    <span style="flex:1"></span>
+    <label style="font-size:11.5px">Verplaats naar</label>
+    <select id="bulk-cat" aria-label="Doelgroep"></select>
+    <button class="btn btn-primary btn-sm" data-onclick="verplaatsVoorraadSelectie()">Verplaatsen</button>
+    <button class="btn btn-danger btn-sm" data-onclick="verwijderVoorraadSelectie()">Verwijderen</button>
+    <button class="btn btn-ghost btn-sm" data-onclick="wisVoorraadSelectie()">Selectie wissen</button>
+  </div>
+
+  <div class="card card-flush">
+    <div class="table-wrap"><table id="tbl-voorraad" class="js-sorteerbaar tbl-compact">
+      <thead><tr>
+        <th style="width:34px;padding-left:16px"><input type="checkbox" id="voorraad-check-all" aria-label="Alles selecteren"></th>
+        <th data-sort="tekst">Artikel</th>
+        <th style="width:120px" id="voorraad-cat-kop" data-sort="tekst">Groep</th>
+        <th style="width:88px;text-align:right" data-sort="getal" id="voorraad-kop-aantal">Voorraad</th>
+        <th style="width:88px;text-align:right" data-sort="getal">Inkoop</th>
+        <th style="width:88px;text-align:right" data-sort="getal">Verkoop</th>
+        <th style="width:96px;text-align:right" data-sort="getal">Waarde</th>
+        <th style="width:104px;text-align:right" data-sort="getal" id="voorraad-kop-omzet">Omzet 2026</th>
+        <th style="width:104px" data-sort="tekst">Status</th>
+        <th style="width:126px"></th>
+        <th style="width:96px;padding-right:16px"></th>
+      </tr></thead>
+      <tbody id="covers-body"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- HNVI -->
+<div id="p-hnvi" class="page">
+  <div class="page-head">
+    <div class="page-title">HNVI / Xtenate</div>
+    <div class="page-sub">Loten inkopen, verkopen en de marge volgen</div>
+  </div>
+  <div class="metrics" id="hnvi-metrics"></div>
+  <div class="toolbar">
+    <select id="f-hnvi-jaar" aria-label="Jaar">
+      <option value="">Alle jaren</option>
+      <option value="2022">2022</option>
+      <option value="2023">2023</option>
+      <option value="2024">2024</option>
+      <option value="2025">2025</option>
+      <option value="2026">2026</option>
+    </select>
+    <select id="f-hnvi-status" aria-label="Status">
+      <option value="">Alle loten</option>
+      <option value="voorraad">In voorraad</option>
+      <option value="verkocht">Verkocht</option>
+    </select>
+    <button class="btn btn-danger" id="hnvi-delete-btn" style="display:none" data-onclick="verwijderGeselecteerdeHNVI()">Verwijder selectie</button>
+    <button class="btn btn-primary btn-ml" data-onclick="openHNVIModal()">+ Lot toevoegen</button>
+  </div>
+  <div class="card card-flush">
+    <div class="table-wrap"><table id="tbl-hnvi" class="js-sorteerbaar tbl-compact">
+      <thead><tr>
+        <th style="width:36px;padding-left:16px"><input type="checkbox" id="hnvi-check-all" title="Alles selecteren"></th>
+        <th style="width:78px" data-sort="datum">Datum</th>
+        <th data-sort="tekst">Omschrijving</th>
+        <th style="width:88px;text-align:right" data-sort="getal">Inkoop</th>
+        <th style="width:88px;text-align:right" data-sort="getal">Verkoop</th>
+        <th style="width:88px;text-align:right" data-sort="getal">Winst</th>
+        <th style="width:104px" data-sort="tekst">Status</th>
+        <th style="width:88px;padding-right:16px"></th>
+      </tr></thead>
+      <tbody id="hnvi-body"></tbody>
+    </table></div>
+  </div>
+</div>
+
+</div><!-- /page-wrap -->
+</main>
+</div><!-- /app -->
+
+<!-- DETAILPANEEL -->
+<div class="drawer-backdrop" id="drawer-backdrop" data-onclick="sluitDrawer()"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-label="Details van de boeking">
+  <div class="drawer-head">
+    <h3>Boeking</h3>
+    <button class="icon-btn" aria-label="Sluiten" data-onclick="sluitDrawer()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<!-- MODAL: PRODUCTGROEPEN -->
+<div class="modal-overlay" id="modal-groepen">
+<div class="modal">
+  <h3>Productgroepen</h3>
+  <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:var(--sp-4)">Hernoem een groep door de naam aan te passen. Verwijder je een groep, dan verhuizen de artikelen naar de eerste andere groep.</p>
+  <div id="groepen-lijst" style="display:flex;flex-direction:column;gap:6px;margin-bottom:var(--sp-4)"></div>
+  <div class="form-group full" style="margin-bottom:var(--sp-2)">
+    <label>Nieuwe groep</label>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="groep-nieuw" placeholder="bijv. Sleutelhangers" style="flex:1">
+      <button class="btn" data-onclick="voegGroepToe()">Toevoegen</button>
+    </div>
+  </div>
+  <div id="groep-fout" style="font-size:12px;color:var(--red);min-height:16px"></div>
+  <div class="modal-actions">
+    <button class="btn" data-onclick="sluitGroepenModal()">Annuleren</button>
+    <button class="btn btn-primary" data-onclick="bewaarGroepen()">Opslaan</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: MIGRATIE NAAR SUPABASE -->
+<div class="modal-overlay" id="modal-migratie">
+<div class="modal" style="width:720px">
+  <h3>Migratie naar Supabase</h3>
+  <div class="mig-fasen" id="mig-fasen"></div>
+  <div id="mig-inhoud"></div>
+  <div style="text-align:right;margin-top:var(--sp-3)">
+    <button class="btn btn-ghost btn-sm" data-onclick="sluitMigratieModal()">Venster sluiten</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: HERSTEL UITVOEREN -->
+<div class="modal-overlay" id="modal-uitvoeren">
+<div class="modal" style="width:880px">
+  <h3>Herstel uitvoeren</h3>
+  <div id="uit-inhoud"></div>
+  <div style="text-align:right;margin-top:var(--sp-3)">
+    <button class="btn btn-ghost btn-sm" data-onclick="sluitUitvoeren()">Venster sluiten</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: GEGEVENSCONTROLE -->
+<div class="modal-overlay" id="modal-gegevenscontrole">
+<div class="modal" style="width:900px">
+  <h3>Gegevenscontrole <span style="font-size:11px;font-weight:500;color:var(--text-muted)">— keuze per afwijking, wijzigt niets</span></h3>
+  <div id="gc-inhoud"></div>
+  <div style="text-align:right;margin-top:var(--sp-3)">
+    <button class="btn btn-ghost btn-sm" data-onclick="herlaadGegevenscontrole()">Opnieuw controleren</button>
+    <button class="btn btn-ghost btn-sm" data-onclick="sluitGegevenscontrole()">Venster sluiten</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: OPSLAGDIAGNOSE (tijdelijk, alleen lezen) -->
+<div class="modal-overlay" id="modal-opslagdiagnose">
+<div class="modal" style="width:820px">
+  <h3>Opslagdiagnose <span style="font-size:11px;font-weight:500;color:var(--text-muted)">— tijdelijk, leest alleen</span></h3>
+  <div id="diag-inhoud"></div>
+  <div style="text-align:right;margin-top:var(--sp-3)">
+    <button class="btn btn-ghost btn-sm" data-onclick="sluitOpslagDiagnose()">Venster sluiten</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: SUPABASE ZELFTEST -->
+<div class="modal-overlay" id="modal-zelftest">
+<div class="modal" style="width:540px">
+  <h3>Supabase testen</h3>
+  <p style="font-size:12.5px;color:var(--text-muted);line-height:1.55;margin-bottom:var(--sp-4)">
+    Controleert of toevoegen, lezen, wijzigen en verwijderen werken tegen je eigen database. De test maakt regels aan met de naam "Zelftest", verwijdert ze daarna weer, en telt of er niets is blijven staan. Je administratie wordt niet aangeraakt.
+  </p>
+  <div id="zelftest-samenvatting"></div>
+  <div class="card card-flush" id="zelftest-lijst" style="margin:0"></div>
+  <div class="modal-actions">
+    <button class="btn" data-onclick="sluitZelftestModal()">Sluiten</button>
+    <button class="btn btn-primary" id="zelftest-knop" data-onclick="startZelftest()">Test starten</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: EXCEL EXPORT -->
+<div class="modal-overlay" id="modal-export">
+<div class="modal">
+  <h3>Exporteer naar Excel</h3>
+  <p style="font-size:12.5px;color:var(--text-muted);line-height:1.55;margin-bottom:var(--sp-4)">
+    Je krijgt een bestand met dezelfde werkbladen en kolommen als je eigen administratiebestand: een blad per maand, Creditkaart Prive, Per Periode en Voorraad &amp; Mutaties. De app kan het bestand ook weer inlezen, dus het werkt als volwaardige reservekopie.
+  </p>
+  <div class="form-group full">
+    <label>Boekjaar</label>
+    <select id="export-jaar" aria-label="Boekjaar"></select>
+  </div>
+  <div id="export-samenvatting" style="margin-top:var(--sp-3)"></div>
+  <div class="modal-actions">
+    <button class="btn" data-onclick="sluitExportModal()">Annuleren</button>
+    <button class="btn btn-primary" data-onclick="doeExport()">Downloaden</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: CLOUD SYNC -->
+<div class="modal-overlay" id="modal-sync">
+<div class="modal" style="width:460px">
+  <h3>Cloud sync instellen</h3>
+  <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:1rem">Synchroniseer je gegevens tussen apparaten via een Google Sheet. Zie het meegeleverde "AppsScript-Code.gs" bestand voor de installatie-instructies.</p>
+  <div class="form-group" style="margin-bottom:1rem">
+    <label style="font-size:11px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:4px">Web app URL (eindigt op /exec)</label>
+    <input type="text" id="sync-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;font-size:12px;padding:6px 10px">
+  </div>
+  <div id="sync-status" style="font-size:12px;color:var(--text-muted);margin-bottom:1rem"></div>
+  <div style="display:flex;gap:8px;margin-bottom:.5rem">
+    <button class="btn" style="flex:1" data-onclick="syncUpload()">⬆ Upload naar cloud</button>
+    <button class="btn" style="flex:1" data-onclick="syncDownload()">⬇ Download van cloud</button>
+  </div>
+  <div style="font-size:11px;color:var(--text-hint)">Upload stuurt jouw lokale data naar de cloud (overschrijft cloud data). Download haalt cloud data op (overschrijft lokale data).</div>
+  <div class="modal-actions">
+    <button class="btn" data-onclick="document.getElementById('modal-sync').classList.remove('open')">Sluiten</button>
+    <button class="btn btn-primary" data-onclick="saveSyncUrl()">URL opslaan</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: API KEY -->
+<div class="modal-overlay" id="modal-apikey">
+<div class="modal">
+  <h3>Anthropic API sleutel</h3>
+  <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:1rem">Vereist voor het importeren van HNVI facturen via AI. De sleutel wordt alleen lokaal in je browser opgeslagen.</p>
+  <div class="form-group" style="margin-bottom:1rem">
+    <label style="font-size:11px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:4px">API sleutel</label>
+    <input type="password" id="apikey-input" placeholder="sk-ant-..." style="width:100%;font-size:12px;padding:6px 10px">
+  </div>
+  <div style="font-size:11px;color:var(--text-muted)">Haal je sleutel op via <a href="https://console.anthropic.com" target="_blank" style="color:var(--blue)">console.anthropic.com</a></div>
+  <div class="modal-actions">
+    <button class="btn" data-onclick="document.getElementById('modal-apikey').classList.remove('open')">Annuleren</button>
+    <button class="btn btn-primary" data-onclick="saveApiKey()">Opslaan</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: HNVI FACTUUR PREVIEW -->
+<div class="modal-overlay" id="modal-hnvi-factuur">
+<div class="modal" style="width:520px">
+  <h3>HNVI factuur importeren</h3>
+  <div id="hnvi-factuur-status" style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">Factuur wordt uitgelezen...</div>
+  <div id="hnvi-factuur-preview"></div>
+  <div class="modal-actions">
+    <button class="btn" data-onclick="document.getElementById('modal-hnvi-factuur').classList.remove('open')">Annuleren</button>
+    <button class="btn btn-primary" id="hnvi-factuur-btn" style="display:none" data-onclick="bevestigHNVIImport()">Importeer alle items</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: TRANSACTIE -->
+<div class="modal-overlay" id="modal-tx">
+<div class="modal">
+  <h3 id="tx-modal-title">Transactie toevoegen</h3>
+  <div class="form-grid">
+    <div class="form-group"><label>Datum</label><input type="date" id="tx-d"></div>
+    <div class="form-group"><label>Bedrag (€)</label><input type="text" inputmode="decimal" id="tx-b" placeholder="0,00"></div>
+    <div class="form-group full"><label>Naam / tegenpartij</label><input type="text" id="tx-n" placeholder="bijv. HNVI, Bol.com..."></div>
+    <div class="form-group"><label>Type</label>
+      <select id="tx-t" aria-label="Soort mutatie">
+        <option value="inkomst">Inkomst</option>
+        <option value="uitgave">Uitgave</option>
+        <option value="prive_opname">Privé opname</option>
+        <option value="prive_storting">Privé storting</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Rekening</label>
+      <select id="tx-rek" aria-label="Rekening">
+        <option value="1010">1010 Bank</option>
+        <option value="1009">1009 Revolut</option>
+        <option value="1030">1030 Creditkaart</option>
+        <option value="1020">1020 Paypal</option>
+        <option value="1090">1090 Kruisposten</option>
+      </select>
+    </div>
+    <div class="form-group full"><label>Grootboek</label>
+      <select id="tx-gb" aria-label="Grootboekrekening">
+        <optgroup label="Omzet">
+          <option value="8000">8000 Omzet Xtenate</option>
+          <option value="8010">8010 Omzet Bol.com (covers)</option>
+          <option value="8020">8020 Omzet Helmetstore</option>
+        </optgroup>
+        <optgroup label="Inkoop">
+          <option value="7000">7000 Inkoop AliExpress</option>
+          <option value="7010">7010 Inkoop HNVI</option>
+          <option value="7020">7020 Inkoop MijnMagie</option>
+          <option value="7100">7100 Inkoop verzendartikelen</option>
+          <option value="7900">7900 Transportkosten</option>
+        </optgroup>
+        <optgroup label="Kosten">
+          <option value="4235">4235 Kleine aanschaf inventaris</option>
+          <option value="4290">4290 Overige zakelijke aankopen</option>
+          <option value="4350">4350 Bankkosten</option>
+          <option value="4760">4760 Abonnement</option>
+          <option value="4810">4810 Reclame</option>
+          <option value="4815">4815 Website</option>
+          <option value="4895">4895 Overige verkoopkosten</option>
+          <option value="600">600 Privé storting</option>
+          <option value="601">601 Privé opname</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="form-group full"><label>Omschrijving (optioneel)</label><input type="text" id="tx-o" placeholder="extra toelichting"></div>
+  </div>
+  <div id="tx-fout" style="font-size:12px;color:var(--red);min-height:16px;margin-top:8px"></div>
+  <div class="modal-actions">
+    <button class="btn" data-onclick="closeTx()">Annuleren</button>
+    <button class="btn btn-danger" id="tx-delete-btn" style="display:none" data-onclick="deleteTx()">Verwijderen</button>
+    <button class="btn btn-primary" id="tx-save-btn" data-onclick="saveTx()">Opslaan</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: COVER ARTIKEL -->
+<div class="modal-overlay" id="modal-cover">
+<div class="modal">
+  <h3 id="cover-modal-title">Artikel toevoegen</h3>
+  <div class="form-grid">
+    <div class="form-group full"><label>Artikelnaam</label><input type="text" id="cv-naam" placeholder="bijv. Stitch"></div>
+    <div class="form-group full"><label>Productgroep</label>
+      <select id="cv-cat" aria-label="Productgroep"></select>
+    </div>
+    <div class="form-group"><label>Huidige voorraad</label><input type="number" id="cv-vrd" placeholder="0" min="0"></div>
+    <div class="form-group"><label>Melden onder <span style="color:var(--text-hint)">(standaard 3)</span></label><input type="number" id="cv-min" placeholder="3" min="0"></div>
+    <div class="form-group"><label>Inkoopprijs per stuk (€)</label><input type="text" inputmode="decimal" id="cv-inkoopprijs" placeholder="bijv. 4,20"></div>
+    <div class="form-group"><label>Verkoopprijs (€)</label><input type="text" inputmode="decimal" id="cv-prijs" placeholder="bijv. 31,95"></div>
+    <div class="form-group"><label>Ingekocht totaal (stuks)</label><input type="number" id="cv-ink" placeholder="0" min="0"></div>
+    <div class="form-group"><label>Verkocht totaal (stuks)</label><input type="number" id="cv-vk" placeholder="0" min="0"></div>
+    <div class="form-group"><label id="cv-26-label">Verkocht in 2026 (stuks)</label><input type="number" id="cv-26" placeholder="0" min="0"></div>
+    <div class="form-group"><label id="cv-jaar-eind-label">Eindvoorraad 31-12-2026</label><input type="number" id="cv-jaar-eind" placeholder="leeg = niet vastgelegd" min="0"></div>
+    <div class="form-group full"><label>Zoekterm AliExpress</label><input type="text" id="cv-zoek" placeholder="bijv. stitch helmet cover plush"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" data-onclick="closeCoverModal()">Annuleren</button>
+    <button class="btn btn-primary" data-onclick="saveCover()">Opslaan</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: HNVI LOT -->
+<div class="modal-overlay" id="modal-hnvi">
+<div class="modal">
+  <h3 id="hnvi-modal-title">Lot toevoegen</h3>
+  <div class="form-grid">
+    <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end">
+      <label style="min-height:32px;display:flex;align-items:flex-end;margin-bottom:4px">Bod excl. (€)</label>
+      <input type="text" inputmode="decimal" id="hn-bod" placeholder="0,00">
+    </div>
+    <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end">
+      <label style="min-height:32px;display:flex;flex-direction:column;justify-content:flex-end;margin-bottom:4px">
+        Inkoopprijs incl. (€)<br><span style="font-size:10px;color:var(--text-muted)">×1,17 ×1,21 · aanpasbaar</span>
+      </label>
+      <input type="text" inputmode="decimal" id="hn-ik" placeholder="automatisch">
+    </div>
+    <div class="form-group full"><label>Omschrijving</label><input type="text" id="hn-o" placeholder="bijv. HNVI lot 482 — sieradenset"></div>
+    <div class="form-group"><label>Datum</label><input type="date" id="hn-d"></div>
+    <div class="form-group full"><label>Notitie <span style="font-size:10px;color:var(--text-muted)">(optioneel)</span></label><input type="text" id="hn-noot" placeholder="bijv. defect, ophalen dinsdag..."></div>
+    <div class="form-group full" id="hn-vk-wrap" style="display:none"><label>Verkoopprijs (€)</label><input type="text" inputmode="decimal" id="hn-vk" placeholder="0,00"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" data-onclick="closeHNVIModal()">Annuleren</button>
+    <button class="btn btn-primary" id="hn-save-btn" data-onclick="saveHNVI()">Opslaan</button>
+  </div>
+</div>
+</div>
+
+
+
+<!-- MODAL: IMPORT STATUS -->
+<div class="modal-overlay" id="modal-import">
+<div class="modal">
+  <h3 id="import-title">Importeren...</h3>
+  <div id="import-body" style="font-size:13px;line-height:1.8;color:var(--text-muted)"></div>
+  <div class="modal-actions" id="import-actions" style="display:none">
+    <button class="btn btn-primary" data-onclick="document.getElementById('modal-import').classList.remove('open')">Sluiten</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: RESET BEVESTIGING -->
+<div class="modal-overlay" id="modal-wis">
+<div class="modal">
+  <h3>Data wissen</h3>
+  <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:1rem">Kies wat je wilt wissen. Dit kan niet ongedaan worden gemaakt.</p>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="wis-2026" checked=""> 2026 (huidige data: transacties, covers — HNVI/Xtenate-loten blijven altijd bewaard)
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="wis-2025"> 2025 (historisch)
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="wis-2024"> 2024 (historisch)
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="wis-2023"> 2023 (historisch)
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="wis-2022"> 2022 (historisch)
+    </label>
+  </div>
+  <div id="wis-status" style="font-size:12px;color:var(--text-muted);margin-bottom:.5rem"></div>
+  <div class="modal-actions">
+    <button class="btn" data-onclick="document.getElementById('modal-wis').classList.remove('open')">Annuleren</button>
+    <button class="btn btn-primary" style="background:var(--red);border-color:var(--red)" data-onclick="doWis()">Wis geselecteerd</button>
+  </div>
+  <hr style="margin:1rem 0;border-color:var(--border,#333)">
+  <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:.5rem">Staan de historische jaren (2022-2025) er raar uit, bijvoorbeeld verkeerde privé-opnames/stortingen? Dan staat er waarschijnlijk een verouderde kopie in je browseropslag. Herstel ze naar de standaardwaarden uit de app:</p>
+  <div class="modal-actions">
+    <button class="btn" data-onclick="herstelHistorischeData()">Herstel historische data (2022-2025) naar standaard</button>
+  </div>
+</div>
+</div>
+
+
+
+
+<div class="voorbeeld-balk"><b>Voorbeeld</b> — dit is een momentopname van de nieuwe startpagina. Knoppen doen hier niets; het is alleen om de indeling te beoordelen.</div></body></html>

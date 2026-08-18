@@ -8,7 +8,10 @@ export const state = {
   COVERS: [],
   HNVI_LOTS: [],
   HIST_TX: [],
+  FACTUREN: [],
   nxtTx: 200,
+  nxtFactuur: 1,
+  editFactuurId: null,
   nxtCover: 100,
   nxtHnvi: 10,
   huidigJaar: '2026',
@@ -181,10 +184,37 @@ export function saveCoversData() { save('xtenate_covers', state.COVERS); save('x
 
 export function saveHnviData() { save('xtenate_hnvi', state.HNVI_LOTS); save('xtenate_nxtHnvi', state.nxtHnvi); }
 
+// ─── FACTUREN (fase 7) ─────────────────────────────────────────────────────
+// Debiteuren en crediteuren staan naast de boekingen, niet erin. Er is geen
+// _DEFAULT: facturen beginnen leeg, er valt niets te herstellen naar standaard.
+// Een lege of beschadigde opslag levert dus gewoon een lege lijst op, en de
+// bestaande 634 boekingen blijven daarbij onaangeroerd.
+state.FACTUREN = load('xtenate_facturen', []);
+state.nxtFactuur = load('xtenate_nxt_factuur', 1);
+
+export const FACTUUR_INSTELLINGEN_STANDAARD = {
+  betaaltermijnDebiteur: 30,
+  betaaltermijnCrediteur: 14,
+  waarschuwDagen: 7
+};
+export let FACTUUR_INSTELLINGEN = load('xtenate_factuur_instellingen',
+  JSON.parse(JSON.stringify(FACTUUR_INSTELLINGEN_STANDAARD)));
+
+export function saveFacturen() {
+  save('xtenate_facturen', state.FACTUREN);
+  save('xtenate_nxt_factuur', state.nxtFactuur);
+}
+
+export function saveFactuurInstellingen(nieuwe) {
+  if (nieuwe) FACTUUR_INSTELLINGEN = { ...FACTUUR_INSTELLINGEN, ...nieuwe };
+  save('xtenate_factuur_instellingen', FACTUUR_INSTELLINGEN);
+}
+
 // ─── STATE INITIALISATIE (identiek aan origineel) ──────────────────────────
 state.huidigJaar = '2026';
 state.hnviSellId = null;
 state.editTxId = null;
 state.editCoverId = null;
+state.editFactuurId = null;
 state.hnviLaatsteDatum = new Date().toISOString().split('T')[0];
 state.hnviImportItems = [];

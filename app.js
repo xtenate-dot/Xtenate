@@ -2,9 +2,12 @@
 // attributen in index.html blijven werken, regelt de globale interacties
 // (detailpaneel, zoeken, sneltoetsen) en start de app op.
 
-import { nav, gaNaar, hertekenHuidigePagina } from './ui.js?v=20260812c';
+import { nav, gaNaar, hertekenHuidigePagina, paginaUitHash } from './ui.js?v=20260812c';
 import { wisselJaar, renderHome } from './dashboard.js?v=20260812c';
 import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking, deleteTx } from './bank.js?v=20260812c';
+import { renderFacturen, kiesFactuurTab } from './facturen-ui.js?v=20260812c';
+import { renderBeheer } from './beheer.js?v=20260812c';
+import { renderPortaal } from './home.js?v=20260812c';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260812c';
 import { renderBelasting } from './belasting.js?v=20260812c';
 import {
@@ -58,8 +61,9 @@ const zoekVoorraadVertraagd = vertraag(renderCovers);
 
 Object.assign(window, {
   zoekGrootboekVertraagd, zoekVoorraadVertraagd,
-  nav, gaNaar, wisselJaar, hertekenHuidigePagina,
+  nav, gaNaar, wisselJaar, hertekenHuidigePagina, paginaUitHash,
   renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking, deleteTx,
+  renderFacturen, kiesFactuurTab, renderBeheer, renderPortaal,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
   renderBelasting, renderControle, klapControleUit, toonAlleControleRegels,
   verbergControleMelding, zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen,
@@ -163,7 +167,8 @@ document.addEventListener('keydown', e => {
 
   // Cijfers 1-6 springen naar een pagina
   if (!inVeld && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    const paginas = ['home', 'bank', 'grootboek', 'belasting', 'controle', 'voorraad', 'hnvi'];
+    const paginas = ['home', 'overzicht', 'bank', 'facturen', 'grootboek',
+      'belasting', 'voorraad', 'hnvi', 'beheer'];
     const index = parseInt(e.key, 10) - 1;
     if (index >= 0 && index < paginas.length) { e.preventDefault(); gaNaar(paginas[index]); }
   }
@@ -173,4 +178,6 @@ document.addEventListener('keydown', e => {
 // De administratie wordt pas getekend als er een geldige sessie is. Alles
 // hierboven is voorbereiding; de gegevens komen nog uit dezelfde bron als
 // voorheen, er is alleen een deur voor gezet.
-startAuth(() => renderHome());
+// Na inloggen naar de pagina uit de hash, zodat een refresh je op je plek laat.
+// Zonder hash is dat 'home', precies zoals voorheen.
+startAuth(() => gaNaar(paginaUitHash()));
