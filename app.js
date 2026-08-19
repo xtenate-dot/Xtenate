@@ -102,11 +102,26 @@ initUiVoorkeuren();
 initNavGroepen();
 initZoek();
 
-// ---------- Modals sluiten bij klik buiten ----------
+// ---------- Modals sluiten bij klik buiten + ESC + Enter-cancel ----------
+// Voor oude modals (.modal-overlay) EN nieuwe modals (partijen.js)
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  if (overlay.id === 'modal-hnvi') return; // deze mag alleen via de knoppen dicht
-  if (overlay.id === 'modal-tx') return; // Fase 4: boeking-modal sluit NIET via click-outside
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+  // Bepaalde modals sluiten NIET via click-outside (alleen via knoppen en ESC)
+  const doNotCloseMagically = ['modal-hnvi', 'modal-tx'];
+  if (!doNotCloseMagically.includes(overlay.id)) {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) {
+        overlay.classList.remove('open');
+        document.body.classList.remove('modal-open');
+      }
+    });
+  }
+});
+
+// Ook handler voor 'Annuleren'-knoppen in oude modals
+document.querySelectorAll('button[onclick*="classList.remove"]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    document.body.classList.remove('modal-open');
+  });
 });
 
 // Fase 4: ESC sluit modal-tx (maar niet via click-outside)
@@ -178,7 +193,12 @@ document.addEventListener('keydown', e => {
     sluitZoek();
     sluitDrawer();
     sluitMobielMenu();
-    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    // Alle modals sluiten (zowel oude .modal-overlay.open als nieuwe met partijen.js)
+    document.querySelectorAll('.modal-overlay.open, .modal-overlay.active, [id*="modal"].open').forEach(m => {
+      m.classList.remove('open');
+      m.classList.remove('active');
+    });
+    document.body.classList.remove('modal-open');
     return;
   }
 

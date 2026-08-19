@@ -22,8 +22,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="style.css?v=20260812c">
 <link rel="stylesheet" href="layout.css?v=20260812c">
-<link rel="stylesheet" href="components.css?v=20260819">
+<link rel="stylesheet" href="components.css?v=20260820">
 <link rel="stylesheet" href="responsive.css?v=20260812c">
+
+<script>
+// Bij refresh/startup alle modals sluiten, want ze kunnen in localStorage steken
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.classList.remove('open');
+    m.classList.remove('active');
+  });
+});
+</script>
 </head>
 <body>
 
@@ -1000,6 +1010,6 @@
 </div>
 </div>
 
-<script type="module" src="app.js?v=20260812c"></script>
+<script type="module" src="app.js?v=20260820"></script>
 </body>
 </html>
