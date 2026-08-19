@@ -10,6 +10,8 @@ import { renderBeheer } from './beheer.js?v=20260812c';
 import { renderPortaal } from './home.js?v=20260812c';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260812c';
 import { renderBelasting } from './belasting.js?v=20260812c';
+import { renderCrediteuren, wisselJaarCrediteuren } from './crediteuren.js?v=20260818';
+import { renderDebiteuren, wisselJaarDebiteuren } from './debiteuren.js?v=20260818';
 import {
   renderControle, klapControleUit, toonAlleControleRegels, verbergControleMelding,
   zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen
@@ -192,3 +194,9 @@ document.addEventListener('keydown', e => {
 // Na inloggen naar de pagina uit de hash, zodat een refresh je op je plek laat.
 // Zonder hash is dat 'home', precies zoals voorheen.
 startAuth(() => gaNaar(paginaUitHash()));
+
+// Fase 4: Crediteuren & Debiteuren functies global beschikbaar
+window.renderCrediteuren = renderCrediteuren;
+window.wisselJaarCrediteuren = wisselJaarCrediteuren;
+window.renderDebiteuren = renderDebiteuren;
+window.wisselJaarDebiteuren = wisselJaarDebiteuren;
