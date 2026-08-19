@@ -1,8 +1,15 @@
-// partijen.js — gedeelde logica voor debiteuren en crediteuren.
+// partijen.js — gedeelde logica voor de pagina's Debiteuren en Crediteuren.
 //
-// Beide pagina's staan tegelijk in de DOM. Daarom werkt alles hier op een
-// meegegeven container en nooit op document.querySelectorAll: anders pakt de
-// ene pagina de knoppen van de andere over en opent de verkeerde modal.
+// Twee dingen waar je hier op moet letten:
+//
+// 1. Beide pagina's staan tegelijk in de DOM. Alles werkt daarom op een
+//    meegegeven container en nooit op document.querySelectorAll: anders pakt
+//    de ene pagina de knoppen van de andere over.
+//
+// 2. Alle eigen klassenamen beginnen met 'pm-'. De app gebruikt zelf al
+//    .modal-overlay en .modal voor zijn vijftien bestaande vensters. Die staan
+//    op display:none en gaan alleen open via .open. Een eigen regel voor
+//    .modal-overlay zou dat overschrijven en elk venster tegelijk tonen.
 
 import { state, saveTxData, saveHistTxData } from './storage.js?v=20260812c';
 import { fmt } from './helpers.js?v=20260812c';
@@ -27,30 +34,30 @@ export function boekingenVoorJaar(jaar) {
 
 const partijNaamVan = b => (b.naam || '').trim() || '(geen naam)';
 
-// ---------------------------------------------------------------- lijst
+// ------------------------------------------------------------------ lijst
 
 /**
  * Tekent de partijenlijst en hangt de Details-knoppen op.
  *
- * @param {object}   opts
- * @param {string}   opts.lijstId     id van de container
- * @param {string}   opts.totaalId    id van het totaalveld
- * @param {string}   opts.jaarId      id van de jaarkiezer
- * @param {string}   opts.soort       'inkomst' of 'uitgave'
- * @param {string}   opts.leegTekst   tekst als er niets is
- * @param {Function} opts.herteken    functie om na wijzigen opnieuw te tekenen
+ * @param {object}   o
+ * @param {string}   o.lijstId    id van de container
+ * @param {string}   o.totaalId   id van het totaalveld
+ * @param {string}   o.jaarId     id van de jaarkiezer
+ * @param {string}   o.soort      'inkomst' of 'uitgave'
+ * @param {string}   o.leegTekst  tekst als er niets is
+ * @param {Function} o.herteken   opnieuw tekenen na een wijziging
  */
-export function tekenPartijen(opts) {
-  const lijst = document.getElementById(opts.lijstId);
-  const totaalVeld = document.getElementById(opts.totaalId);
+export function tekenPartijen(o) {
+  const lijst = document.getElementById(o.lijstId);
+  const totaalVeld = document.getElementById(o.totaalId);
   if (!lijst || !totaalVeld) return;
 
-  const jaar = document.getElementById(opts.jaarId)?.value || '2026';
-  const boekingen = boekingenVoorJaar(jaar).filter(t => t.type === opts.soort);
+  const jaar = document.getElementById(o.jaarId)?.value || '2026';
+  const boekingen = boekingenVoorJaar(jaar).filter(t => t.type === o.soort);
 
   if (boekingen.length === 0) {
     const periode = jaar === 'all' ? 'de administratie' : jaar;
-    lijst.innerHTML = `<div class="leeg">${opts.leegTekst} in ${veilig(periode)}</div>`;
+    lijst.innerHTML = `<div class="leeg">${o.leegTekst} in ${veilig(periode)}</div>`;
     totaalVeld.textContent = fmt(0);
     return;
   }
@@ -66,14 +73,14 @@ export function tekenPartijen(opts) {
   }
 
   const gesorteerd = [...groepen.entries()].sort((a, b) => b[1].totaal - a[1].totaal);
-  const tekenKlasse = opts.soort === 'inkomst' ? 'pos' : 'neg';
-  const voorvoegsel = opts.soort === 'inkomst' ? '+&nbsp;' : '';
+  const teken = o.soort === 'inkomst' ? 'pos' : 'neg';
+  const plus = o.soort === 'inkomst' ? '+&nbsp;' : '';
 
   lijst.innerHTML = gesorteerd.map(([naam, g], i) => `
     <div class="partij-rij">
       <span class="partij-naam" title="${veilig(naam)}">${veilig(naam)}</span>
       <span class="partij-aantal">${g.aantal}&times;</span>
-      <span class="partij-bedrag ${tekenKlasse}">${voorvoegsel}${fmt(g.totaal)}</span>
+      <span class="partij-bedrag ${teken}">${plus}${fmt(g.totaal)}</span>
       <button type="button" class="btn-details" data-rij="${i}">Details</button>
     </div>`).join('');
 
@@ -81,145 +88,143 @@ export function tekenPartijen(opts) {
   lijst.querySelectorAll('.btn-details').forEach(knop => {
     knop.addEventListener('click', () => {
       const naam = gesorteerd[Number(knop.dataset.rij)][0];
-      openPartijModal(naam, boekingen.filter(b => partijNaamVan(b) === naam), opts);
+      openPartijVenster(naam, boekingen.filter(b => partijNaamVan(b) === naam), o);
     });
   });
 
-  totaalVeld.textContent = fmt(gesorteerd.reduce((som, [, g]) => som + g.totaal, 0));
+  totaalVeld.textContent = fmt(gesorteerd.reduce((s, [, g]) => s + g.totaal, 0));
 }
 
-// ---------------------------------------------------------------- modal
+// ------------------------------------------------------------------ venster
 
-let sluitHuidigeModal = null;
+let sluitHuidige = null;
 
-/** Zet een overlay neer die met Esc, de knop of een klik ernaast dichtgaat. */
-function toonOverlay(id, binnenkantHtml) {
-  sluitHuidigeModal?.();
+/** Zet een venster neer dat met Esc, de knop of een klik ernaast dichtgaat. */
+function toonVenster(id, inhoudHtml) {
+  sluitHuidige?.();
 
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.id = id;
-  overlay.innerHTML = `<div class="modal-venster" role="dialog" aria-modal="true">${binnenkantHtml}</div>`;
-  document.body.appendChild(overlay);
-  document.body.classList.add('modal-open');
+  const laag = document.createElement('div');
+  laag.className = 'pm-laag';
+  laag.id = id;
+  laag.innerHTML = `<div class="pm-venster" role="dialog" aria-modal="true">${inhoudHtml}</div>`;
+  document.body.appendChild(laag);
 
   const sluit = () => {
-    document.removeEventListener('keydown', opToets);
-    overlay.remove();
-    if (!document.querySelector('.modal-overlay')) {
-      document.body.classList.remove('modal-open');
-    }
-    if (sluitHuidigeModal === sluit) sluitHuidigeModal = null;
+    document.removeEventListener('keydown', opToets, true);
+    laag.remove();
+    if (sluitHuidige === sluit) sluitHuidige = null;
   };
 
+  // In de capture-fase: de app heeft zelf een Escape-handler die alle vensters
+  // met .open sluit, en die mag hier niet doorheen fietsen.
   function opToets(e) {
-    if (e.key === 'Escape') { e.preventDefault(); sluit(); }
+    if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); sluit(); }
   }
 
-  document.addEventListener('keydown', opToets);
-  overlay.addEventListener('mousedown', e => { if (e.target === overlay) sluit(); });
-  overlay.querySelectorAll('[data-sluit]').forEach(k => k.addEventListener('click', sluit));
+  document.addEventListener('keydown', opToets, true);
+  laag.addEventListener('mousedown', e => { if (e.target === laag) sluit(); });
+  laag.querySelectorAll('[data-pm-sluit]').forEach(k => k.addEventListener('click', sluit));
 
-  sluitHuidigeModal = sluit;
-  return { overlay, sluit };
+  sluitHuidige = sluit;
+  return { laag, sluit };
 }
 
-function openPartijModal(naam, boekingen, opts) {
+function openPartijVenster(naam, boekingen, o) {
   const opDatum = [...boekingen].sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
   const totaal = opDatum.reduce((s, b) => s + (Number(b.bedrag) || 0), 0);
 
   const rijen = opDatum.map((b, i) => `
     <tr>
-      <td class="col-datum">${veilig(b.datum || '—')}</td>
-      <td class="col-bedrag">${fmt(b.bedrag)}</td>
-      <td class="col-gb">${veilig(b.gb || '—')}</td>
-      <td class="col-omschr" title="${veilig(b.omschr || '')}">${veilig(b.omschr || '—')}</td>
-      <td class="col-acties">
-        <button type="button" class="btn-mini" data-bewerk="${i}">Bewerk</button>
-        <button type="button" class="btn-mini btn-mini-rood" data-verwijder="${i}">Verwijder</button>
+      <td class="pm-datum">${veilig(b.datum || '—')}</td>
+      <td class="pm-bedrag">${fmt(b.bedrag)}</td>
+      <td class="pm-gb">${veilig(b.gb || '—')}</td>
+      <td class="pm-omschr" title="${veilig(b.omschr || '')}">${veilig(b.omschr || '—')}</td>
+      <td class="pm-acties">
+        <button type="button" class="pm-mini" data-bewerk="${i}">Bewerk</button>
+        <button type="button" class="pm-mini pm-mini-rood" data-verwijder="${i}">Verwijder</button>
       </td>
     </tr>`).join('');
 
-  const { overlay } = toonOverlay('partij-modal', `
-    <header class="modal-kop">
+  const { laag } = toonVenster('pm-partij', `
+    <header class="pm-kop">
       <div>
-        <h2>${veilig(naam)}</h2>
-        <p class="modal-sub">${opDatum.length} boeking${opDatum.length === 1 ? '' : 'en'} &middot; ${fmt(totaal)}</p>
+        <h3>${veilig(naam)}</h3>
+        <p class="pm-sub">${opDatum.length} boeking${opDatum.length === 1 ? '' : 'en'} &middot; ${fmt(totaal)}</p>
       </div>
-      <button type="button" class="modal-sluit" data-sluit aria-label="Sluiten">&times;</button>
+      <button type="button" class="pm-kruis" data-pm-sluit aria-label="Sluiten">&times;</button>
     </header>
-    <div class="modal-inhoud">
-      <table class="modal-tabel">
+    <div class="pm-inhoud">
+      <table class="pm-tabel">
         <thead>
           <tr>
-            <th class="col-datum">Datum</th>
-            <th class="col-bedrag">Bedrag</th>
-            <th class="col-gb">Grootboek</th>
-            <th class="col-omschr">Omschrijving</th>
-            <th class="col-acties">Acties</th>
+            <th class="pm-datum">Datum</th>
+            <th class="pm-bedrag">Bedrag</th>
+            <th class="pm-gb">Grootboek</th>
+            <th class="pm-omschr">Omschrijving</th>
+            <th class="pm-acties">Acties</th>
           </tr>
         </thead>
         <tbody>${rijen}</tbody>
       </table>
     </div>
-    <footer class="modal-voet">
-      <span class="modal-hint">Esc sluit dit venster</span>
-      <button type="button" class="btn-secundair" data-sluit>Sluiten</button>
+    <footer class="pm-voet">
+      <span class="pm-hint">Esc sluit dit venster</span>
+      <button type="button" class="btn" data-pm-sluit>Sluiten</button>
     </footer>`);
 
-  overlay.querySelectorAll('[data-bewerk]').forEach(k => k.addEventListener('click',
-    () => openBewerkModal(opDatum[Number(k.dataset.bewerk)], opts)));
+  laag.querySelectorAll('[data-bewerk]').forEach(k => k.addEventListener('click',
+    () => openBewerkVenster(opDatum[Number(k.dataset.bewerk)], o)));
 
-  overlay.querySelectorAll('[data-verwijder]').forEach(k => k.addEventListener('click',
-    () => verwijderBoeking(opDatum[Number(k.dataset.verwijder)], opts)));
+  laag.querySelectorAll('[data-verwijder]').forEach(k => k.addEventListener('click',
+    () => verwijderBoeking(opDatum[Number(k.dataset.verwijder)], o)));
 }
 
-function openBewerkModal(boeking, opts) {
-  const { overlay, sluit } = toonOverlay('bewerk-modal', `
-    <header class="modal-kop">
-      <h2>Boeking bewerken</h2>
-      <button type="button" class="modal-sluit" data-sluit aria-label="Sluiten">&times;</button>
+function openBewerkVenster(boeking, o) {
+  const { laag, sluit } = toonVenster('pm-bewerk', `
+    <header class="pm-kop">
+      <h3>Boeking bewerken</h3>
+      <button type="button" class="pm-kruis" data-pm-sluit aria-label="Sluiten">&times;</button>
     </header>
-    <div class="modal-inhoud">
-      <div class="veld-raster">
-        <label>Datum<input type="date" id="bew-datum" value="${veilig(boeking.datum || '')}"></label>
-        <label>Bedrag (&euro;)<input type="number" step="0.01" id="bew-bedrag" value="${Number(boeking.bedrag) || 0}"></label>
-        <label>Grootboek<input type="text" id="bew-gb" value="${veilig(boeking.gb || '')}"></label>
-        <label>Rekening<input type="text" id="bew-rek" value="${veilig(boeking.rek || '')}"></label>
-        <label class="veld-breed">Naam / partij<input type="text" id="bew-naam" value="${veilig(boeking.naam || '')}"></label>
-        <label class="veld-breed">Omschrijving<input type="text" id="bew-omschr" value="${veilig(boeking.omschr || '')}"></label>
+    <div class="pm-inhoud">
+      <div class="pm-velden">
+        <label>Datum<input type="date" id="pm-datum" value="${veilig(boeking.datum || '')}"></label>
+        <label>Bedrag (&euro;)<input type="number" step="0.01" id="pm-bedrag" value="${Number(boeking.bedrag) || 0}"></label>
+        <label>Grootboek<input type="text" id="pm-gb" value="${veilig(boeking.gb || '')}"></label>
+        <label>Rekening<input type="text" id="pm-rek" value="${veilig(boeking.rek || '')}"></label>
+        <label class="pm-breed">Naam / partij<input type="text" id="pm-naam" value="${veilig(boeking.naam || '')}"></label>
+        <label class="pm-breed">Omschrijving<input type="text" id="pm-omschr" value="${veilig(boeking.omschr || '')}"></label>
       </div>
     </div>
-    <footer class="modal-voet">
-      <span class="modal-hint">Esc annuleert</span>
-      <div class="modal-knoppen">
-        <button type="button" class="btn-secundair" data-sluit>Annuleren</button>
-        <button type="button" class="btn-primair" id="bew-opslaan">Opslaan</button>
+    <footer class="pm-voet">
+      <span class="pm-hint">Esc annuleert</span>
+      <div class="pm-knoppen">
+        <button type="button" class="btn" data-pm-sluit>Annuleren</button>
+        <button type="button" class="btn btn-primary" id="pm-opslaan">Opslaan</button>
       </div>
     </footer>`);
 
-  const waarde = id => overlay.querySelector('#' + id)?.value ?? '';
+  const waarde = id => laag.querySelector('#' + id)?.value ?? '';
 
-  overlay.querySelector('#bew-opslaan').addEventListener('click', async () => {
+  laag.querySelector('#pm-opslaan').addEventListener('click', async () => {
     const gewijzigd = {
       ...boeking,
-      datum: waarde('bew-datum') || boeking.datum,
-      bedrag: Number(waarde('bew-bedrag')) || 0,
-      naam: waarde('bew-naam'),
-      omschr: waarde('bew-omschr'),
-      gb: waarde('bew-gb'),
-      rek: waarde('bew-rek')
+      datum: waarde('pm-datum') || boeking.datum,
+      bedrag: Number(waarde('pm-bedrag')) || 0,
+      naam: waarde('pm-naam'),
+      omschr: waarde('pm-omschr'),
+      gb: waarde('pm-gb'),
+      rek: waarde('pm-rek')
     };
 
-    // Op id zoeken, niet op de index uit de gefilterde lijst: die index hoort
-    // bij het scherm en niet bij state.TX, dus daarmee overschreef de vorige
-    // versie de verkeerde boeking.
+    // Op id zoeken, niet op de index uit de gefilterde schermlijst: die index
+    // hoort bij het scherm en niet bij state.TX, dus daarmee zou je een heel
+    // andere boeking overschrijven.
     const hist = isHistorisch(boeking);
-    const lijst = hist ? state.HIST_TX : state.TX;
-    const pos = (lijst || []).findIndex(t => String(t.id) === String(boeking.id));
+    const bron = hist ? state.HIST_TX : state.TX;
+    const pos = (bron || []).findIndex(t => String(t.id) === String(boeking.id));
     if (pos === -1) { alert('Boeking niet meer gevonden.'); sluit(); return; }
 
-    lijst[pos] = gewijzigd;
+    bron[pos] = gewijzigd;
     hist ? saveHistTxData() : saveTxData();
 
     try {
@@ -231,13 +236,13 @@ function openBewerkModal(boeking, opts) {
     }
 
     sluit();
-    opts.herteken();
+    o.herteken();
   });
 
-  overlay.querySelector('#bew-datum')?.focus();
+  laag.querySelector('#pm-datum')?.focus();
 }
 
-async function verwijderBoeking(boeking, opts) {
+async function verwijderBoeking(boeking, o) {
   const regel = `${boeking.datum} — ${fmt(boeking.bedrag)} — ${boeking.naam || '(geen naam)'}`;
   if (!confirm(`Deze boeking verwijderen?\n\n${regel}`)) return;
 
@@ -258,6 +263,6 @@ async function verwijderBoeking(boeking, opts) {
     addToPendingQueue(boeking, 'delete', hist);
   }
 
-  sluitHuidigeModal?.();
-  opts.herteken();
+  sluitHuidige?.();
+  o.herteken();
 }
