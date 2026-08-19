@@ -512,3 +512,33 @@ body.nav-collapsed .account-blok .btn { justify-content: center; }
 body.nav-collapsed .nav-groep-inhoud { display: block; }
 body.nav-collapsed .nav-chevron { display: none; }
 body.nav-collapsed .nav-section-btn { pointer-events: none; }
+
+/* ---------- Edit/Delete buttons voor debiteuren/crediteuren ---------- */
+.btn-details {
+  padding: 6px 12px; font-size: 12px; font-weight: 500;
+  background: var(--primary, #0066cc); color: white;
+  border: none; border-radius: 4px; cursor: pointer;
+  transition: background .2s;
+}
+.btn-details:hover { background: var(--primary-dark, #0052a3); }
+
+/* Modal backdrop & form styling */
+#modal-backdrop, #edit-modal-backdrop {
+  animation: fadeIn .15s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Form labels & inputs in modals */
+#edit-form label {
+  display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px;
+  color: var(--text);
+}
+#edit-form input {
+  width: 100%; padding: 8px; font-size: 13px;
+  border: 1px solid var(--border); border-radius: 4px;
+  font-family: inherit;
+}
+#edit-form input:focus {
+  outline: none; border-color: var(--primary, #0066cc);
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, .1);
+}
