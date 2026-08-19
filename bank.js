@@ -7,6 +7,14 @@ import {
 import { MAAND_SALDOS, saveHistTxData, saveTxData, state } from './storage.js?v=20260812c';
 import { maakSorteerbaar } from './tables.js?v=20260812c';
 
+// Fase 3A: Supabase pending queue
+import {
+  addToPendingQueue,
+  syncPendingQueue,
+  pendingQueue,
+  isSupabaseReady
+} from './supabase-client-v2.js?v=20260818';
+
 const el = id => document.getElementById(id);
 
 function bronVoorJaar(jaar) {
@@ -75,6 +83,23 @@ export function renderBank() {
       <div class="val ${bedrag == null ? 'muted' : bedrag >= 0 ? 'pos' : 'neg'}">${bedrag == null ? '—' : fmt(bedrag)}</div>
       <div class="sub">${esc(sub)}</div>
     </div>`;
+
+  // Fase 3A: Show pending queue badge if items waiting for sync
+  const pendingCount = Object.keys(pendingQueue).length;
+  const metrics = el('bank-metrics');
+  if (pendingCount > 0 && metrics && metrics.parentNode) {
+    let badge = el('pending-badge');
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.id = 'pending-badge';
+      badge.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;color:#333;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:12px;text-align:center';
+      metrics.parentNode.insertBefore(badge, metrics);
+    }
+    badge.textContent = `⏳ ${pendingCount} wijziging(en) wachten op synchronisatie`;
+  } else {
+    const badge = el('pending-badge');
+    if (badge) badge.remove();
+  }
 
   el('bank-metrics').innerHTML = `
     <div class="metric"><div class="lbl">Privé gestort</div><div class="val pos">${fmt(priveSt)}</div><div class="sub">${lijst.filter(t => t.type === 'prive_storting').length} keer</div></div>
@@ -195,13 +220,23 @@ export function deleteTx() {
     return; // Gebruiker heeft geannuleerd
   }
 
-  // Verwijder uit TX of HIST_TX
+  // Verwijder uit TX of HIST_TX (hard delete lokaal)
   if (historisch) {
     state.HIST_TX = state.HIST_TX.filter(t => String(t.id) !== String(state.editTxId));
     saveHistTxData();
   } else {
     state.TX = state.TX.filter(t => String(t.id) !== String(state.editTxId));
     saveTxData();
+  }
+
+  // Fase 3A: Add to pending queue for Supabase soft delete
+  addToPendingQueue({ id: state.editTxId }, 'delete', historisch);
+  
+  // Fase 3A: Try Supabase sync (async, non-blocking)
+  if (isSupabaseReady()) {
+    syncPendingQueue().catch(err => {
+      console.warn('Supabase delete sync failed (will retry):', err);
+    });
   }
 
   // Reset modal state
@@ -251,22 +286,41 @@ export function saveTx() {
     gb
   };
 
+  let isHistoric = false;
+  
   if (state.editTxId != null) {
     // Een historische boeking hoort in HIST_TX te blijven staan, anders zou hij
     // naar 2026 verhuizen en uit de jaaroverzichten van dat jaar verdwijnen.
     const bestaand = vindTx(state.editTxId);
-    if (bestaand && bestaand.historisch) {
+    isHistoric = bestaand && bestaand.historisch;
+    
+    if (isHistoric) {
       state.HIST_TX = state.HIST_TX.map(t => (String(t.id) === String(state.editTxId) ? tx : t));
       saveHistTxData();
     } else {
       state.TX = state.TX.map(t => (String(t.id) === String(state.editTxId) ? tx : t));
       saveTxData();
     }
+    
+    // Fase 3A: Add to pending queue for Supabase sync
+    addToPendingQueue(tx, 'update', isHistoric);
+    
   } else {
     state.TX.push(tx);
     saveTxData();
+    
+    // Fase 3A: Add to pending queue for Supabase sync
+    addToPendingQueue(tx, 'create', false);
   }
+  
   closeTx();
+  
+  // Fase 3A: Try Supabase sync (async, non-blocking)
+  if (isSupabaseReady()) {
+    syncPendingQueue().catch(err => {
+      console.warn('Supabase sync failed (will retry):', err);
+    });
+  }
 
   // Een nieuwe boeking is altijd 2026; sta je in een ander jaar te kijken,
   // dan zou hij anders ongemerkt buiten beeld vallen.

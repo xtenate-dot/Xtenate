@@ -3,6 +3,17 @@
 // samengevoegd in een gedeeld `state`-object zodat andere modules ernaar kunnen
 // verwijzen zonder dat we losse globale variabelen nodig hebben.
 
+// Fase 3A: Import Supabase client v2 (pending queue + RLS)
+import { 
+  loadBoekingenFromSupabase,
+  loadPendingQueue,
+  syncPendingQueue,
+  pendingQueue,
+  isSupabaseReady,
+  addToPendingQueue,
+  savePendingQueue
+} from './supabase-client-v2.js?v=20260818';
+
 export const state = {
   TX: [],
   COVERS: [],
@@ -19,7 +30,8 @@ export const state = {
   editCoverId: null,
   hnviSellId: null,
   hnviLaatsteDatum: null,
-  hnviImportItems: []
+  hnviImportItems: [],
+  loadedFromSupabase: false  // Track data source
 };
 
 export const HIST_TX_DEFAULT = [];
@@ -196,3 +208,62 @@ state.editCoverId = null;
 state.editFactuurId = null;
 state.hnviLaatsteDatum = new Date().toISOString().split('T')[0];
 state.hnviImportItems = [];
+
+// ─── FASE 3A: HYBRID DATA LOADING ────────────────────────────────────────
+/**
+ * Load boekingen from Supabase OR localStorage (fallback)
+ * Called after auth is complete
+ * 
+ * Flow:
+ * 1. Try Supabase (RLS filters to current user)
+ * 2. If fail/timeout: Fall back to localStorage
+ * 3. Load pending queue for recovery
+ * 4. Retry syncing pending items
+ */
+export async function loadDataHybrid() {
+  console.log('📦 Loading data (hybrid: Supabase → localStorage fallback)...');
+  
+  // Try Supabase first
+  if (isSupabaseReady()) {
+    try {
+      console.log('🔄 Attempting to load from Supabase...');
+      const result = await loadBoekingenFromSupabase();
+      
+      if (result && (result.TX.length > 0 || result.HIST_TX.length > 0)) {
+        state.TX = result.TX;
+        state.HIST_TX = result.HIST_TX;
+        state.loadedFromSupabase = true;
+        console.log(`✅ Data loaded from Supabase: ${state.TX.length} TX + ${state.HIST_TX.length} HIST_TX`);
+      } else if (result) {
+        // Empty result but no error = first time or no data
+        console.log('ℹ️  Supabase empty (first time?), loading from localStorage');
+        state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
+        state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
+        state.loadedFromSupabase = false;
+      }
+    } catch (err) {
+      console.warn(`⚠️  Supabase load failed: ${err.message}, falling back to localStorage`);
+      state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
+      state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
+      state.loadedFromSupabase = false;
+    }
+  } else {
+    // Supabase not ready
+    console.log('⚠️  Supabase not ready, loading from localStorage');
+    state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
+    state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
+    state.loadedFromSupabase = false;
+  }
+  
+  // Load pending queue (recovery from offline changes)
+  loadPendingQueue();
+  const pendingCount = Object.keys(pendingQueue).length;
+  if (pendingCount > 0) {
+    console.log(`⏳ Found ${pendingCount} pending items, attempting sync...`);
+    await syncPendingQueue().catch(err => 
+      console.warn('Pending sync failed:', err)
+    );
+  }
+  
+  console.log('✅ Data loading complete');
+}
