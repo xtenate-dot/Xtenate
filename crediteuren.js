@@ -4,15 +4,19 @@
 import { fmt } from './helpers.js?v=20260812c';
 import { state } from './storage.js?v=20260812c';
 
+// Zorg dat state altijd beschikbaar is
+const getState = () => window.state || state;
+
 const el = id => document.getElementById(id);
 
 export function renderCrediteuren() {
   const jaar = el('f-jaar-crediteuren')?.value || '2026';
   
   // Filter: alleen 2026 of geselecteerd jaar
-  let tx = state.TX || [];
+  const s = getState();
+  let tx = s.TX || [];
   if (jaar !== '2026') {
-    tx = (state.HIST_TX || []).filter(t => t.datum.startsWith(jaar));
+    tx = (s.HIST_TX || []).filter(t => t.datum.startsWith(jaar));
   }
   
   // Filter: alleen UITGAVEN (type='uitgave')
