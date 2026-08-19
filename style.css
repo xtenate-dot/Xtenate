@@ -149,3 +149,43 @@ a { color: var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* Crediteuren & Debiteuren rows */
+.crediteuren-row, .debiteuren-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.crediteuren-row:last-child, .debiteuren-row:last-child {
+  border-bottom: none;
+}
+
+.crediteuren-naam, .debiteuren-naam {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.crediteuren-stats, .debiteuren-stats {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.crediteuren-count, .debiteuren-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  min-width: 50px;
+  text-align: right;
+}
+
+.crediteuren-bedrag, .debiteuren-bedrag {
+  font-weight: 600;
+  min-width: 90px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

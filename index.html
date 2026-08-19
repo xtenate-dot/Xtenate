@@ -99,6 +99,14 @@
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 3 2 3-2 3 2V8z"/><path d="M14 2v6h6"/><path d="M8 12h6M8 16h4"/></svg>
     <span class="nav-label">Facturen</span>
   </div>
+  <div class="nav-item" data-page="crediteuren" onclick="nav('crediteuren',this)" title="Crediteuren">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    <span class="nav-label">Crediteuren</span>
+  </div>
+  <div class="nav-item" data-page="debiteuren" onclick="nav('debiteuren',this)" title="Debiteuren">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    <span class="nav-label">Debiteuren</span>
+  </div>
   <div class="nav-item" data-page="grootboek" onclick="nav('grootboek',this)" title="Grootboek">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
     <span class="nav-label">Grootboek</span>
@@ -341,6 +349,52 @@
   </div>
   <div class="vtabs" id="facturen-tabs" role="tablist"></div>
   <div id="facturen-inhoud"></div>
+</div>
+
+<!-- CREDITEUREN (wie betaal ik) -->
+<div id="p-crediteuren" class="page">
+  <div class="page-head">
+    <div class="page-title">Crediteuren</div>
+    <div class="page-sub">Wie betaal ik en hoeveel?</div>
+  </div>
+  <div class="page-controls">
+    <select id="f-jaar-crediteuren" onchange="wisselJaarCrediteuren()" aria-label="Jaar">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+      <option value="all">Alles</option>
+    </select>
+  </div>
+  <div class="card">
+    <div style="padding: 16px; font-weight: 600; color: var(--text-muted); font-size: 12px; text-transform: uppercase;">
+      Totaal betaald: <span id="crediteuren-totaal" style="color: var(--text); font-weight: 700;">€0,00</span>
+    </div>
+    <div id="crediteuren-list"></div>
+  </div>
+</div>
+
+<!-- DEBITEUREN (wie betaalt mij) -->
+<div id="p-debiteuren" class="page">
+  <div class="page-head">
+    <div class="page-title">Debiteuren</div>
+    <div class="page-sub">Wie betaalt mij en hoeveel?</div>
+  </div>
+  <div class="page-controls">
+    <select id="f-jaar-debiteuren" onchange="wisselJaarDebiteuren()" aria-label="Jaar">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+      <option value="2023">2023</option>
+      <option value="all">Alles</option>
+    </select>
+  </div>
+  <div class="card">
+    <div style="padding: 16px; font-weight: 600; color: var(--text-muted); font-size: 12px; text-transform: uppercase;">
+      Totaal ontvangen: <span id="debiteuren-totaal" style="color: var(--text); font-weight: 700;">€0,00</span>
+    </div>
+    <div id="debiteuren-list"></div>
+  </div>
 </div>
 
 <!-- BEHEER -->
