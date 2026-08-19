@@ -8,7 +8,6 @@
 
 import { getClient, leesbareFout, testVerbinding } from './supabase.js?v=20260812c';
 import { configProbleem, isGeconfigureerd } from './config.js?v=20260812c';
-import { loadDataHybrid } from './storage.js?v=20260812c';
 
 const el = id => document.getElementById(id);
 
@@ -86,22 +85,7 @@ export async function uitloggen() {
   } catch (e) {
     console.warn('Uitloggen bij Supabase mislukte, sessie lokaal opgeruimd:', e);
   }
-  
-  // Fase 3A: Bij logout localStorage voor deze user wissen zodat volgende user
-  // niet dezelfde data ziet. Settings (thema, etc.) blijven.
-  // Noodrem verwijderen = weer aan (volgende user moet na inlog opnieuw sync aanzetten)
-  try {
-    localStorage.removeItem('xtenate_tx');
-    localStorage.removeItem('xtenate_hist_tx_override');
-    localStorage.removeItem('xtenate_pending_queue_v2');
-    localStorage.removeItem('xtenate_sync_aan');  // Noodrem weer aan voor volgende user
-    console.log('✅ User data cleared from localStorage');
-  } catch (e) {
-    console.warn('Could not clear localStorage:', e);
-  }
-  
   sessie = null;
-  appGestart = false;  // Reset app state voor volgende user
   toonAccount();
   el('auth-email').value = '';
   el('auth-wachtwoord').value = '';
@@ -125,20 +109,9 @@ function toonAccount() {
 function naarApp() {
   toonAccount();
   toonScherm('app');
-  
-  // Fase 3A: Noodrem automatisch uitzetten bij login (sync staat aan)
-  localStorage.setItem('xtenate_sync_aan', 'ja');
-  
   // De app zelf wordt maar één keer opgestart; opnieuw inloggen tekent alleen
   // de huidige pagina opnieuw.
-  if (!appGestart) { 
-    appGestart = true;
-    // Fase 3A: Laad gegevens van Supabase (of fallback naar localStorage)
-    loadDataHybrid().then(() => startApp?.()).catch(err => {
-      console.error('loadDataHybrid failed:', err);
-      startApp?.();  // Even try to continue
-    });
-  }
+  if (!appGestart) { appGestart = true; startApp?.(); }
   else window.hertekenHuidigePagina?.();
 }
 

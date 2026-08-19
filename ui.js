@@ -2,8 +2,6 @@
 
 import { renderBank } from './bank.js?v=20260812c';
 import { renderBelasting } from './belasting.js?v=20260812c';
-import { renderCrediteuren } from './crediteuren.js?v=20260818';
-import { renderDebiteuren } from './debiteuren.js?v=20260818';
 import { renderHome } from './dashboard.js?v=20260812c';
 import { renderPortaal } from './home.js?v=20260812c';
 import { renderGrootboek } from './grootboek.js?v=20260812c';
@@ -18,8 +16,6 @@ const RENDERS = {
   overzicht: renderHome,    // het financiële dashboard (voorheen 'home')
   bank: renderBank,
   facturen: renderFacturen,
-  crediteuren: renderCrediteuren,
-  debiteuren: renderDebiteuren,
   grootboek: renderGrootboek,
   belasting: renderBelasting,
   controle: renderControle,
@@ -33,8 +29,6 @@ const TITELS = {
   overzicht: 'Overzicht',
   bank: 'Bank',
   facturen: 'Facturen',
-  crediteuren: 'Crediteuren',
-  debiteuren: 'Debiteuren',
   grootboek: 'Grootboek',
   belasting: 'Belasting',
   controle: 'Controle',
