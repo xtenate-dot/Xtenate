@@ -18,8 +18,8 @@
 // nooit in een repository, en nooit in code die wordt gepubliceerd. Zet ze hier
 // dus niet neer — de controle onderaan dit bestand weigert ze ook.
 
-export const SUPABASE_URL = 'https://wmnqtukxwzbzmkmxdxrt.supabase.co';
-export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_brzIbFoa_C-qWtq2pbmWSA_gnpI7E6_';
+export const SUPABASE_URL = 'https://mgguvduurfsurjomrnkd.supabase.co';
+export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_iDKjeBYhXLG_khglkLqSyA_aFdxJmTj';
 
 /** Versie van de Supabase-bibliotheek die van de CDN wordt gehaald. */
 export const SUPABASE_LIB = 'https://esm.sh/@supabase/supabase-js@2.45.4';
