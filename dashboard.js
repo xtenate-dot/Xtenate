@@ -25,8 +25,10 @@ export function getHomeTX() {
 // ("Per Periode") komen rechtstreeks uit de boekhouding en zijn leidend;
 // alleen als die ontbreken wordt er opgeteld uit de losse boekingen.
 function berekenJaarMetrics(jaar, txVanJaar) {
-  const override = HOME_TOTALS[jaar];
-  if (override) return { ...override, uitExcel: true };
+  // Fase 3B: Excel-overrides UITGESCHAKELD — altijd live van Supabase rekenen
+  // const override = HOME_TOTALS[jaar];
+  // if (override) return { ...override, uitExcel: true };
+  
   return {
     omzet: txVanJaar.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s, t) => s + t.bedrag, 0),
     kosten: txVanJaar.filter(isUitgave).reduce((s, t) => s + t.bedrag, 0),
