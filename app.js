@@ -99,7 +99,18 @@ initZoek();
 // ---------- Modals sluiten bij klik buiten ----------
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   if (overlay.id === 'modal-hnvi') return; // deze mag alleen via de knoppen dicht
+  if (overlay.id === 'modal-tx') return; // Fase 4: boeking-modal sluit NIET via click-outside
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+// Fase 4: ESC sluit modal-tx (maar niet via click-outside)
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('modal-tx');
+    if (modal && modal.classList.contains('open')) {
+      modal.classList.remove('open');
+    }
+  }
 });
 
 // ---------- Doorklikken naar een boeking ----------
