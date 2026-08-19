@@ -1,6 +1,7 @@
 // crediteuren.js — Wie betaal ik en hoeveel?
 
 import { fmt } from './helpers.js?v=20260812c';
+import { state } from './storage.js?v=20260812c';
 
 const el = id => document.getElementById(id);
 
@@ -8,7 +9,7 @@ export function renderCrediteuren() {
   const jaar = el('f-jaar-crediteuren')?.value || '2026';
   
   // State ophalen via window
-  const s = window.state || {};
+  const s = state;
   let tx = s.TX || [];
   
   if (jaar !== '2026') {
