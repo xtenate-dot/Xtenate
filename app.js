@@ -10,6 +10,8 @@ import { renderBeheer } from './beheer.js?v=20260812c';
 import { renderPortaal } from './home.js?v=20260812c';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260812c';
 import { renderBelasting } from './belasting.js?v=20260812c';
+import { renderCrediteuren, wisselJaarCrediteuren } from './crediteuren.js?v=20260818';
+import { renderDebiteuren, wisselJaarDebiteuren } from './debiteuren.js?v=20260818';
 import {
   renderControle, klapControleUit, toonAlleControleRegels, verbergControleMelding,
   zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen
@@ -30,6 +32,7 @@ import {
   openApiKeyModal, saveApiKey, bevestigImport, annuleerImport
 } from './modals.js?v=20260812c';
 import { initUiVoorkeuren, wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu } from './theme.js?v=20260812c';
+import { wisselNavGroep, initNavGroepen } from './navgroepen.js?v=20260819';
 import { initZoek, focusZoek, sluitZoek } from './search.js?v=20260812c';
 import { openExportModal, sluitExportModal, toonExportSamenvatting, doeExport } from './excel-ui.js?v=20260812c';
 import { openZelftestModal, sluitZelftestModal, startZelftest } from './zelftest-ui.js?v=20260812c';
@@ -64,6 +67,7 @@ Object.assign(window, {
   nav, gaNaar, wisselJaar, hertekenHuidigePagina, paginaUitHash,
   renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking, deleteTx,
   renderFacturen, kiesFactuurTab, renderBeheer, renderPortaal,
+  renderCrediteuren, wisselJaarCrediteuren, renderDebiteuren, wisselJaarDebiteuren,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
   renderBelasting, renderControle, klapControleUit, toonAlleControleRegels,
   verbergControleMelding, zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen,
@@ -89,17 +93,30 @@ Object.assign(window, {
   openOpslagDiagnose, sluitOpslagDiagnose, voerOpslagDiagnoseUit, kopieerOpslagDiagnose, maakOpslagSnapshot, toonOverrides, toonNegeerlijst, downloadBackup, downloadNegeerBestanden,
   login, uitloggen, opnieuwVerbinden,
   wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu,
+  wisselNavGroep,
   sluitDrawer
 });
 
 // ---------- Voorkeuren (thema, ingeklapt menu) ----------
 initUiVoorkeuren();
+initNavGroepen();
 initZoek();
 
 // ---------- Modals sluiten bij klik buiten ----------
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   if (overlay.id === 'modal-hnvi') return; // deze mag alleen via de knoppen dicht
+  if (overlay.id === 'modal-tx') return; // Fase 4: boeking-modal sluit NIET via click-outside
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+// Fase 4: ESC sluit modal-tx (maar niet via click-outside)
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('modal-tx');
+    if (modal && modal.classList.contains('open')) {
+      modal.classList.remove('open');
+    }
+  }
 });
 
 // ---------- Doorklikken naar een boeking ----------

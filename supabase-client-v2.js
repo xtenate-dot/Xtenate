@@ -11,15 +11,9 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260818';
+import { getClient, heeftClient } from './supabase.js?v=20260812c';
 
 // ===== NOODREM =====
-// Zolang dit uit staat gaat er NIETS naar Supabase. Standaard uit, zodat je
-// echte administratie nooit per ongeluk wordt verstuurd. Aanzetten doe je
-// bewust, in de console van de browser:
-//     localStorage.setItem('xtenate_sync_aan', 'ja'); location.reload();
-// Uitzetten:
-//     localStorage.removeItem('xtenate_sync_aan'); location.reload();
 export function syncIsAangezet() {
   try {
     return localStorage.getItem('xtenate_sync_aan') === 'ja';
@@ -32,10 +26,6 @@ export function syncIsAangezet() {
 export const pendingQueue = {};
 const QUEUE_STORAGE_KEY = 'xtenate_pending_queue_v2';
 
-/**
- * Save pending queue to localStorage
- * Ensures persistence across page reloads
- */
 export function savePendingQueue() {
   try {
     localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(pendingQueue));
@@ -45,10 +35,6 @@ export function savePendingQueue() {
   }
 }
 
-/**
- * Load pending queue from localStorage
- * Called on app startup to recover unsyncked items
- */
 export function loadPendingQueue() {
   try {
     const saved = localStorage.getItem(QUEUE_STORAGE_KEY);
@@ -66,26 +52,19 @@ export function loadPendingQueue() {
   }
 }
 
-/**
- * Clear pending queue (only after successful sync)
- */
 export function clearPendingQueueItem(key) {
   delete pendingQueue[key];
   savePendingQueue();
 }
 
-/**
- * Add item to pending queue
- * Called after every local change
- */
 export function addToPendingQueue(boeking, operation, isHistoric = false) {
   const key = `${operation}_${boeking.id}_${Date.now()}`;
   
   pendingQueue[key] = {
     id: boeking.id,
-    operation: operation,      // 'create', 'update', 'delete'
+    operation: operation,
     isHistoric: isHistoric,
-    status: 'pending',         // 'pending' or 'syncing'
+    status: 'pending',
     timestamp: Date.now(),
     attempts: 0,
     maxAttempts: 3,
@@ -109,10 +88,6 @@ export function addToPendingQueue(boeking, operation, isHistoric = false) {
 
 // ===== LOAD FROM SUPABASE =====
 
-/**
- * Load boekingen from Supabase with RLS
- * Returns { TX, HIST_TX } or null if failed
- */
 export async function loadBoekingenFromSupabase() {
   if (!heeftClient()) {
     console.log('⚠️  Supabase client not initialized');
@@ -122,7 +97,6 @@ export async function loadBoekingenFromSupabase() {
   try {
     const sb = await getClient();
     
-    // RLS will filter automatically to authenticated user's data
     const { data, error } = await sb
       .from('boekingen')
       .select('*')
@@ -139,7 +113,6 @@ export async function loadBoekingenFromSupabase() {
       return { TX: [], HIST_TX: [] };
     }
     
-    // Parse to TX/HIST_TX structure for backward compatibility
     const TX = [];
     const HIST_TX = [];
     
@@ -173,10 +146,6 @@ export async function loadBoekingenFromSupabase() {
 
 // ===== SAVE TO SUPABASE =====
 
-/**
- * Save boeking to Supabase (upsert)
- * Returns true if successful, false otherwise
- */
 export async function saveToSupabase(boeking, isHistoric) {
   if (!heeftClient()) {
     console.log('⚠️  Supabase not ready, skipping save');
@@ -186,7 +155,17 @@ export async function saveToSupabase(boeking, isHistoric) {
   try {
     const sb = await getClient();
     
+    // Haal user ID uit Supabase sessie
+    const session = await sb.auth.getSession();
+    const userId = session?.data?.session?.user?.id;
+    
+    if (!userId) {
+      console.warn('⚠️  No user ID available (not logged in?)');
+      return false;
+    }
+    
     const record = {
+      user_id: userId,
       legacy_id: String(boeking.id),
       legacy_source: isHistoric ? 'hist_tx' : 'tx',
       datum: boeking.datum,
@@ -202,9 +181,15 @@ export async function saveToSupabase(boeking, isHistoric) {
       updated_at: new Date().toISOString()
     };
     
-    const { error } = await sb
+    // Delete old version (MET user_id, dus RLS laat het toe)
+    await sb
       .from('boekingen')
-      .upsert(record, { onConflict: 'legacy_id' });
+      .delete()
+      .eq('legacy_id', String(boeking.id))
+      .eq('user_id', userId);
+    
+    // Insert fresh
+    const { error } = await sb.from('boekingen').insert([record]);
     
     if (error) {
       console.error(`❌ Supabase save failed (${boeking.id}):`, error);
@@ -222,20 +207,26 @@ export async function saveToSupabase(boeking, isHistoric) {
 
 // ===== DELETE FROM SUPABASE (SOFT DELETE) =====
 
-/**
- * Soft delete: set deleted_at timestamp
- * Record stays in DB for recovery, but won't load
- */
 export async function deleteFromSupabase(id) {
   if (!heeftClient()) return false;
   
   try {
     const sb = await getClient();
     
+    // Haal user ID
+    const session = await sb.auth.getSession();
+    const userId = session?.data?.session?.user?.id;
+    
+    if (!userId) {
+      console.warn('⚠️  No user ID for delete');
+      return false;
+    }
+    
     const { error } = await sb
       .from('boekingen')
       .update({ deleted_at: new Date().toISOString() })
-      .eq('legacy_id', String(id));
+      .eq('legacy_id', String(id))
+      .eq('user_id', userId);
     
     if (error) {
       console.error(`❌ Supabase soft delete failed (${id}):`, error);
@@ -253,13 +244,6 @@ export async function deleteFromSupabase(id) {
 
 // ===== SYNC PENDING QUEUE =====
 
-/**
- * Retry syncing all pending items to Supabase
- * Called on:
- * - After every local change (async)
- * - On page load (to catch offline changes)
- * - On reconnect event (online)
- */
 export async function syncPendingQueue() {
   if (!heeftClient()) {
     console.log('⚠️  Supabase not available, skipping sync');
@@ -277,7 +261,6 @@ export async function syncPendingQueue() {
   for (const key of keys) {
     const pending = pendingQueue[key];
     
-    // Skip if already at max attempts
     if (pending.attempts >= pending.maxAttempts) {
       console.warn(`⚠️  ${key}: Max attempts reached, pausing`);
       failed++;
@@ -319,7 +302,6 @@ export async function syncPendingQueue() {
 // ===== HELPERS =====
 
 export function isSupabaseReady() {
-  // De noodrem gaat voor alles: staat sync uit, dan doen we niets.
   if (!syncIsAangezet()) return false;
   return heeftClient();
 }
@@ -330,26 +312,4 @@ export function getPendingCount() {
 
 export function getPendingItems() {
   return Object.values(pendingQueue);
-}
-
-/**
- * Test: Simulate offline by preventing Supabase access
- */
-let _testOfflineMode = false;
-
-export function setTestOfflineMode(offline) {
-  _testOfflineMode = offline;
-  console.log(_testOfflineMode ? '📴 TEST MODE: Offline' : '📡 TEST MODE: Online');
-}
-
-export function isTestOfflineMode() {
-  return _testOfflineMode;
-}
-
-// Override heeftClient in offline mode
-const originalHeeftClient = heeftClient;
-
-export function testableHeeftClient() {
-  if (_testOfflineMode) return false;
-  return originalHeeftClient();
 }
