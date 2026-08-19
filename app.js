@@ -10,8 +10,6 @@ import { renderBeheer } from './beheer.js?v=20260812c';
 import { renderPortaal } from './home.js?v=20260812c';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260812c';
 import { renderBelasting } from './belasting.js?v=20260812c';
-import { renderCrediteuren, wisselJaarCrediteuren } from './crediteuren.js?v=20260818';
-import { renderDebiteuren, wisselJaarDebiteuren } from './debiteuren.js?v=20260818';
 import {
   renderControle, klapControleUit, toonAlleControleRegels, verbergControleMelding,
   zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen
@@ -101,18 +99,7 @@ initZoek();
 // ---------- Modals sluiten bij klik buiten ----------
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   if (overlay.id === 'modal-hnvi') return; // deze mag alleen via de knoppen dicht
-  if (overlay.id === 'modal-tx') return; // Fase 4: boeking-modal sluit NIET via click-outside
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
-});
-
-// Fase 4: ESC sluit modal-tx (maar niet via click-outside)
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    const modal = document.getElementById('modal-tx');
-    if (modal && modal.classList.contains('open')) {
-      modal.classList.remove('open');
-    }
-  }
 });
 
 // ---------- Doorklikken naar een boeking ----------
@@ -194,9 +181,3 @@ document.addEventListener('keydown', e => {
 // Na inloggen naar de pagina uit de hash, zodat een refresh je op je plek laat.
 // Zonder hash is dat 'home', precies zoals voorheen.
 startAuth(() => gaNaar(paginaUitHash()));
-
-// Fase 4: Crediteuren & Debiteuren functies global beschikbaar
-window.renderCrediteuren = renderCrediteuren;
-window.wisselJaarCrediteuren = wisselJaarCrediteuren;
-window.renderDebiteuren = renderDebiteuren;
-window.wisselJaarDebiteuren = wisselJaarDebiteuren;
