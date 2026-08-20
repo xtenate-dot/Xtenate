@@ -5,6 +5,7 @@ import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
 } from './storage.js?v=20260812c';
 import { maakSorteerbaar } from './tables.js?v=20260812c';
+import { saveToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260812c';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -329,7 +330,7 @@ export function verplaatsVoorraadSelectie() {
   renderCovers();
 }
 
-export function verwijderArtikel(id) {
+export async function verwijderArtikel(id) {
   const c = state.COVERS.find(x => String(x.id) === String(id));
   if (!c) return;
   if (!window.confirm(`"${c.artikel}" verwijderen uit de voorraad?`)) return;
@@ -337,10 +338,20 @@ export function verwijderArtikel(id) {
   state.COVERS = state.COVERS.filter(x => String(x.id) !== String(id));
   selectie.delete(String(id));
   saveCoversData();
+  
+  // Naar Supabase sturen
+  try {
+    const ok = await deleteFromSupabase(c.id);
+    if (!ok) addToPendingQueue(c, 'delete', false);
+  } catch (err) {
+    console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
+    addToPendingQueue(c, 'delete', false);
+  }
+  
   renderCovers();
 }
 
-export function verwijderVoorraadSelectie() {
+export async function verwijderVoorraadSelectie() {
   if (!selectie.size) return;
   const weg = state.COVERS.filter(c => selectie.has(String(c.id)));
   const n = weg.length;
@@ -349,6 +360,18 @@ export function verwijderVoorraadSelectie() {
   state.COVERS = state.COVERS.filter(c => !selectie.has(String(c.id)));
   selectie.clear();
   saveCoversData();
+  
+  // Elk artikel naar Supabase sturen
+  for (const artikel of weg) {
+    try {
+      const ok = await deleteFromSupabase(artikel.id);
+      if (!ok) addToPendingQueue(artikel, 'delete', false);
+    } catch (err) {
+      console.warn('Supabase niet bereikbaar voor artikel, in wachtrij gezet:', err);
+      addToPendingQueue(artikel, 'delete', false);
+    }
+  }
+  
   renderCovers();
 }
 
@@ -528,7 +551,7 @@ const getal = (id, decimalen) => {
   return isNaN(n) ? null : n;
 };
 
-export function saveCover() {
+export async function saveCover() {
   const naam = el('cv-naam').value.trim();
   if (!naam) { el('cv-naam').focus(); return; }
 
@@ -560,6 +583,16 @@ export function saveCover() {
   else state.COVERS.push(obj);
 
   saveCoversData();
+  
+  // Naar Supabase sturen
+  try {
+    const ok = await saveToSupabase(obj, false);
+    if (!ok) addToPendingQueue(obj, 'update', false);
+  } catch (err) {
+    console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
+    addToPendingQueue(obj, 'update', false);
+  }
+  
   closeCoverModal();
   renderCovers();
 }
