@@ -596,3 +596,139 @@ export async function saveCover() {
   closeCoverModal();
   renderCovers();
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// IMPORT VOORRAAD UIT EXCEL (2022-2026)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export async function openImportModalVoorraad() {
+  const modal = el('modal-import-voorraad');
+  if (modal) modal.classList.add('open');
+  el('import-file-input').click();
+}
+
+export function sluitImportModal() {
+  const modal = el('modal-import-voorraad');
+  if (modal) modal.classList.remove('open');
+}
+
+export async function handleImportVoorraad(event) {
+  const files = event.target.files;
+  if (!files.length) return;
+
+  const status = el('import-status');
+  status.innerHTML = '⏳ Inlezen...';
+
+  try {
+    // Lees alle Excel-bestanden
+    const alleArtikelenNieuw = {};
+
+    for (const file of files) {
+      const data = await file.arrayBuffer();
+      const wb = window.XLSX.read(data);
+      
+      // Zoek Voorraad sheet
+      const sheetNaam = wb.SheetNames.find(s => 
+        s.toLowerCase().includes('voorraad') && s.toLowerCase().includes('mutatie')
+      );
+      
+      if (!sheetNaam) {
+        console.warn(`${file.name}: geen Voorraad & Mutaties sheet`);
+        status.innerHTML += `<br>⚠️ ${file.name}: geen Voorraad sheet`;
+        continue;
+      }
+
+      const ws = wb.Sheets[sheetNaam];
+      const rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      
+      if (rows.length < 3) continue;
+
+      // Vind header rij
+      let headerRow = 1;
+      for (let r = 0; r < Math.min(5, rows.length); r++) {
+        if (rows[r][0] === 'Artikel') {
+          headerRow = r;
+          break;
+        }
+      }
+
+      const header = rows[headerRow] || [];
+      const colPrijs = 13; // Kolom 14 (0-indexed: 13)
+      
+      // Vind jaar-kolommen
+      const jaarKolommen = {};
+      for (let c = colPrijs + 1; c < header.length; c++) {
+        const h = header[c];
+        if (h && /^202[0-9]$/.test(String(h).trim())) {
+          jaarKolommen[String(h).trim()] = c;
+        }
+      }
+
+      // Lees artikelen
+      for (let r = headerRow + 1; r < rows.length; r++) {
+        const row = rows[r];
+        if (!row[0] || row[0] === '') break;
+        
+        const artikel = String(row[0]).trim();
+        if (artikel.toLowerCase().startsWith('totaal')) break;
+
+        const prijs = parseFloat(row[colPrijs]) || 0;
+        const jaren = {};
+        
+        for (const [jaar, col] of Object.entries(jaarKolommen)) {
+          const eind = parseFloat(row[col]) || 0;
+          jaren[jaar] = { eind, verkocht: 0 };
+        }
+
+        if (!alleArtikelenNieuw[artikel]) {
+          alleArtikelenNieuw[artikel] = {
+            artikel,
+            prijs,
+            jaren: {}
+          };
+        }
+        // Merge jaren
+        Object.assign(alleArtikelenNieuw[artikel].jaren, jaren);
+      }
+    }
+
+    // Voeg toe aan state
+    let toegevoegd = 0, bijgewerkt = 0;
+    
+    for (const [artikelNaam, nieuwData] of Object.entries(alleArtikelenNieuw)) {
+      const bestaand = state.COVERS.find(a => a.artikel === artikelNaam);
+      
+      if (bestaand) {
+        if (!bestaand.jaren) bestaand.jaren = {};
+        Object.assign(bestaand.jaren, nieuwData.jaren);
+        if (nieuwData.prijs && !bestaand.prijs) bestaand.prijs = nieuwData.prijs;
+        bijgewerkt++;
+      } else {
+        state.COVERS.push({
+          id: `imp-${Date.now()}-${Math.random()}`,
+          artikel: artikelNaam,
+          categorie: standaardGroep(),
+          prijs: nieuwData.prijs || 0,
+          inkoop: 0,
+          inkoopprijs: 0,
+          voorraad: Object.values(nieuwData.jaren)[Object.keys(nieuwData.jaren).length - 1]?.eind || 0,
+          jaren: nieuwData.jaren
+        });
+        toegevoegd++;
+      }
+    }
+
+    saveCoversData();
+    
+    status.innerHTML = `✅ ${toegevoegd} toegevoegd, ${bijgewerkt} bijgewerkt<br><small style="color:var(--text-muted)">Sluit dit venster. Controleer de Voorraad-tab.</small>`;
+    
+    setTimeout(() => {
+      sluitImportModal();
+      renderCovers();
+    }, 1500);
+
+  } catch (e) {
+    status.innerHTML = `❌ Fout: ${e.message}`;
+    console.error('Import fout:', e);
+  }
+}

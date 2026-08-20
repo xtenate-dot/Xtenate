@@ -574,6 +574,7 @@
       <option value="uit">Uitverkocht</option>
       <option value="onbekend">Niet vastgelegd</option>
     </select>
+    <button class="btn btn-primary btn-ml" onclick="openImportModalVoorraad()" title="Import Excel 2022-2026">📥 Import</button>
     <button class="btn btn-primary btn-ml" onclick="openCoverModal()">+ Artikel toevoegen</button>
   </div>
 
@@ -671,6 +672,26 @@
 </aside>
 
 <!-- MODAL: PRODUCTGROEPEN -->
+<div class="modal-overlay" id="modal-import-voorraad">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Voorraad importeren (2022-2026)</h3>
+      <button class="btn-close" onclick="sluitImportModal()"></button>
+    </div>
+    <div class="modal-body" style="padding:1.5rem">
+      <p style="margin-bottom:1rem;color:var(--text-muted);font-size:13px">
+        Laad één of meer Excel-bestanden (Administratie_2022.xlsx t/m 2026.xlsx). 
+        De app leest de "Voorraad & Mutaties" sheet en voegt alle artikelen toe.
+      </p>
+      <input type="file" id="import-file-input" multiple accept=".xlsx" style="display:none" onchange="handleImportVoorraad(event)">
+      <button class="btn btn-primary" onclick="document.getElementById('import-file-input').click()" style="width:100%;margin-bottom:1rem">
+        📁 Kies Excel-bestanden
+      </button>
+      <div id="import-status" style="margin-top:1rem;font-size:12px;color:var(--text-muted)"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-groepen">
 <div class="modal">
   <h3>Productgroepen</h3>
