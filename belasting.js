@@ -27,13 +27,17 @@ export function renderBelasting() {
   const ct = document.getElementById('bel-card-title');
   if (ct) ct.textContent = `Berekening box 1 — indicatie ${jaar === 'all' ? 'alle jaren' : jaar}`;
 
-  const omzet = belTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t)=>s+t.bedrag,0);
-
-  // Alle overige kosten (niet 7010 = HNVI inkoop)
-  const kostenOverig = belTX.filter(t => isUitgave(t) && t.gb !== '7010').reduce((s,t)=>s+t.bedrag,0);
+  const omzetBank = belTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t)=>s+t.bedrag,0);
 
   // HNVI inkoop: filter op jaar van het lot (via datum)
   const hnviJaar = jaar === 'all' ? state.HNVI_LOTS : state.HNVI_LOTS.filter(i => i.datum && i.datum.startsWith(jaar));
+  
+  // HNVI-verkoopwaarde telt als opbrengst (verkochte loten)
+  const hnviOmzet = hnviJaar.filter(i => i.status === 'verkocht').reduce((s,i)=>s+(Number(i.verkoop)||0),0);
+  const omzetTotal = omzetBank + hnviOmzet;
+
+  // Alle overige kosten (niet 7010 = HNVI inkoop)
+  const kostenOverig = belTX.filter(t => isUitgave(t) && t.gb !== '7010').reduce((s,t)=>s+t.bedrag,0);
   const hnviVerkocht = hnviJaar.filter(i => i.status === 'verkocht').reduce((s,i)=>s+(Number(i.inkoop)||0),0);
   const hnviVoorraad = hnviJaar.filter(i => i.status === 'voorraad').reduce((s,i)=>s+(Number(i.inkoop)||0),0);
   const hnviVoorraadAantal = hnviJaar.filter(i => i.status === 'voorraad').length;
@@ -44,28 +48,50 @@ export function renderBelasting() {
   const hnviNietAftrekbaar = hnviVoorraad;
 
   // Voorraadartikelen tellen pas als kosten in het jaar dat ze verkocht zijn.
-  // Koop je iets in 2025 en verkoop je het in 2026, dan valt de inkoopprijs in
-  // 2026. Wat op 31 december nog op de plank ligt is geen kostenpost maar een
-  // bezitting, en staat hieronder apart als eindvoorraad.
+  // Twee manieren om in te voeren:
+  // 1) Inkoopprijs = prijs per stuk (€4,20), Ingekocht = aantal (100)
+  //    → COGS = €4,20 × aantal_verkocht
+  // 2) Inkoopprijs = totale prijs (€1250), Ingekocht = aantal (100)
+  //    → COGS = €1250 × (aantal_verkocht / 100)
+  // We controleren: als inkoopprijs groter is dan verwacht per-stuk bedrag,
+  // nemen we aan dat het een totaal is.
   const voorraadCogs = (state.COVERS || []).reduce((som, art) => {
-    const prijs = Number(art.inkoopprijs ?? art.inkoop ?? 0);
-    if (!(prijs > 0)) return som;                 // zonder inkoopprijs niets te rekenen
+    let prijsPerStuk = Number(art.inkoopprijs || 0);
+    const aantal_ingekocht = Number(art.inkoop || 0);
+    
+    if (!(prijsPerStuk > 0)) return som;  // geen prijs = geen kosten
+    
+    // Heuristische check: als inkoopprijs zeer groot is EN aantal ingekocht > 0,
+    // neem aan dat het de totale prijs is (bijv. €1250 ipv €12,50 per stuk)
+    if (prijsPerStuk > 1000 && aantal_ingekocht > 0) {
+      // Waarschijnlijk totale inkoopprijs → verdeel over aantal
+      prijsPerStuk = prijsPerStuk / aantal_ingekocht;
+    }
+    
     if (jaar === 'all') {
       const alle = Object.values(art.jaren || {})
         .reduce((n, j) => n + (Number(j?.verkocht) || 0), 0);
-      return som + prijs * alle;
+      return som + prijsPerStuk * alle;
     }
-    return som + prijs * (Number(art.jaren?.[jaar]?.verkocht) || 0);
+    return som + prijsPerStuk * (Number(art.jaren?.[jaar]?.verkocht) || 0);
   }, 0);
 
   // Waarde van wat er aan het eind van het jaar nog ligt (balanspost, geen kosten).
   const voorraadEind = (state.COVERS || []).reduce((som, art) => {
-    const prijs = Number(art.inkoopprijs ?? art.inkoop ?? 0);
-    if (!(prijs > 0)) return som;
+    let prijsPerStuk = Number(art.inkoopprijs || 0);
+    const aantal_ingekocht = Number(art.inkoop || 0);
+    
+    if (!(prijsPerStuk > 0)) return som;
+    
+    // Dezelfde heuristische check: totale prijs ipv per-stuk prijs
+    if (prijsPerStuk > 1000 && aantal_ingekocht > 0) {
+      prijsPerStuk = prijsPerStuk / aantal_ingekocht;
+    }
+    
     const aantal = jaar === 'all' || jaar === HUIDIG_JAAR
       ? Number(art.voorraad) || 0
       : Number(art.jaren?.[jaar]?.eind ?? 0);
-    return som + prijs * aantal;
+    return som + prijsPerStuk * aantal;
   }, 0);
 
   // Handmatige posten (huur, rente, verzekering) uit de kostenmodal.
@@ -73,11 +99,11 @@ export function renderBelasting() {
   const handmatigTotaal = handmatig.reduce((s, k) => s + (Number(k.bedrag) || 0), 0);
 
   const kostenAftrekbaar = kostenOverig + hnviAftrekbaar + voorraadCogs + handmatigTotaal;
-  const winst = omzet - kostenAftrekbaar;
+  const winst = omzetTotal - kostenAftrekbaar;
 
   // Jaarprojectie op basis van huidige maanden
   const maandenMet = [...new Set(belTX.filter(t=>isInkomst(t)&&isOmzet(t.gb)).map(t=>t.datum.slice(0,7)))].length || 1;
-  const omzetPerMaand = omzet / maandenMet;
+  const omzetPerMaand = omzetTotal / maandenMet;
   const kostenPerMaand = kostenAftrekbaar / maandenMet;
   const omzetJaar = Math.round(omzetPerMaand * 12);
   const kostenJaar = Math.round(kostenPerMaand * 12);
@@ -96,7 +122,7 @@ export function renderBelasting() {
   const belastbaar = winst > 0 ? Math.max(0, winst - mkb) : 0;
 
   document.getElementById('bel-metrics').innerHTML = `
-    <div class="metric"><div class="lbl">Bruto omzet</div><div class="val">${fmt(omzet)}</div></div>
+    <div class="metric"><div class="lbl">Bruto omzet</div><div class="val">${fmt(omzetTotal)}</div></div>
     <div class="metric"><div class="lbl">Aftrekbare kosten</div><div class="val neg">${fmt(kostenAftrekbaar)}</div></div>
     <div class="metric"><div class="lbl">Winst / verlies</div><div class="val ${winst>=0?'pos':'neg'}">${fmt(winst)}</div></div>
     <div class="metric"><div class="lbl">${ib<=0?'Geschatte teruggave':'Geschatte IB'}</div><div class="val ${ib<=0?'pos':'neg'}">${ib<=0?'+':''}${fmt(Math.abs(Math.round(ib)))}</div></div>
@@ -118,7 +144,7 @@ export function renderBelasting() {
     </div>` : '');
 
   document.getElementById('bel-calc').innerHTML = `
-    <div class="ib-row"><span>Bruto omzet</span><span>${fmt(omzet)}</span></div>
+    <div class="ib-row"><span>Bruto omzet</span><span>${fmt(omzetTotal)}</span></div>
     <div class="ib-row"><span>Overige kosten & inkoop</span><span class="neg">– ${fmt(kostenOverig)}</span></div>
     <div class="ib-row"><span>HNVI inkoop (verkochte loten)</span><span class="neg">– ${fmt(hnviAftrekbaar)}</span></div>
     <div class="ib-row"><span>Voorraad (inkoopprijs verkochte artikelen)</span><span class="neg">– ${fmt(voorraadCogs)}</span></div>
@@ -218,7 +244,10 @@ export function aangifteTekst(jaar = gekozenJaar()) {
     ? [...state.HIST_TX, ...state.TX]
     : (jaar === HUIDIG_JAAR ? state.TX : state.HIST_TX.filter(t => t.datum.startsWith(jaar)));
 
-  const omzet = belTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s, t) => s + t.bedrag, 0);
+  // Omzet uit bank (gb 8000, 8010, 8020)
+  const omzetBank = belTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s, t) => s + t.bedrag, 0);
+  
+  // Kosten (alles behalve 7010 = HNVI-inkoop die appart telt)
   const kostenOverig = belTX.filter(t => isUitgave(t) && t.gb !== '7010').reduce((s, t) => s + t.bedrag, 0);
 
   const hnviJaar = jaar === 'all' ? state.HNVI_LOTS : state.HNVI_LOTS.filter(i => i.datum && i.datum.startsWith(jaar));
@@ -226,23 +255,44 @@ export function aangifteTekst(jaar = gekozenJaar()) {
   const hnviInkoop = hnviJaar.length
     ? hnviJaar.filter(i => i.status === 'verkocht').reduce((s, i) => s + (Number(i.inkoop) || 0), 0)
     : hnviBank;
+  
+  // Omzet uit verkochte HNVI-loten
+  const hnviOmzet = hnviJaar.filter(i => i.status === 'verkocht').reduce((s, i) => s + (Number(i.verkoop) || 0), 0);
+  const omzet = omzetBank + hnviOmzet;
 
+  // Voorraad-COGS: artikelen die dit jaar verkocht zijn
   const cogs = (state.COVERS || []).reduce((som, art) => {
-    const prijs = Number(art.inkoopprijs ?? art.inkoop ?? 0);
-    if (!(prijs > 0)) return som;
-    if (jaar === 'all') {
-      return som + prijs * Object.values(art.jaren || {}).reduce((n, j) => n + (Number(j?.verkocht) || 0), 0);
+    let prijsPerStuk = Number(art.inkoopprijs || 0);
+    const aantal_ingekocht = Number(art.inkoop || 0);
+    
+    if (!(prijsPerStuk > 0)) return som;
+    
+    // Heuristische check: totale inkoopprijs ipv per-stuk
+    if (prijsPerStuk > 1000 && aantal_ingekocht > 0) {
+      prijsPerStuk = prijsPerStuk / aantal_ingekocht;
     }
-    return som + prijs * (Number(art.jaren?.[jaar]?.verkocht) || 0);
+    
+    if (jaar === 'all') {
+      return som + prijsPerStuk * Object.values(art.jaren || {}).reduce((n, j) => n + (Number(j?.verkocht) || 0), 0);
+    }
+    return som + prijsPerStuk * (Number(art.jaren?.[jaar]?.verkocht) || 0);
   }, 0);
 
   const eind = (state.COVERS || []).reduce((som, art) => {
-    const prijs = Number(art.inkoopprijs ?? art.inkoop ?? 0);
-    if (!(prijs > 0)) return som;
+    let prijsPerStuk = Number(art.inkoopprijs || 0);
+    const aantal_ingekocht = Number(art.inkoop || 0);
+    
+    if (!(prijsPerStuk > 0)) return som;
+    
+    // Dezelfde heuristische check
+    if (prijsPerStuk > 1000 && aantal_ingekocht > 0) {
+      prijsPerStuk = prijsPerStuk / aantal_ingekocht;
+    }
+    
     const aantal = jaar === 'all' || jaar === HUIDIG_JAAR
       ? Number(art.voorraad) || 0
       : Number(art.jaren?.[jaar]?.eind ?? 0);
-    return som + prijs * aantal;
+    return som + prijsPerStuk * aantal;
   }, 0);
 
   const handmatig = handmatigeKosten(jaar);
