@@ -20,7 +20,8 @@ import {
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie,
   draaiActieTerug, openGroepenModal, sluitGroepenModal, voegGroepToe, verwijderGroep, bewaarGroepen,
-  kiesVoorraadJaar, legVoorraadVast, verwijderArtikel, verwijderVoorraadSelectie
+  kiesVoorraadJaar, legVoorraadVast, verwijderArtikel, verwijderVoorraadSelectie,
+  openImportModalVoorraad, sluitImportModal, handleImportVoorraad
 } from './voorraad.js?v=20260820d';
 import {
   renderHNVI, berekenHNVIInkoop, openHNVIModal, openHNVISell, closeHNVIModal, saveHNVI,
@@ -76,6 +77,7 @@ Object.assign(window, {
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie,
   draaiActieTerug, openGroepenModal, sluitGroepenModal, voegGroepToe, verwijderGroep, bewaarGroepen,
   kiesVoorraadJaar, legVoorraadVast, verwijderArtikel, verwijderVoorraadSelectie,
+  openImportModalVoorraad, sluitImportModal, handleImportVoorraad,
   renderHNVI, berekenHNVIInkoop, openHNVIModal, openHNVISell, closeHNVIModal, saveHNVI,
   wisHNVIVerkoop, verwijderHNVIItem, toggleAllHNVI, updateHNVIDeleteBtn, verwijderGeselecteerdeHNVI,
   importHNVIFactuur, bevestigHNVIImport,
