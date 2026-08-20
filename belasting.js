@@ -28,15 +28,100 @@ export function handmatigeKosten(jaar) {
 // 7010 staat er niet bij: dat is HNVI en heeft zijn eigen afhandeling.
 // Verzendartikelen (7100) en transport (7900) zijn géén handelsvoorraad maar
 // directe kosten, dus die blijven gewoon aftrekbaar in het jaar zelf.
-const VOORRAADREKENINGEN_STANDAARD = ['7000', '7020'];
+/**
+ * Welke inkooprekeningen handelsvoorraad dragen. Dat leiden we af uit de
+ * artikelen zelf: elk artikel wijst zijn eigen rekening aan. Een rekening die
+ * alleen directe kosten draagt — filament bijvoorbeeld — blijft zo gewoon
+ * meteen aftrekbaar, en er hoeft nergens een vaste lijst onderhouden te worden.
+ *
+ * 7010 staat er nooit bij: HNVI heeft zijn eigen afhandeling.
+ */
+export function voorraadRekeningen(covers) {
+  const uit = new Set();
+  for (const art of covers || []) {
+    if (art?.handelsvoorraad === false) continue;
+    const gb = String(art?.inkoopGb || '7000');
+    if (gb !== '7010') uit.add(gb);
+  }
+  return [...uit];
+}
 
-/** Welke rekeningen als handelsvoorraad gelden; aan te passen door de gebruiker. */
-export function voorraadRekeningen() {
-  try {
-    const ruw = JSON.parse(localStorage.getItem('xtenate_voorraadrekeningen') || 'null');
-    if (Array.isArray(ruw) && ruw.length) return ruw.map(String);
-  } catch { /* val terug op de standaard */ }
-  return VOORRAADREKENINGEN_STANDAARD;
+export function isHandelsvoorraad(art) {
+  return art?.handelsvoorraad !== false;
+}
+
+/** De inkooprekening van een artikel; 7000 als er niets is gekozen. */
+export function inkoopRekeningVan(art) {
+  return String(art?.inkoopGb || '7000');
+}
+
+/**
+ * Leidt per inkooprekening af wat één stuk gekost heeft.
+ *
+ * De bank weet het totaalbedrag, de voorraadadministratie weet het aantal
+ * stuks. Samen geven ze de gemiddelde inkoopprijs: totaal besteed gedeeld
+ * door totaal ingekocht. Dat is de methode van de gemiddelde inkoopprijs, en
+ * die mag je voor de aangifte gebruiken zolang je hem elk jaar aanhoudt.
+ *
+ * We rekenen over alle jaren samen. Per jaar zou nauwkeuriger lijken, maar
+ * dan krijg je rare uitkomsten in een jaar waarin je niets inkocht en wel
+ * verkocht — en juist dat gebeurt hier vaak.
+ */
+export function inkoopprijzenUitBank(alleTX, covers) {
+  // stuks[gb][jaar] uit de voorraadadministratie, bedrag[gb][jaar] uit de bank.
+  const stuks = {}, bedrag = {};
+
+  for (const art of covers || []) {
+    if (!isHandelsvoorraad(art)) continue;
+    const gb = inkoopRekeningVan(art);
+    stuks[gb] = stuks[gb] || {};
+    for (const [jr, v] of Object.entries(art.jaren || {})) {
+      stuks[gb][jr] = (stuks[gb][jr] || 0) + (Number(v?.inkoop) || 0);
+    }
+  }
+
+  for (const t of alleTX || []) {
+    if (!isUitgave(t)) continue;
+    const gb = String(t.gb);
+    if (!stuks[gb]) continue;
+    const jr = String(t.datum || '').slice(0, 4);
+    bedrag[gb] = bedrag[gb] || {};
+    bedrag[gb][jr] = (bedrag[gb][jr] || 0) + (Number(t.bedrag) || 0);
+  }
+
+  const uit = {};
+  for (const gb of Object.keys(stuks)) {
+    const jaren = {};
+    let totStuks = 0, totBedrag = 0;
+    for (const jr of new Set([...Object.keys(stuks[gb] || {}), ...Object.keys(bedrag[gb] || {})])) {
+      const st = stuks[gb][jr] || 0;
+      const bd = (bedrag[gb] || {})[jr] || 0;
+      if (st > 0 && bd > 0) jaren[jr] = bd / st;
+      totStuks += st; totBedrag += bd;
+    }
+    uit[gb] = { jaren, gemiddeld: totStuks > 0 && totBedrag > 0 ? totBedrag / totStuks : null };
+  }
+  return uit;
+}
+
+/**
+ * Wat één stuk van dit artikel kostte. Een handmatig ingevulde inkoopprijs
+ * gaat voor; anders komt de prijs uit de bank.
+ */
+export function prijsPerStuk(art, prijzenUitBank, jaar) {
+  const handmatig = Number(art?.inkoopprijs);
+  if (handmatig > 0) {
+    // Soms staat het totaalbedrag van de bestelling in dit veld in plaats van
+    // de stuksprijs. Boven de duizend euro met een bekend aantal gaan we ervan
+    // uit dat het om het totaal gaat.
+    const aantal = Number(art.inkoop) || 0;
+    return handmatig > 1000 && aantal > 0 ? handmatig / aantal : handmatig;
+  }
+  if (!isHandelsvoorraad(art)) return 0;
+  const p = prijzenUitBank?.[inkoopRekeningVan(art)];
+  if (!p) return 0;
+  // Prijs van het jaar zelf; kocht je dat jaar niets in, dan het gemiddelde.
+  return (jaar && jaar !== 'all' ? p.jaren?.[jaar] : null) ?? p.gemiddeld ?? 0;
 }
 
 export function renderBelasting() {
@@ -59,7 +144,8 @@ export function renderBelasting() {
   // Kosten die meteen aftrekbaar zijn. Handelsvoorraad hoort hier niet bij:
   // die telt via de COGS-regel hieronder, anders staat dezelfde inkoop er twee
   // keer in. 7010 (HNVI) heeft zijn eigen regel.
-  const vrdRek = voorraadRekeningen();
+  const alleTX = [...state.HIST_TX, ...state.TX];
+  const vrdRek = voorraadRekeningen(state.COVERS);
   const isVoorraadInkoop = t => t.gb === '7010' || vrdRek.includes(String(t.gb));
   const kostenOverig = belTX.filter(t => isUitgave(t) && !isVoorraadInkoop(t)).reduce((s,t)=>s+t.bedrag,0);
 
@@ -85,43 +171,31 @@ export function renderBelasting() {
   //    → COGS = €1250 × (aantal_verkocht / 100)
   // We controleren: als inkoopprijs groter is dan verwacht per-stuk bedrag,
   // nemen we aan dat het een totaal is.
-  const voorraadCogs = (state.COVERS || []).reduce((som, art) => {
-    let prijsPerStuk = Number(art.inkoopprijs || 0);
-    const aantal_ingekocht = Number(art.inkoop || 0);
-    
-    if (!(prijsPerStuk > 0)) return som;  // geen prijs = geen kosten
-    
-    // Heuristische check: als inkoopprijs zeer groot is EN aantal ingekocht > 0,
-    // neem aan dat het de totale prijs is (bijv. €1250 ipv €12,50 per stuk)
-    if (prijsPerStuk > 1000 && aantal_ingekocht > 0) {
-      // Waarschijnlijk totale inkoopprijs → verdeel over aantal
-      prijsPerStuk = prijsPerStuk / aantal_ingekocht;
-    }
-    
-    if (jaar === 'all') {
-      const alle = Object.values(art.jaren || {})
-        .reduce((n, j) => n + (Number(j?.verkocht) || 0), 0);
-      return som + prijsPerStuk * alle;
-    }
-    return som + prijsPerStuk * (Number(art.jaren?.[jaar]?.verkocht) || 0);
+  // Prijs per stuk komt uit de bank: bedrag op de inkooprekening gedeeld door
+  // het aantal ingekochte stuks. Een handmatige inkoopprijs gaat daar voor.
+  const prijzenUitBank = inkoopprijzenUitBank(alleTX, state.COVERS);
+
+  const handelsartikelen = (state.COVERS || []).filter(isHandelsvoorraad);
+
+  // Inkoopwaarde van wat er dit jaar verkocht is. Dat is de kostenpost, niet
+  // het bedrag dat je bij de inkoop hebt overgemaakt.
+  const voorraadCogs = handelsartikelen.reduce((som, art) => {
+    const prijs = prijsPerStuk(art, prijzenUitBank, jaar);
+    if (!(prijs > 0)) return som;
+    const stuks = jaar === 'all'
+      ? Object.values(art.jaren || {}).reduce((n, j) => n + (Number(j?.verkocht) || 0), 0)
+      : Number(art.jaren?.[jaar]?.verkocht) || 0;
+    return som + prijs * stuks;
   }, 0);
 
   // Waarde van wat er aan het eind van het jaar nog ligt (balanspost, geen kosten).
-  const voorraadEind = (state.COVERS || []).reduce((som, art) => {
-    let prijsPerStuk = Number(art.inkoopprijs || 0);
-    const aantal_ingekocht = Number(art.inkoop || 0);
-    
-    if (!(prijsPerStuk > 0)) return som;
-    
-    // Dezelfde heuristische check: totale prijs ipv per-stuk prijs
-    if (prijsPerStuk > 1000 && aantal_ingekocht > 0) {
-      prijsPerStuk = prijsPerStuk / aantal_ingekocht;
-    }
-    
-    const aantal = jaar === 'all' || jaar === HUIDIG_JAAR
+  const voorraadEind = handelsartikelen.reduce((som, art) => {
+    const prijs = prijsPerStuk(art, prijzenUitBank, jaar);
+    if (!(prijs > 0)) return som;
+    const stuks = jaar === 'all' || jaar === HUIDIG_JAAR
       ? Number(art.voorraad) || 0
       : Number(art.jaren?.[jaar]?.eind ?? 0);
-    return som + prijsPerStuk * aantal;
+    return som + prijs * stuks;
   }, 0);
 
   // Handmatige posten (huur, rente, verzekering) uit de kostenmodal.
@@ -166,13 +240,40 @@ export function renderBelasting() {
   // niet waar je moet zijn.
   const punten = [];
 
-  const zonderPrijs = (state.COVERS || []).filter(a => !(Number(a.inkoopprijs) > 0));
+  // Een artikel telt pas mee als er een prijs per stuk uit te rekenen valt.
+  // Dat lukt niet als de rekening geen bankmutaties heeft, of als er nergens
+  // een ingekocht aantal staat om het bedrag over te verdelen.
+  const zonderPrijs = handelsartikelen.filter(a => !(prijsPerStuk(a, prijzenUitBank, jaar) > 0));
   if (zonderPrijs.length) {
     const namen = zonderPrijs.slice(0, 3).map(a => a.artikel).filter(Boolean).join(', ');
     punten.push({
       soort: 'let-op',
-      tekst: `${zonderPrijs.length} ${zonderPrijs.length === 1 ? 'artikel heeft' : 'artikelen hebben'} geen inkoopprijs${namen ? ` (${escHtml(namen)}${zonderPrijs.length > 3 ? ', …' : ''})` : ''}. Die tellen niet mee als inkoopkosten. Vul de inkoopprijs in bij Voorraad.`
+      tekst: `Voor ${zonderPrijs.length} ${zonderPrijs.length === 1 ? 'artikel is' : 'artikelen is'} geen inkoopprijs te bepalen${namen ? ` (${escHtml(namen)}${zonderPrijs.length > 3 ? ', …' : ''})` : ''}. Die tellen niet mee als inkoopkosten. Vul bij Voorraad het aantal ingekochte stuks in, of zet de inkoopprijs met de hand.`
     });
+  }
+
+  // Toon de afgeleide prijs, zodat je kunt nagaan of die klopt met wat je
+  // werkelijk betaalde. En waarschuw als hij per jaar sterk verschilt: dan
+  // staan er waarschijnlijk heel verschillende artikelen op één rekening.
+  for (const [gb, p] of Object.entries(prijzenUitBank)) {
+    const dit = jaar !== 'all' ? p.jaren?.[jaar] : null;
+    const gebruikt = dit ?? p.gemiddeld;
+    if (!(gebruikt > 0)) continue;
+
+    punten.push({
+      soort: 'gunstig',
+      tekst: `Inkoopprijs op ${gb} berekend uit de bank: ${fmt(gebruikt)} per stuk${dit ? ` (bedrag ${jaar} gedeeld door de stuks van ${jaar})` : ' (gemiddelde over alle jaren, want dit jaar staat er geen inkoop op deze rekening)'}.`
+    });
+
+    const reeks = Object.values(p.jaren || {});
+    if (reeks.length > 1 && Math.max(...reeks) > Math.min(...reeks) * 2.5) {
+      const perJaar = Object.entries(p.jaren).sort()
+        .map(([j, v]) => `${j} ${fmt(v)}`).join(', ');
+      punten.push({
+        soort: 'waarschuwing',
+        tekst: `De berekende prijs op ${gb} loopt sterk uiteen: ${perJaar}. Op deze rekening staan blijkbaar heel verschillende artikelen door elkaar, en dan zegt één gemiddelde weinig. Vul bij de dure artikelen zelf een inkoopprijs in, of geef ze een eigen inkooprekening.`
+      });
+    }
   }
 
   // Artikelen met een prijs, maar zonder verkoopaantal voor dit jaar: dan blijft
@@ -367,7 +468,8 @@ export function aangifteTekst(jaar = gekozenJaar()) {
   
   // Directe kosten. Handelsvoorraad en HNVI vallen hierbuiten: die tellen via
   // de inkoopwaarde van de omzet, anders staat dezelfde inkoop er dubbel in.
-  const vrdRek = voorraadRekeningen();
+  const vrdRek = voorraadRekeningen(state.COVERS);
+  const prijzenUitBank = inkoopprijzenUitBank([...state.HIST_TX, ...state.TX], state.COVERS);
   const kostenOverig = belTX
     .filter(t => isUitgave(t) && t.gb !== '7010' && !vrdRek.includes(String(t.gb)))
     .reduce((s, t) => s + t.bedrag, 0);
@@ -383,38 +485,24 @@ export function aangifteTekst(jaar = gekozenJaar()) {
   const omzet = omzetBank + hnviOmzet;
 
   // Voorraad-COGS: artikelen die dit jaar verkocht zijn
-  const cogs = (state.COVERS || []).reduce((som, art) => {
-    let prijsPerStuk = Number(art.inkoopprijs || 0);
-    const aantal_ingekocht = Number(art.inkoop || 0);
-    
-    if (!(prijsPerStuk > 0)) return som;
-    
-    // Heuristische check: totale inkoopprijs ipv per-stuk
-    if (prijsPerStuk > 1000 && aantal_ingekocht > 0) {
-      prijsPerStuk = prijsPerStuk / aantal_ingekocht;
-    }
-    
-    if (jaar === 'all') {
-      return som + prijsPerStuk * Object.values(art.jaren || {}).reduce((n, j) => n + (Number(j?.verkocht) || 0), 0);
-    }
-    return som + prijsPerStuk * (Number(art.jaren?.[jaar]?.verkocht) || 0);
+  const handelsartikelen = (state.COVERS || []).filter(isHandelsvoorraad);
+
+  const cogs = handelsartikelen.reduce((som, art) => {
+    const prijs = prijsPerStuk(art, prijzenUitBank, jaar);
+    if (!(prijs > 0)) return som;
+    const stuks = jaar === 'all'
+      ? Object.values(art.jaren || {}).reduce((n, j) => n + (Number(j?.verkocht) || 0), 0)
+      : Number(art.jaren?.[jaar]?.verkocht) || 0;
+    return som + prijs * stuks;
   }, 0);
 
-  const eind = (state.COVERS || []).reduce((som, art) => {
-    let prijsPerStuk = Number(art.inkoopprijs || 0);
-    const aantal_ingekocht = Number(art.inkoop || 0);
-    
-    if (!(prijsPerStuk > 0)) return som;
-    
-    // Dezelfde heuristische check
-    if (prijsPerStuk > 1000 && aantal_ingekocht > 0) {
-      prijsPerStuk = prijsPerStuk / aantal_ingekocht;
-    }
-    
-    const aantal = jaar === 'all' || jaar === HUIDIG_JAAR
+  const eind = handelsartikelen.reduce((som, art) => {
+    const prijs = prijsPerStuk(art, prijzenUitBank, jaar);
+    if (!(prijs > 0)) return som;
+    const stuks = jaar === 'all' || jaar === HUIDIG_JAAR
       ? Number(art.voorraad) || 0
       : Number(art.jaren?.[jaar]?.eind ?? 0);
-    return som + prijsPerStuk * aantal;
+    return som + prijs * stuks;
   }, 0);
 
   const handmatig = handmatigeKosten(jaar);
