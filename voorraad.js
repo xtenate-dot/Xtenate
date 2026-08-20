@@ -515,6 +515,12 @@ export function bewaarGroepen() {
 
 const VELDEN = ['cv-naam','cv-cat','cv-ink','cv-vk','cv-vrd','cv-26','cv-zoek','cv-prijs','cv-inkoopprijs','cv-min','cv-jaar-eind'];
 
+/** Keuzevelden hebben een zinnige standaard in plaats van leeg. */
+function zetKeuzeStandaarden() {
+  el('cv-handelsvoorraad').value = 'ja';
+  el('cv-inkoop-gb').value = '7000';
+}
+
 /** Het jaar waarvoor de modal de eindstand toont. */
 function modalJaar() { return gekozenJaar === 'nu' ? HUIDIG_JAAR : gekozenJaar; }
 
@@ -530,6 +536,7 @@ export function openCoverModal() {
   VELDEN.forEach(id => { if (el(id)) el(id).value = ''; });
   zetJaarLabels();
   el('cv-cat').value = actieveTab === 'alle' ? standaardGroep() : actieveTab;
+  zetKeuzeStandaarden();
   el('modal-cover').classList.add('open');
   el('cv-naam').focus();
 }
@@ -552,7 +559,25 @@ export function openCoverEdit(id) {
   el('cv-prijs').value = c.prijs ?? '';
   el('cv-inkoopprijs').value = c.inkoopprijs ?? '';
   el('cv-min').value = c.minVoorraad ?? '';
+  el('cv-handelsvoorraad').value = c.handelsvoorraad === false ? 'nee' : 'ja';
+  el('cv-inkoop-gb').value = c.inkoopGb || '7000';
   el('modal-cover').classList.add('open');
+  
+  // Event listener: auto-bereken eindstand
+  const berekenEindstand = () => {
+    const jVorig = String(Number(j) - 1);
+    const beginVoorraad = c.jaren?.[jVorig]?.eind ?? 0;
+    const inkoopDitJaar = c.jaren?.[j]?.inkoop ?? 0;
+    const verkochtDitJaar = getal('cv-26');
+    
+    if (verkochtDitJaar != null) {
+      const einde = beginVoorraad + inkoopDitJaar - (verkochtDitJaar || 0);
+      el('cv-jaar-eind').value = einde;
+    }
+  };
+  
+  el('cv-26').removeEventListener('input', berekenEindstand);
+  el('cv-26').addEventListener('input', berekenEindstand);
 }
 
 export function closeCoverModal() { el('modal-cover').classList.remove('open'); }
@@ -571,12 +596,33 @@ export async function saveCover() {
 
   const bestaand = state.COVERS.find(c => c.id === state.editCoverId);
   const j = modalJaar();
-  const verkocht = getal('cv-26');
-  const eind = getal('cv-jaar-eind');
+  
+  // Dit jaar's aantallen
+  const verkochtDitJaar = getal('cv-26');        // verkocht in dit boekjaar
+  const eindIngevoerd = getal('cv-jaar-eind');   // eindstand 31-12
 
+  // Auto-bereken eindstand voor dit jaar
+  // Eindstand = Begin + Ingekocht - Verkocht
+  // Begin = eindstand vorig jaar
+  let eindEindstand = eindIngevoerd;
+  if (verkochtDitJaar != null) {
+    const jVorig = String(Number(j) - 1);
+    const beginVoorraad = bestaand?.jaren?.[jVorig]?.eind ?? 0;
+    const inkoopDitJaar = bestaand?.jaren?.[j]?.inkoop ?? 0;
+    eindEindstand = beginVoorraad + inkoopDitJaar - (verkochtDitJaar || 0);
+  }
+
+  // Sla op in jaren
   const jaren = { ...(bestaand?.jaren || {}) };
-  if (verkocht != null || eind != null) jaren[j] = { eind, verkocht };
-  else delete jaren[j];
+  if (verkochtDitJaar != null || eindEindstand != null) {
+    jaren[j] = {
+      ...(jaren[j] || {}),
+      eind: eindEindstand,
+      verkocht: verkochtDitJaar ?? jaren[j]?.verkocht
+    };
+  } else {
+    delete jaren[j];
+  }
 
   const obj = {
     id: state.editCoverId || state.nxtCover++,
@@ -585,11 +631,13 @@ export async function saveCover() {
     inkoop: getal('cv-ink') ?? 0,
     verkoop: getal('cv-vk') ?? 0,
     voorraad: getal('cv-vrd') ?? 0,
-    omzet2026: j === HUIDIG_JAAR ? (verkocht ?? 0) : (bestaand?.omzet2026 ?? 0),
+    omzet2026: j === HUIDIG_JAAR ? (verkochtDitJaar ?? 0) : (bestaand?.omzet2026 ?? 0),
     zoekterm: el('cv-zoek').value.trim(),
     prijs: getal('cv-prijs', true),
     inkoopprijs: getal('cv-inkoopprijs', true),
     minVoorraad: getal('cv-min'),
+    handelsvoorraad: el('cv-handelsvoorraad').value !== 'nee',
+    inkoopGb: el('cv-inkoop-gb').value || '7000',
     jaren
   };
 
