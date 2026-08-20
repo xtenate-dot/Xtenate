@@ -36,21 +36,20 @@ export function handmatigeKosten(jaar) {
  *
  * 7010 staat er nooit bij: HNVI heeft zijn eigen afhandeling.
  */
-export function voorraadRekeningen(covers) {
-  const uit = new Set();
-  for (const art of covers || []) {
-    if (art?.handelsvoorraad === false) continue;
-    const gb = String(art?.inkoopGb || '7000');
-    if (gb !== '7010') uit.add(gb);
-  }
-  return [...uit];
+/**
+ * Welke inkooprekeningen artikel-voorraad dragen: AliExpress (7000) en MijnMagie (7020).
+ * HNVI (7010) gaat volledig via loten. Verzendartikelen (7100) zijn directe kosten.
+ */
+export function voorraadRekeningen() {
+  return ['7000', '7020'];
 }
 
 export function isHandelsvoorraad(art) {
-  return art?.handelsvoorraad !== false;
+  if (art?.handelsvoorraad === false) return false;
+  const gb = String(art?.inkoopGb || '7000');
+  return gb === '7000' || gb === '7020';
 }
 
-/** De inkooprekening van een artikel; 7000 als er niets is gekozen. */
 export function inkoopRekeningVan(art) {
   return String(art?.inkoopGb || '7000');
 }
@@ -238,11 +237,32 @@ export function renderBelasting() {
   // Punten die de berekening stil kunnen vertekenen. Elk punt zegt wat er aan
   // de hand is en wat je moet doen; anders weet je wel dat er iets mis is maar
   // niet waar je moet zijn.
+  // HNVI-controle: bank 7010 vs ingevoerde loten
+  const bank7010 = (alleTX || [])
+    .filter(t => t.type === 'uitgave' && String(t.gb) === '7010')
+    .reduce((som, t) => som + (Number(t.bedrag) || 0), 0);
+  const hnviLoten = (state.HNVI_LOTS || [])
+    .reduce((som, lot) => som + (Number(lot.inkoop) || 0), 0);
+  const hnviMissing = Math.max(0, bank7010 - hnviLoten);
+
   const punten = [];
 
   // Een artikel telt pas mee als er een prijs per stuk uit te rekenen valt.
   // Dat lukt niet als de rekening geen bankmutaties heeft, of als er nergens
   // een ingekocht aantal staat om het bedrag over te verdelen.
+  // HNVI-controle
+  if (hnviMissing > 0.01) {
+    punten.unshift({
+      soort: 'waarschuwing',
+      tekst: `HNVI-inkoop niet volledig ingevoerd: € ${fmt(bank7010)} op GB 7010, maar € ${fmt(hnviLoten)} in loten. Nog in te voeren: € ${fmt(hnviMissing)}.`
+    });
+  } else if (bank7010 > 0) {
+    punten.unshift({
+      soort: 'gunstig',
+      tekst: `HNVI-controle OK: € ${fmt(bank7010)} op GB 7010 = € ${fmt(hnviLoten)} in loten ingevoerd.`
+    });
+  }
+
   const zonderPrijs = handelsartikelen.filter(a => !(prijsPerStuk(a, prijzenUitBank, jaar) > 0));
   if (zonderPrijs.length) {
     const namen = zonderPrijs.slice(0, 3).map(a => a.artikel).filter(Boolean).join(', ');
