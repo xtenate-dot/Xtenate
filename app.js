@@ -9,7 +9,7 @@ import { renderFacturen, kiesFactuurTab } from './facturen-ui.js?v=20260812c';
 import { renderBeheer } from './beheer.js?v=20260812c';
 import { renderPortaal } from './home.js?v=20260812c';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260812c';
-import { renderBelasting } from './belasting.js?v=20260812c';
+import { renderBelasting, openExtraKosten, kopieerAangifte, downloadAangifte } from './belasting.js?v=20260820';
 import { renderCrediteuren, wisselJaarCrediteuren } from './crediteuren.js?v=20260819';
 import { renderDebiteuren, wisselJaarDebiteuren } from './debiteuren.js?v=20260819';
 import {
@@ -69,7 +69,8 @@ Object.assign(window, {
   renderFacturen, kiesFactuurTab, renderBeheer, renderPortaal,
   renderCrediteuren, wisselJaarCrediteuren, renderDebiteuren, wisselJaarDebiteuren,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
-  renderBelasting, renderControle, klapControleUit, toonAlleControleRegels,
+  renderBelasting, openExtraKosten, kopieerAangifte, downloadAangifte,
+  renderControle, klapControleUit, toonAlleControleRegels,
   verbergControleMelding, zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen,
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie,
