@@ -263,7 +263,6 @@
 <div id="p-overzicht" class="page">
   <div class="page-head">
     <div class="page-title">Overzicht</div>
-    <div class="page-sub">Hoe je onderneming ervoor staat</div>
   </div>
 
   <div class="kpi-grid" id="home-kpi"></div>
@@ -322,7 +321,6 @@
 <div id="p-bank" class="page">
   <div class="page-head">
     <div class="page-title">Bank</div>
-    <div class="page-sub">Alle mutaties per rekening</div>
   </div>
   <div class="toolbar">
     <select id="f-jaar-bank" onchange="renderBank()" aria-label="Jaar">
@@ -368,7 +366,6 @@
 <div id="p-facturen" class="page">
   <div class="page-head">
     <div class="page-title">Facturen</div>
-    <div class="page-sub">Openstaande verkoop- en inkoopfacturen</div>
   </div>
   <div class="vtabs" id="facturen-tabs" role="tablist"></div>
   <div id="facturen-inhoud"></div>
@@ -378,7 +375,6 @@
 <div id="p-crediteuren" class="page">
   <div class="page-head">
     <div class="page-title">Crediteuren</div>
-    <div class="page-sub">Wie betaal ik en hoeveel?</div>
   </div>
   <div class="page-controls">
     <select id="f-jaar-crediteuren" onchange="wisselJaarCrediteuren()" aria-label="Jaar">
@@ -401,7 +397,6 @@
 <div id="p-debiteuren" class="page">
   <div class="page-head">
     <div class="page-title">Debiteuren</div>
-    <div class="page-sub">Wie betaalt mij en hoeveel?</div>
   </div>
   <div class="page-controls">
     <select id="f-jaar-debiteuren" onchange="wisselJaarDebiteuren()" aria-label="Jaar">
@@ -424,7 +419,6 @@
 <div id="p-beheer" class="page">
   <div class="page-head">
     <div class="page-title">Beheer</div>
-    <div class="page-sub">Gegevens, onderhoud en systeem</div>
   </div>
   <div id="beheer-inhoud"></div>
 </div>
@@ -433,7 +427,6 @@
 <div id="p-grootboek" class="page">
   <div class="page-head">
     <div class="page-title">Grootboek</div>
-    <div class="page-sub">Saldo per rekening, met doorklik naar de boekingen</div>
   </div>
 
   <div class="toolbar">
@@ -505,9 +498,9 @@
 <div id="p-belasting" class="page">
   <div class="page-head">
     <div class="page-title">Belasting</div>
-    <div class="page-sub">Wat je over dit jaar aan inkomstenbelasting kunt verwachten</div>
   </div>
   <div class="toolbar">
+    <button type="button" id="bel-toggle-aangifte" onclick="document.getElementById('bel-calc').style.display = document.getElementById('bel-calc').style.display === 'none' ? '' : 'none'; document.getElementById('aangifte-container').style.display = document.getElementById('aangifte-container').style.display === 'none' ? '' : 'none'; renderBelasting();" style="padding: 6px 12px; background: var(--blue); color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: bold;">📋 Aangifte IB</button>
     <select id="f-jaar-bel" onchange="renderBelasting()" aria-label="Jaar">
       <option value="2026">2026</option>
       <option value="2025">2025</option>
@@ -525,6 +518,7 @@
       <div style="position:relative;height:170px"><canvas id="c-bel" role="img" aria-label="Omzet per kanaal"></canvas></div>
       <div id="bel-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:11px;color:var(--text-muted)"></div>
     </div>
+    <div id="aangifte-container" style="display: none;"></div>
   </div>
   <div class="card"><div class="card-title">Fiscale verwerking per grootboekrekening</div>
     <table><thead><tr><th style="width:44px">Nr.</th><th>Omschrijving</th><th style="width:130px">Fiscale behandeling</th><th style="width:92px;text-align:right">Bedrag</th></tr></thead>
@@ -536,7 +530,6 @@
 <div id="p-controle" class="page">
   <div class="page-head">
     <div class="page-title">Controle</div>
-    <div class="page-sub">Wat er nog aandacht nodig heeft in je administratie</div>
   </div>
 
   <div class="toolbar">
@@ -561,7 +554,6 @@
 <div id="p-voorraad" class="page">
   <div class="page-head">
     <div class="page-title">Voorraad</div>
-    <div class="page-sub">Wat er ligt, wat het waard is en wat bijna op is</div>
   </div>
 
   <div class="kpi-grid" id="voorraad-kpi" style="margin-bottom:var(--sp-5)"></div>
@@ -626,7 +618,6 @@
 <div id="p-hnvi" class="page">
   <div class="page-head">
     <div class="page-title">HNVI / Xtenate</div>
-    <div class="page-sub">Loten inkopen, verkopen en de marge volgen</div>
   </div>
   <div class="metrics" id="hnvi-metrics"></div>
   <div class="toolbar">

@@ -4,6 +4,7 @@ import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260812c';
 import { maakSorteerbaar } from './tables.js?v=20260812c';
 import { openApiKeyModal } from './modals.js?v=20260812c';
 import { saveHnviData, state } from './storage.js?v=20260812c';
+import { saveToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260812c';
 
 export function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
@@ -109,42 +110,91 @@ export function openHNVISell(id) {
 
 export function closeHNVIModal() { document.getElementById('modal-hnvi').classList.remove('open'); }
 
-export function saveHNVI() {
+export async function saveHNVI() {
+  let gewijzigdLot = null;
+  
   if (state.hnviSellId) {
     const vk = bedragUit('hn-vk');
     const noot = document.getElementById('hn-noot').value;
     const nieuweStatus = vk > 0 ? 'verkocht' : 'voorraad';
     const nieuweInkoop = bedragUit('hn-ik');
-    state.HNVI_LOTS = state.HNVI_LOTS.map(i => String(i.id)===String(state.hnviSellId) ? {
-      ...i,
+    gewijzigdLot = {
+      id: state.hnviSellId,
       datum: document.getElementById('hn-d').value,
       omschr: document.getElementById('hn-o').value,
       inkoop: nieuweInkoop,
       verkoop: vk > 0 ? vk : null,
       status: nieuweStatus,
       noot
-    } : i);
+    };
+    state.HNVI_LOTS = state.HNVI_LOTS.map(i => String(i.id)===String(state.hnviSellId) ? gewijzigdLot : i);
   } else {
     const newId = state.nxtHnvi++;
     state.hnviLaatsteDatum = document.getElementById('hn-d').value;
-    state.HNVI_LOTS.push({id:newId, _key:String(newId), datum:state.hnviLaatsteDatum, omschr:document.getElementById('hn-o').value, inkoop:bedragUit('hn-ik'), verkoop:null, status:'voorraad', noot:document.getElementById('hn-noot').value});
+    gewijzigdLot = {
+      id: newId,
+      _key: String(newId),
+      datum: state.hnviLaatsteDatum,
+      omschr: document.getElementById('hn-o').value,
+      inkoop: bedragUit('hn-ik'),
+      verkoop: null,
+      status: 'voorraad',
+      noot: document.getElementById('hn-noot').value
+    };
+    state.HNVI_LOTS.push(gewijzigdLot);
   }
+  
   saveHnviData();
+  
+  // Naar Supabase sturen (of wachtrij als offline)
+  try {
+    const ok = await saveToSupabase(gewijzigdLot, false);
+    if (!ok) addToPendingQueue(gewijzigdLot, 'update', false);
+  } catch (err) {
+    console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
+    addToPendingQueue(gewijzigdLot, 'update', false);
+  }
+  
   closeHNVIModal();
   renderHNVI();
 }
 
-export function wisHNVIVerkoop(id) {
+export async function wisHNVIVerkoop(id) {
   if (!window.confirm('Verkoopbedrag verwijderen en lot terug op voorraad zetten?')) return;
-  state.HNVI_LOTS = state.HNVI_LOTS.map(i => String(i.id)===String(id) ? {...i, verkoop:null, status:'voorraad'} : i);
+  const gewijzigd = state.HNVI_LOTS.find(i => String(i.id)===String(id));
+  if (!gewijzigd) return;
+  
+  const bijgewerkt = {...gewijzigd, verkoop:null, status:'voorraad'};
+  state.HNVI_LOTS = state.HNVI_LOTS.map(i => String(i.id)===String(id) ? bijgewerkt : i);
   saveHnviData();
+  
+  try {
+    const ok = await saveToSupabase(bijgewerkt, false);
+    if (!ok) addToPendingQueue(bijgewerkt, 'update', false);
+  } catch (err) {
+    console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
+    addToPendingQueue(bijgewerkt, 'update', false);
+  }
+  
   renderHNVI();
 }
 
-export function verwijderHNVIItem(key) {
+export async function verwijderHNVIItem(key) {
   if (!window.confirm('Dit lot verwijderen?')) return;
+  const teVerwijderen = state.HNVI_LOTS.find(i => String(i._key||i.id) === String(key));
+  if (!teVerwijderen) return;
+  
   state.HNVI_LOTS = state.HNVI_LOTS.filter(i => String(i._key||i.id) !== String(key));
   saveHnviData();
+  
+  try {
+    const ok = await deleteFromSupabase(teVerwijderen.id);
+    if (!ok) addToPendingQueue(teVerwijderen, 'delete', false);
+  } catch (err) {
+    console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
+    addToPendingQueue(teVerwijderen, 'delete', false);
+  }
+  
   renderHNVI();
 }
 
