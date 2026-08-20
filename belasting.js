@@ -19,6 +19,26 @@ export function handmatigeKosten(jaar) {
   }
 }
 
+// Grootboeknummers waarop handelsvoorraad wordt ingekocht: spullen die je
+// doorverkoopt. Die mag je niet als kosten nemen op het moment van inkopen,
+// maar pas als ze verkocht zijn — dat rekent de app uit via de Voorraad-tab
+// (COGS). Zouden we de bankmutatie óók meetellen, dan telt dezelfde inkoop
+// dubbel en wordt de aftrek te hoog.
+//
+// 7010 staat er niet bij: dat is HNVI en heeft zijn eigen afhandeling.
+// Verzendartikelen (7100) en transport (7900) zijn géén handelsvoorraad maar
+// directe kosten, dus die blijven gewoon aftrekbaar in het jaar zelf.
+const VOORRAADREKENINGEN_STANDAARD = ['7000', '7020'];
+
+/** Welke rekeningen als handelsvoorraad gelden; aan te passen door de gebruiker. */
+export function voorraadRekeningen() {
+  try {
+    const ruw = JSON.parse(localStorage.getItem('xtenate_voorraadrekeningen') || 'null');
+    if (Array.isArray(ruw) && ruw.length) return ruw.map(String);
+  } catch { /* val terug op de standaard */ }
+  return VOORRAADREKENINGEN_STANDAARD;
+}
+
 export function renderBelasting() {
   const jaar = document.getElementById('f-jaar-bel') ? document.getElementById('f-jaar-bel').value : '2026';
   const belTX = jaar === 'all' ? [...state.HIST_TX, ...state.TX] : (jaar === '2026' ? state.TX : state.HIST_TX.filter(t => t.datum.startsWith(jaar)));
@@ -36,8 +56,18 @@ export function renderBelasting() {
   const hnviOmzet = hnviJaar.filter(i => i.status === 'verkocht').reduce((s,i)=>s+(Number(i.verkoop)||0),0);
   const omzetTotal = omzetBank + hnviOmzet;
 
-  // Alle overige kosten (niet 7010 = HNVI inkoop)
-  const kostenOverig = belTX.filter(t => isUitgave(t) && t.gb !== '7010').reduce((s,t)=>s+t.bedrag,0);
+  // Kosten die meteen aftrekbaar zijn. Handelsvoorraad hoort hier niet bij:
+  // die telt via de COGS-regel hieronder, anders staat dezelfde inkoop er twee
+  // keer in. 7010 (HNVI) heeft zijn eigen regel.
+  const vrdRek = voorraadRekeningen();
+  const isVoorraadInkoop = t => t.gb === '7010' || vrdRek.includes(String(t.gb));
+  const kostenOverig = belTX.filter(t => isUitgave(t) && !isVoorraadInkoop(t)).reduce((s,t)=>s+t.bedrag,0);
+
+  // Wat er dit jaar op die voorraadrekeningen is uitgegeven. Niet als kosten
+  // geteld, maar wel getoond zodat je ziet waar het gebleven is.
+  const voorraadInkoopBank = belTX
+    .filter(t => isUitgave(t) && vrdRek.includes(String(t.gb)))
+    .reduce((s,t)=>s+t.bedrag,0);
   const hnviVerkocht = hnviJaar.filter(i => i.status === 'verkocht').reduce((s,i)=>s+(Number(i.inkoop)||0),0);
   const hnviVoorraad = hnviJaar.filter(i => i.status === 'voorraad').reduce((s,i)=>s+(Number(i.inkoop)||0),0);
   const hnviVoorraadAantal = hnviJaar.filter(i => i.status === 'voorraad').length;
@@ -130,18 +160,87 @@ export function renderBelasting() {
     <div class="metric"><div class="lbl">Voorraad eind ${jaar === 'all' ? 'nu' : jaar}</div><div class="val" style="color:var(--text-muted)">${fmt(voorraadEind)}</div><div class="sub">bezitting, geen kostenpost</div></div>
     <div class="metric"><div class="lbl">Projectie heel jaar</div><div class="val ${winstJaar>=0?'pos':'neg'}">${fmt(winstJaar)}</div><div class="sub">op basis van ${maandenMet} mnd</div></div>`;
 
-  const teruggaveRegel = ib < 0 ? `
-    <div style="background:var(--green-bg);border:1px solid color-mix(in srgb, var(--green) 25%, transparent);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--green)">
-      💡 Bij verlies kun je dit verrekenen met ander inkomen (bijv. loon). Geschatte teruggave: <strong>${fmt(Math.abs(Math.round(ib)))}</strong> — bespreek dit met je belastingadviseur.
-    </div>` : '';
+  // ---------------------------------------------------------- aandachtspunten
+  // Punten die de berekening stil kunnen vertekenen. Elk punt zegt wat er aan
+  // de hand is en wat je moet doen; anders weet je wel dat er iets mis is maar
+  // niet waar je moet zijn.
+  const punten = [];
 
-  const hnviWaarschuwing = hnviNietAftrekbaar > 0 ? `
-    <div style="background:var(--amber-bg);border:1px solid color-mix(in srgb, var(--amber) 25%, transparent);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
-      ⚠ ${fmt(hnviNietAftrekbaar)} HNVI inkoop is nog niet aftrekbaar (voorraad). Zodra je die loten verkoopt in de HNVI-tab wordt dit automatisch aangepast.
-    </div>` : (state.HNVI_LOTS.length === 0 ? `
-    <div style="background:var(--amber-bg);border:1px solid color-mix(in srgb, var(--amber) 25%, transparent);border-radius:6px;padding:.625rem .875rem;margin-top:.75rem;font-size:12px;color:var(--amber)">
-      ⚠ Voeg je HNVI-loten toe in de HNVI-tab zodat de belasting correct wordt berekend. Nu wordt alle 7010 inkoop als aftrekbaar beschouwd.
-    </div>` : '');
+  const zonderPrijs = (state.COVERS || []).filter(a => !(Number(a.inkoopprijs) > 0));
+  if (zonderPrijs.length) {
+    const namen = zonderPrijs.slice(0, 3).map(a => a.artikel).filter(Boolean).join(', ');
+    punten.push({
+      soort: 'let-op',
+      tekst: `${zonderPrijs.length} ${zonderPrijs.length === 1 ? 'artikel heeft' : 'artikelen hebben'} geen inkoopprijs${namen ? ` (${escHtml(namen)}${zonderPrijs.length > 3 ? ', …' : ''})` : ''}. Die tellen niet mee als inkoopkosten. Vul de inkoopprijs in bij Voorraad.`
+    });
+  }
+
+  // Artikelen met een prijs, maar zonder verkoopaantal voor dit jaar: dan blijft
+  // de inkoop onzichtbaar in de aangifte terwijl er misschien wél verkocht is.
+  if (jaar !== 'all') {
+    const nietVastgelegd = (state.COVERS || []).filter(a =>
+      Number(a.inkoopprijs) > 0 && a.jaren?.[jaar]?.verkocht == null);
+    if (nietVastgelegd.length) {
+      punten.push({
+        soort: 'let-op',
+        tekst: `Bij ${nietVastgelegd.length} ${nietVastgelegd.length === 1 ? 'artikel is' : 'artikelen is'} niet vastgelegd hoeveel er in ${jaar} verkocht is. Zolang dat leeg blijft rekent ${jaar} met nul verkochte stuks. Vul dit in bij Voorraad, veld "Verkocht in ${jaar}".`
+      });
+    }
+  }
+
+  if (hnviNietAftrekbaar > 0) {
+    punten.push({
+      soort: 'let-op',
+      tekst: `${fmt(hnviNietAftrekbaar)} aan HNVI-inkoop zit nog in voorraad en is daarom niet aftrekbaar. Zodra je die loten op verkocht zet, verschuift dit vanzelf.`
+    });
+  }
+
+  if (!state.HNVI_LOTS.length && hnviTotaalBank > 0) {
+    punten.push({
+      soort: 'waarschuwing',
+      tekst: `Er staat ${fmt(hnviTotaalBank)} aan HNVI-inkoop (7010) in de bank, maar er zijn geen loten vastgelegd. Nu wordt dat volledige bedrag als aftrekbaar gerekend, wat te gunstig is als een deel nog in voorraad ligt. Voeg de loten toe in de HNVI-tab.`
+    });
+  }
+
+  if (voorraadInkoopBank > 0 && voorraadCogs === 0) {
+    punten.push({
+      soort: 'waarschuwing',
+      tekst: `Er is dit jaar ${fmt(voorraadInkoopBank)} ingekocht op ${vrdRek.join(' en ')}, maar er staat geen enkel verkocht artikel met een inkoopprijs tegenover. Die inkoop telt nu nergens als kosten, waardoor je winst te hoog uitkomt. Vul bij Voorraad de inkoopprijs en het aantal verkochte stuks in.`
+    });
+  }
+
+  if (ib < 0) {
+    punten.push({
+      soort: 'gunstig',
+      tekst: `Bij verlies kun je dit verrekenen met ander inkomen, bijvoorbeeld loon. Geschatte teruggave ${fmt(Math.abs(Math.round(ib)))}. Leg dit voor aan je adviseur voordat je erop rekent.`
+    });
+  }
+
+  const kleuren = {
+    'waarschuwing': ['var(--red-bg)', 'var(--red)', '!'],
+    'let-op': ['var(--amber-bg)', 'var(--amber)', '!'],
+    'gunstig': ['var(--green-bg)', 'var(--green)', 'i']
+  };
+
+  document.getElementById('bel-info').innerHTML = punten.length ? `
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">Aandachtspunten</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${punten.map(p => {
+          const [bg, fc, teken] = kleuren[p.soort] || kleuren['let-op'];
+          return `<div style="display:flex;gap:9px;align-items:flex-start;font-size:12px;line-height:1.5">
+            <span style="flex:0 0 17px;height:17px;margin-top:1px;border-radius:50%;background:${bg};color:${fc};font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center">${teken}</span>
+            <span style="color:var(--text)">${p.tekst}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : `
+    <div class="card" style="margin-bottom:1rem">
+      <div style="display:flex;gap:9px;align-items:center;font-size:12px;color:var(--text-muted)">
+        <span style="flex:0 0 17px;height:17px;border-radius:50%;background:var(--green-bg);color:var(--green);font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center">✓</span>
+        <span>Geen aandachtspunten. Inkoopprijzen en verkoopaantallen zijn voor dit jaar ingevuld.</span>
+      </div>
+    </div>`;
 
   document.getElementById('bel-calc').innerHTML = `
     <div class="ib-row"><span>Bruto omzet</span><span>${fmt(omzetTotal)}</span></div>
@@ -151,6 +250,7 @@ export function renderBelasting() {
     ${handmatig.map(k => `<div class="ib-row"><span>${escHtml(k.label) || 'Overige post'}</span><span class="neg">– ${fmt(Number(k.bedrag) || 0)}</span></div>`).join('')}
     <div class="ib-row" style="color:var(--text-muted);font-size:11px"><span>HNVI inkoop (voorraad, niet aftrekbaar)</span><span>${fmt(hnviNietAftrekbaar)}</span></div>
     <div class="ib-row" style="color:var(--text-muted);font-size:11px"><span>Voorraad nog op de plank (bezitting)</span><span>${fmt(voorraadEind)}</span></div>
+    ${voorraadInkoopBank > 0 ? `<div class="ib-row" style="color:var(--text-muted);font-size:11px"><span>Inkoop voorraad dit jaar (${vrdRek.join(', ')}) — geen kostenpost</span><span>${fmt(voorraadInkoopBank)}</span></div>` : ''}
     <div class="ib-row"><span style="font-weight:600">Winst / verlies</span><span style="font-weight:600" class="${winst>=0?'pos':'neg'}">${fmt(winst)}</span></div>
     ${winst > 0 ? `
     <div class="ib-row"><span>MKB-winstvrijstelling (14,2%)</span><span class="neg">– ${fmt(mkb)}</span></div>
@@ -205,10 +305,24 @@ export function renderBelasting() {
   }).join('');
 
   const r7AltijdGbs = [...new Set(belTX.filter(isUitgave).map(t=>t.gb))].filter(g=>['7000','7020','7100','7900'].includes(g)).sort();
+  // Inkoopposten zijn alleen aftrekbaar voor zover de spullen verkocht zijn.
+  // Of dat klopt hangt af van wat er in de Voorraad-tab staat, dus daar kijken
+  // we naar in plaats van "altijd aftrekbaar" te beweren.
+  const heeftVoorraadAdmin = (state.COVERS || []).some(a => Number(a.inkoopprijs) > 0);
   const r7AltijdRows = r7AltijdGbs.map(gb => {
     const tot = belTX.filter(t=>isUitgave(t)&&t.gb===gb).reduce((s,t)=>s+t.bedrag,0);
-    return rij(gb, tot, 'min', 'altijd aftrekbaar', 'neg');
+    return heeftVoorraadAdmin
+      ? rij(gb, tot, 'min', 'zie voorraad-COGS', '')
+      : rij(gb, tot, 'min', 'alleen als verkocht', '');
   }).join('');
+
+  const aftrekbaarheidsNota = `<div style="margin-top:1rem;padding-top:.75rem;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border);line-height:1.55">
+    <strong>Over de inkooprekeningen (7000–7900).</strong> Deze bedragen zijn niet vanzelf aftrekbaar. Aftrekbaar is alleen de inkoopprijs van wat je dat jaar daadwerkelijk verkocht hebt; wat nog op de plank ligt is een bezitting.
+    ${heeftVoorraadAdmin
+      ? `Voor de artikelen die je in Voorraad hebt staan rekent de app dat zelf uit — dat is de regel “Voorraad (inkoopprijs verkochte artikelen)” hierboven. De bedragen in deze tabel zijn de kale bankmutaties en tellen dus niet nog een keer mee.`
+      : `Je hebt nog geen artikelen met een inkoopprijs in de Voorraad-tab, dus die berekening kan de app niet maken. Zolang dat zo is worden deze bedragen volledig als kosten meegenomen, wat te gunstig uitpakt als je nog voorraad hebt liggen.`}
+    Een inkoop die je hebt weggegeven of niet verkocht hoort er helemaal niet in: zet die als artikel in Voorraad met nul verkocht.
+  </div>`;
 
   const hnviBankTot = belTX.filter(t=>isUitgave(t)&&t.gb==='7010').reduce((s,t)=>s+t.bedrag,0);
   const hnviVktTot2 = hnviJaar.filter(i=>i.status==='verkocht').reduce((s,i)=>s+i.inkoop,0);
@@ -222,8 +336,12 @@ export function renderBelasting() {
   document.getElementById("bel-kosten").innerHTML =
     subkop('Baten') + omzetRows +
     subkop('Rubriek 4 — altijd aftrekbaar') + r4Rows +
-    subkop('Inkoop — altijd aftrekbaar') + r7AltijdRows +
+    subkop('Inkoop — aftrekbaar voor zover verkocht') + r7AltijdRows +
     subkop('Inkoop HNVI (7010) — gekoppeld aan HNVI-tab') + r7010Rows;
+  
+  // Voetnoot over aftrekbaarheid van inkoopposten
+  const notaDiv = document.getElementById('bel-nota');
+  if (notaDiv) notaDiv.innerHTML = aftrekbaarheidsNota;
 }
 
 // ---------------------------------------------------------------- aangifte
@@ -247,8 +365,12 @@ export function aangifteTekst(jaar = gekozenJaar()) {
   // Omzet uit bank (gb 8000, 8010, 8020)
   const omzetBank = belTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s, t) => s + t.bedrag, 0);
   
-  // Kosten (alles behalve 7010 = HNVI-inkoop die appart telt)
-  const kostenOverig = belTX.filter(t => isUitgave(t) && t.gb !== '7010').reduce((s, t) => s + t.bedrag, 0);
+  // Directe kosten. Handelsvoorraad en HNVI vallen hierbuiten: die tellen via
+  // de inkoopwaarde van de omzet, anders staat dezelfde inkoop er dubbel in.
+  const vrdRek = voorraadRekeningen();
+  const kostenOverig = belTX
+    .filter(t => isUitgave(t) && t.gb !== '7010' && !vrdRek.includes(String(t.gb)))
+    .reduce((s, t) => s + t.bedrag, 0);
 
   const hnviJaar = jaar === 'all' ? state.HNVI_LOTS : state.HNVI_LOTS.filter(i => i.datum && i.datum.startsWith(jaar));
   const hnviBank = belTX.filter(t => isUitgave(t) && t.gb === '7010').reduce((s, t) => s + (Number(t.bedrag) || 0), 0);

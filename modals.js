@@ -232,12 +232,29 @@ export function importExcel(input) {
           const verkoop = row[8] || 0;
           const omzet2026 = row[15] || 0;
           const getal = v => (typeof v === 'number' ? v : null);
+          
+          // Zoek kolommen voor jaren.2026.eind en jaren.2026.verkocht
+          // Deze staan meestal aan het eind als extra kolommen (na omzet2026)
+          // Row format: [artikel, ..., voorraad, ..., verkoop, ..., omzet2026, ..., jaren.2026.eind?, jaren.2026.verkocht?]
+          let jaren = {};
+          // Check of there are any jaren-velden (deze zouden als extra kolommen staan)
+          // Voor nu: als omzet2026 > 0, neem aan dat dit ook verkocht in 2026 is
+          // (dit is een fallback totdat we de kolommen beter kunnen mappen)
+          if (omzet2026 > 0 || verkoop > 0) {
+            jaren['2026'] = {
+              eind: getal(row[16]) || (getal(voorraad) || 0),  // Eindvoorraad = huidige voorraad
+              verkocht: getal(row[17]) || (omzet2026 > 0 ? omzet2026 : null)  // Verkocht = omzet stuks
+            };
+          }
+          
           newCovers.push({id:cid++, artikel:String(artikel),
             inkoopprijs: getal(row[3]), prijs: getal(row[4]), minVoorraad: getal(row[6]),
             voorraad: typeof voorraad === 'number' ? Math.round(voorraad) : 0,
             inkoop: typeof inkoop === 'number' ? Math.round(inkoop) : 0,
             verkoop: typeof verkoop === 'number' ? Math.round(verkoop) : 0,
-            omzet2026: typeof omzet2026 === 'number' ? Math.round(omzet2026) : 0});
+            omzet2026: typeof omzet2026 === 'number' ? Math.round(omzet2026) : 0,
+            jaren
+          });
           coverCount++;
         });
       }
