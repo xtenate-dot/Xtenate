@@ -12,7 +12,7 @@ import {
   isSupabaseReady,
   addToPendingQueue,
   savePendingQueue
-} from './supabase-client-v2.js?v=20260818';
+} from './supabase-client-v2.js?v=20260820d';
 
 export const state = {
   TX: [],

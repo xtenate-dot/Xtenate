@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script type="module">
+    (async () => {
+      try {
+        const belasting = await import('./belasting.js?v=20260820');
+        console.log('✓ belasting.js laadt');
+        console.log('exports:', Object.keys(belasting).slice(0, 10));
+      } catch (e) {
+        console.error('✗ belasting.js:', e.message);
+      }
+    })();
+  </script>
+</head>
+<body><p>Open DevTools console</p></body>
+</html>
