@@ -40,11 +40,26 @@ function drempel(c) {
  * van dat de app de huidige stand als historie presenteert.
  */
 function standVan(c) {
+  const jaren = c.jaren || {};
   if (gekozenJaar === 'nu') {
-    return { voorraad: c.voorraad, verkocht: c.omzet2026 || 0, vastgelegd: true };
+    // omzet2026 is het oude veld en blijft leidend als het gevuld is. Staat het
+    // er niet, dan pakken we de jaargegevens van dit jaar; anders zou alles wat
+    // uit Excel is ingelezen hier leeg blijven.
+    const j = jaren[HUIDIG_JAAR] || {};
+    return {
+      voorraad: c.voorraad,
+      verkocht: c.omzet2026 ?? j.verkocht ?? 0,
+      inkoop: j.inkoop ?? c.inkoop ?? 0,
+      vastgelegd: true
+    };
   }
-  const j = (c.jaren || {})[gekozenJaar] || {};
-  return { voorraad: j.eind ?? null, verkocht: j.verkocht ?? 0, vastgelegd: j.eind != null };
+  const j = jaren[gekozenJaar] || {};
+  return {
+    voorraad: j.eind ?? null,
+    verkocht: j.verkocht ?? 0,
+    inkoop: j.inkoop ?? 0,
+    vastgelegd: j.eind != null
+  };
 }
 
 function waardeVan(c, stand) {
@@ -247,9 +262,8 @@ export function renderCovers() {
           <td style="font-weight:${stand.voorraad > 0 ? 500 : 400}">${esc(c.artikel)}</td>
           ${toonGroep ? `<td class="muted">${esc(groepNaam(c.categorie))}</td>` : ''}
           <td style="text-align:right" data-v="${stand.voorraad ?? -1}">${stand.voorraad ?? '—'}</td>
-          <td style="text-align:right" class="muted" data-v="${c.inkoopprijs ?? -1}">${c.inkoopprijs != null && c.inkoopprijs !== '' ? fmt(c.inkoopprijs) : '—'}</td>
-          <td style="text-align:right" class="muted" data-v="${vk ?? -1}">${vk != null ? fmt(vk) : '—'}</td>
-          <td style="text-align:right;font-weight:500" data-v="${waarde ?? -1}">${waarde != null ? fmt(waarde) : '—'}</td>
+          <td style="text-align:right" data-v="${stand.inkoop ?? -1}">${stand.inkoop || '—'}</td>
+          <td style="text-align:right" data-v="${stand.verkocht ?? -1}">${stand.verkocht || '—'}</td>
           <td style="text-align:right" class="${!jaarModus && omzet ? 'pos' : ''}" data-v="${jaarModus ? (stand.verkocht || 0) : (omzet ?? 0)}">${rechts}</td>
           <td data-v="${status(c, stand)}">${STATUS_BADGE[status(c, stand)]}</td>
           <td>${c.zoekterm
@@ -263,7 +277,7 @@ export function renderCovers() {
           </td>
         </tr>`;
       }).join('')
-    : `<tr data-geen-sort="1"><td colspan="${toonGroep ? 11 : 10}"><div class="empty">
+    : `<tr data-geen-sort="1"><td colspan="${toonGroep ? 10 : 9}"><div class="empty">
         <div class="empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
         <div class="empty-title">${basis.length ? 'Geen artikelen binnen deze filters' : 'Nog geen artikelen in deze groep'}</div>
         <div class="empty-text">${basis.length
@@ -612,6 +626,23 @@ export function sluitImportModal() {
   if (modal) modal.classList.remove('open');
 }
 
+/**
+ * Voegt jaargegevens samen zonder eerder ingelezen velden weg te gooien.
+ * Elk Excel-bestand levert alleen voor zijn eigen boekjaar de inkoop- en
+ * verkoopaantallen; voor de andere jaren staat er enkel een eindstand. Een
+ * gewone Object.assign zou dat rijkere jaar overschrijven met het armere.
+ */
+function voegJaarSamen(doel, bron) {
+  for (const [jaar, waarden] of Object.entries(bron)) {
+    const bestaand = doel[jaar] || {};
+    for (const [veld, waarde] of Object.entries(waarden)) {
+      if (waarde !== undefined && waarde !== null) bestaand[veld] = waarde;
+    }
+    doel[jaar] = bestaand;
+  }
+  return doel;
+}
+
 export async function handleImportVoorraad(event) {
   const files = event.target.files;
   if (!files.length) return;
@@ -653,16 +684,26 @@ export async function handleImportVoorraad(event) {
       }
 
       const header = rows[headerRow] || [];
-      const colPrijs = 13; // Kolom 14 (0-indexed: 13)
-      
-      // Vind jaar-kolommen
+      const colPrijs = 13;   // rechterblok: Prijs (€)
+      const colInkoop = 7;   // mutatieblok: 📦 Inkoop
+      const colVerkoop = 8;  // mutatieblok: 🛒 Verkoop
+
+      // Jaarkolommen staan rechts van de prijs. Excel levert ze soms als getal
+      // (2022) en soms als 2022.0, dus we knippen de decimalen eraf.
       const jaarKolommen = {};
       for (let c = colPrijs + 1; c < header.length; c++) {
-        const h = header[c];
-        if (h && /^202[0-9]$/.test(String(h).trim())) {
-          jaarKolommen[String(h).trim()] = c;
-        }
+        const h = String(header[c] ?? '').trim().replace(/\.0+$/, '');
+        if (/^20\d\d$/.test(h)) jaarKolommen[h] = c;
       }
+
+      // Elk bestand is één boekjaar. De inkoop- en verkoopaantallen in het
+      // mutatieblok horen bij dat jaar, en dat is het hoogste jaartal in de kop.
+      const bestandsJaar = Object.keys(jaarKolommen).sort().pop();
+
+      const getal = v => {
+        const n = parseFloat(v);
+        return Number.isFinite(n) ? n : 0;
+      };
 
       // Lees artikelen
       for (let r = headerRow + 1; r < rows.length; r++) {
@@ -670,14 +711,25 @@ export async function handleImportVoorraad(event) {
         if (!row[0] || row[0] === '') break;
         
         const artikel = String(row[0]).trim();
-        if (artikel.toLowerCase().startsWith('totaal')) break;
+        // Skip totaal-rijen, lege rijen, en rijen die alleen spaties hebben
+        if (!artikel || artikel.toLowerCase().includes('totaal') || artikel === '-') break;
+        if (/^[\s—–]*$/.test(artikel)) break;
 
         const prijs = parseFloat(row[colPrijs]) || 0;
         const jaren = {};
-        
+
+        // De jaarkolommen zijn eindstanden: wat er op 31-12 nog lag.
         for (const [jaar, col] of Object.entries(jaarKolommen)) {
-          const eind = parseFloat(row[col]) || 0;
-          jaren[jaar] = { eind, verkocht: 0 };
+          jaren[jaar] = { eind: getal(row[col]) };
+        }
+
+        // De aantallen uit het mutatieblok horen bij het jaar van dit bestand.
+        if (bestandsJaar) {
+          jaren[bestandsJaar] = {
+            ...(jaren[bestandsJaar] || {}),
+            inkoop: getal(row[colInkoop]),
+            verkocht: getal(row[colVerkoop])
+          };
         }
 
         if (!alleArtikelenNieuw[artikel]) {
@@ -687,8 +739,7 @@ export async function handleImportVoorraad(event) {
             jaren: {}
           };
         }
-        // Merge jaren
-        Object.assign(alleArtikelenNieuw[artikel].jaren, jaren);
+        voegJaarSamen(alleArtikelenNieuw[artikel].jaren, jaren);
       }
     }
 
@@ -696,11 +747,16 @@ export async function handleImportVoorraad(event) {
     let toegevoegd = 0, bijgewerkt = 0;
     
     for (const [artikelNaam, nieuwData] of Object.entries(alleArtikelenNieuw)) {
+      // Dubbele controle: skip totaal-rijen
+      if (!artikelNaam || artikelNaam.toLowerCase().includes('totaal') || /^[\s—–]*$/.test(artikelNaam)) {
+        continue;
+      }
+      
       const bestaand = state.COVERS.find(a => a.artikel === artikelNaam);
       
       if (bestaand) {
         if (!bestaand.jaren) bestaand.jaren = {};
-        Object.assign(bestaand.jaren, nieuwData.jaren);
+        voegJaarSamen(bestaand.jaren, nieuwData.jaren);
         if (nieuwData.prijs && !bestaand.prijs) bestaand.prijs = nieuwData.prijs;
         bijgewerkt++;
       } else {
