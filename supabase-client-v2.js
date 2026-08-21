@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260821o';
+import { getClient, heeftClient } from './supabase.js?v=20260821p';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -429,7 +429,12 @@ export async function saveCoverToSupabase(cover) {
  * This is a workaround; in production you'd want to know which table upfront.
  */
 export async function deleteFromSupabase(id, type = 'auto') {
-  if (!heeftClient()) return false;
+  console.log(`🗑️  deleteFromSupabase called: id=${id}, type=${type}`);
+  
+  if (!heeftClient()) {
+    console.warn('⚠️  heeftClient() = false, cannot delete');
+    return false;
+  }
   
   try {
     const sb = await getClient();
@@ -439,15 +444,19 @@ export async function deleteFromSupabase(id, type = 'auto') {
     const userId = session?.data?.session?.user?.id;
     
     if (!userId) {
-      console.warn('⚠️  No user ID for delete');
+      console.warn('⚠️  No user ID for delete - session not found');
       return false;
     }
+    
+    console.log(`✓ User ID found: ${userId.substring(0, 8)}...`);
     
     // Determine which table based on type hint or try all
     let tables = [];
     if (type === 'cover' || type === 'auto') tables.push('voorraadartikelen');
     if (type === 'hnvi' || type === 'auto') tables.push('hnvi_loten');
     if (type === 'boeking' || type === 'auto') tables.push('boekingen');
+    
+    console.log(`🔄 Trying to delete from tables: ${tables.join(', ')}`);
     
     let lastError = null;
     for (const table of tables) {
