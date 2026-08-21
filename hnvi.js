@@ -1,10 +1,10 @@
 // hnvi.js — HNVI/Xtenate voorraadbeheer, inclusief AI-factuurimport.
 
-import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260820d';
-import { maakSorteerbaar } from './tables.js?v=20260820d';
-import { openApiKeyModal } from './modals.js?v=20260820d';
-import { saveHnviData, state } from './storage.js?v=20260820d';
-import { saveToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260820d';
+import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260821a';
+import { maakSorteerbaar } from './tables.js?v=20260821a';
+import { openApiKeyModal } from './modals.js?v=20260821a';
+import { saveHnviData, state } from './storage.js?v=20260821a';
+import { saveToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821a';
 
 export function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
