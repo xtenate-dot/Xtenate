@@ -9,10 +9,10 @@
 
 import {
   BEGINSALDO_2026, GBNM, REKNM, calcIB, isInkomst, isOmzet, isUitgave, teltBij
-} from './helpers.js?v=20260821k';
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, state } from './storage.js?v=20260821k';
-import { verborgenOverzicht } from './negeren.js?v=20260821k';
-import { getClient, leesbareFout } from './supabase.js?v=20260821k';
+} from './helpers.js?v=20260821l';
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, state } from './storage.js?v=20260821l';
+import { verborgenOverzicht } from './negeren.js?v=20260821l';
+import { getClient, leesbareFout } from './supabase.js?v=20260821l';
 
 const HOOFDREKENING = '1010';
 
