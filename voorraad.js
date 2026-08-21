@@ -1,11 +1,11 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821t';
+import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821u';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260821t';
-import { maakSorteerbaar } from './tables.js?v=20260821t';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821t';
+} from './storage.js?v=20260821u';
+import { maakSorteerbaar } from './tables.js?v=20260821u';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821u';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -824,17 +824,25 @@ export async function handleImportVoorraad(event) {
 
     saveCoversData();
     
-    // Sync alle zojuist geïmporteerde artikelen naar Supabase
+    // Sync ALLEEN de zojuist toegevoegde/bijgewerkte artikelen naar Supabase
+    status.innerHTML = `⏳ Syncing ${toegevoegd + bijgewerkt} items to Supabase...`;
     console.log(`📤 Syncing ${toegevoegd + bijgewerkt} covers to Supabase...`);
-    for (const artikel of state.COVERS) {
+    
+    let syncOk = 0, syncFailed = 0;
+    const recentArticles = state.COVERS.slice(-Math.max(toegevoegd, bijgewerkt) || state.COVERS.length);
+    
+    for (const artikel of recentArticles) {
       try {
-        await saveCoverToSupabase(artikel);
+        const ok = await saveCoverToSupabase(artikel);
+        if (ok) syncOk++;
+        else syncFailed++;
       } catch (err) {
-        console.warn(`⚠️  Sync van ${artikel.artikel} faalde:`, err.message);
+        syncFailed++;
+        console.error(`❌ ${artikel.artikel}:`, err.message);
       }
     }
     
-    status.innerHTML = `✅ ${toegevoegd} toegevoegd, ${bijgewerkt} bijgewerkt<br><small style="color:var(--text-muted)">Syncing to Supabase...</small>`;
+    status.innerHTML = `✅ ${toegevoegd} toegevoegd, ${bijgewerkt} bijgewerkt<br><small style="color:var(--text-muted)">✅ ${syncOk} naar Supabase · ${syncFailed ? syncFailed + ' mislukt' : 'alles OK'}</small>`;
     
     setTimeout(() => {
       sluitImportModal();
