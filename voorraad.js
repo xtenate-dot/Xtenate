@@ -1,11 +1,11 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821s';
+import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821t';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260821s';
-import { maakSorteerbaar } from './tables.js?v=20260821s';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821s';
+} from './storage.js?v=20260821t';
+import { maakSorteerbaar } from './tables.js?v=20260821t';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821t';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -824,7 +824,17 @@ export async function handleImportVoorraad(event) {
 
     saveCoversData();
     
-    status.innerHTML = `✅ ${toegevoegd} toegevoegd, ${bijgewerkt} bijgewerkt<br><small style="color:var(--text-muted)">Sluit dit venster. Controleer de Voorraad-tab.</small>`;
+    // Sync alle zojuist geïmporteerde artikelen naar Supabase
+    console.log(`📤 Syncing ${toegevoegd + bijgewerkt} covers to Supabase...`);
+    for (const artikel of state.COVERS) {
+      try {
+        await saveCoverToSupabase(artikel);
+      } catch (err) {
+        console.warn(`⚠️  Sync van ${artikel.artikel} faalde:`, err.message);
+      }
+    }
+    
+    status.innerHTML = `✅ ${toegevoegd} toegevoegd, ${bijgewerkt} bijgewerkt<br><small style="color:var(--text-muted)">Syncing to Supabase...</small>`;
     
     setTimeout(() => {
       sluitImportModal();
