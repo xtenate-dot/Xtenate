@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260821n';
+import { getClient, heeftClient } from './supabase.js?v=20260821o';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -465,6 +465,7 @@ export async function deleteFromSupabase(id, type = 'auto') {
             setTimeout(() => window.hertekenHuidigePagina?.(), 300);
             return true;
           }
+          console.warn(`⚠️  ${table} delete error:`, error?.message || error);
           lastError = error;
         } else {
           // Hard delete for voorraadartikelen and hnvi_loten (use legacy_id)
@@ -479,9 +480,11 @@ export async function deleteFromSupabase(id, type = 'auto') {
             setTimeout(() => window.hertekenHuidigePagina?.(), 300);
             return true;
           }
+          console.warn(`⚠️  ${table} delete error:`, error?.message || error);
           lastError = error;
         }
       } catch (err) {
+        console.error(`❌ Exception deleting from ${table}:`, err);
         lastError = err;
         // Continue to next table
       }
