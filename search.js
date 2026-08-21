@@ -1,9 +1,9 @@
 // search.js — globale zoekfunctie over boekingen, voorraad en HNVI-loten.
 
-import { GBNM, REKNM, ddmm, esc, fmt, isInkomst, vertraag, weergaveNaam } from './helpers.js?v=20260821t';
-import { state } from './storage.js?v=20260821t';
-import { openBoeking } from './drawer.js?v=20260821t';
-import { gaNaar } from './ui.js?v=20260821t';
+import { GBNM, REKNM, ddmm, esc, fmt, isInkomst, vertraag, weergaveNaam } from './helpers.js?v=20260821u';
+import { state } from './storage.js?v=20260821u';
+import { openBoeking } from './drawer.js?v=20260821u';
+import { gaNaar } from './ui.js?v=20260821u';
 
 const MAX_PER_GROEP = 6;
 let actieveIndex = -1;

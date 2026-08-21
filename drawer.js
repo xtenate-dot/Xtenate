@@ -1,7 +1,7 @@
 // drawer.js — detailpaneel rechts met alle gegevens van één boeking.
 
-import { GBNM, REKNM, esc, fmt, isInkomst, rekBadge, weergaveNaam } from './helpers.js?v=20260821t';
-import { state } from './storage.js?v=20260821t';
+import { GBNM, REKNM, esc, fmt, isInkomst, rekBadge, weergaveNaam } from './helpers.js?v=20260821u';
+import { state } from './storage.js?v=20260821u';
 
 const TYPE_LABEL = {
   inkomst: 'Inkomst',
