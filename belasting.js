@@ -1,8 +1,9 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc , palette } from './charts.js?v=20260820d';
-import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260820d';
-import { state } from './storage.js?v=20260820d';
+import { charts, dc , palette } from './charts.js?v=20260821a';
+import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821a';
+import { downloadPdf } from './pdf.js?v=20260821a';
+import { state } from './storage.js?v=20260821a';
 
 const HUIDIG_JAAR = '2026';
 
@@ -36,6 +37,38 @@ export function handmatigeKosten(jaar) {
  *
  * 7010 staat er nooit bij: HNVI heeft zijn eigen afhandeling.
  */
+/**
+ * Rekeningen die geen kosten zijn, ook al staat er een uitgave op.
+ *
+ * 2000 en 1090 zijn kruisposten: geld dat van je eigen rekening naar je eigen
+ * rekening gaat. Dat staat er twee keer in, één keer af en één keer bij, en is
+ * geen kostenpost. Zou je het toch meetellen, dan drukt een overboeking je
+ * winst terwijl er niets is uitgegeven.
+ */
+export const KRUISPOSTEN = ['2000', '1090'];
+
+/**
+ * Een uitgave op een omzetrekening is een terugbetaling aan een klant. Die
+ * hoort van de omzet af, niet bij de kosten. Op de winst maakt dat niets uit,
+ * maar het omzetbedrag dat je aan de belastingdienst doorgeeft moet netto zijn.
+ */
+export function nettoOmzet(belTX) {
+  const bij = belTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s, t) => s + (Number(t.bedrag) || 0), 0);
+  const af  = belTX.filter(t => isUitgave(t) && isOmzet(t.gb)).reduce((s, t) => s + (Number(t.bedrag) || 0), 0);
+  return { bij, af, netto: bij - af };
+}
+
+/** Telt deze uitgave mee als bedrijfskosten? */
+export function isKostenpost(t) {
+  if (!isUitgave(t)) return false;
+  const gb = String(t.gb);
+  if (isOmzet(gb)) return false;              // terugbetaling, gaat van de omzet af
+  if (KRUISPOSTEN.includes(gb)) return false; // eigen overboeking
+  if (gb === '7010') return false;            // HNVI, loopt via loten
+  if (voorraadRekeningen().includes(gb)) return false; // voorraad, loopt via inkoopwaarde
+  return true;
+}
+
 /**
  * Welke inkooprekeningen artikel-voorraad dragen: AliExpress (7000) en MijnMagie (7020).
  * HNVI (7010) gaat volledig via loten. Verzendartikelen (7100) zijn directe kosten.
@@ -131,7 +164,8 @@ export function renderBelasting() {
   const ct = document.getElementById('bel-card-title');
   if (ct) ct.textContent = `Berekening box 1 — indicatie ${jaar === 'all' ? 'alle jaren' : jaar}`;
 
-  const omzetBank = belTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s,t)=>s+t.bedrag,0);
+  const omzetSplit = nettoOmzet(belTX);
+  const omzetBank = omzetSplit.netto;
 
   // HNVI inkoop: filter op jaar van het lot (via datum)
   const hnviJaar = jaar === 'all' ? state.HNVI_LOTS : state.HNVI_LOTS.filter(i => i.datum && i.datum.startsWith(jaar));
@@ -146,7 +180,7 @@ export function renderBelasting() {
   const alleTX = [...state.HIST_TX, ...state.TX];
   const vrdRek = voorraadRekeningen(state.COVERS);
   const isVoorraadInkoop = t => t.gb === '7010' || vrdRek.includes(String(t.gb));
-  const kostenOverig = belTX.filter(t => isUitgave(t) && !isVoorraadInkoop(t)).reduce((s,t)=>s+t.bedrag,0);
+  const kostenOverig = belTX.filter(isKostenpost).reduce((s,t)=>s+t.bedrag,0);
 
   // Wat er dit jaar op die voorraadrekeningen is uitgegeven. Niet als kosten
   // geteld, maar wel getoond zodat je ziet waar het gebleven is.
@@ -250,6 +284,23 @@ export function renderBelasting() {
   // Een artikel telt pas mee als er een prijs per stuk uit te rekenen valt.
   // Dat lukt niet als de rekening geen bankmutaties heeft, of als er nergens
   // een ingekocht aantal staat om het bedrag over te verdelen.
+  // Terugbetalingen en eigen overboekingen benoemen, want die zag je eerder
+  // als kosten terug en dat vertekende de winst.
+  if (omzetSplit.af > 0) {
+    punten.push({
+      soort: 'gunstig',
+      tekst: `${fmt(omzetSplit.af)} aan uitgaven staat op een omzetrekening — terugbetalingen aan klanten. Die is van de omzet afgetrokken (bruto ${fmt(omzetSplit.bij)}, netto ${fmt(omzetSplit.netto)}) en telt niet als kostenpost.`
+    });
+  }
+  const kruis = belTX.filter(t => isUitgave(t) && KRUISPOSTEN.includes(String(t.gb)))
+    .reduce((som, t) => som + (Number(t.bedrag) || 0), 0);
+  if (kruis > 0) {
+    punten.push({
+      soort: 'gunstig',
+      tekst: `${fmt(kruis)} staat op kruisposten (overboeking tussen je eigen rekeningen). Dat is buiten de kosten gehouden, anders zou een overboeking je winst drukken.`
+    });
+  }
+
   // HNVI-controle
   if (hnviMissing > 0.01) {
     punten.unshift({
@@ -388,6 +439,7 @@ export function renderBelasting() {
       <button type="button" class="btn btn-sm" onclick="openExtraKosten()">Aftrekposten aanvullen${handmatig.length ? ` (${handmatig.length})` : ''}</button>
       <button type="button" class="btn btn-sm" onclick="kopieerAangifte()">Kopieer aangifte</button>
       <button type="button" class="btn btn-sm" onclick="downloadAangifte()">Download als tekst</button>
+      <button type="button" class="btn btn-sm" onclick="downloadAangiftePdf()">Download als pdf</button>
     </div>`;
 
   const omzData = [
@@ -400,6 +452,53 @@ export function renderBelasting() {
   dc('c-bel');
   charts['c-bel'] = new Chart(document.getElementById('c-bel'), {type:'doughnut',data:{labels:omzLabels,datasets:[{data:omzData,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
   document.getElementById('bel-legend').innerHTML = omzLabels.map((n,i)=>`<span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:${colors[i]}"></span>${n} ${fmt(omzData[i])}</span>`).join('');
+
+  // Kosten per grootboek, in twee schijven: de 4000-reeks zijn bedrijfskosten,
+  // de 7000-reeks is inkoop. Die twee door elkaar in één schijf zou verwarren,
+  // want inkoop is pas een kostenpost zodra het verkocht is.
+  const perGb = {};
+  for (const t of belTX) {
+    if (!isUitgave(t)) continue;
+    const gb = String(t.gb);
+    if (isOmzet(gb) || KRUISPOSTEN.includes(gb)) continue;  // terugbetalingen en eigen overboekingen
+    perGb[gb] = (perGb[gb] || 0) + (Number(t.bedrag) || 0);
+  }
+
+  /** Tekent één schijf; verbergt de kaart als er niets te tonen valt. */
+  const schijf = (canvasId, legendaId, rekeningen) => {
+    const rijen = rekeningen
+      .map(gb => ({ gb, bedrag: perGb[gb] || 0 }))
+      .filter(r => r.bedrag > 0)
+      .sort((a, b) => b.bedrag - a.bedrag);
+
+    const kleuren = palette();
+    dc(canvasId);
+    const vak = document.getElementById(canvasId);
+    const legenda = document.getElementById(legendaId);
+    if (!vak || !legenda) return;
+
+    if (!rijen.length) {
+      legenda.innerHTML = '<span>Geen boekingen in dit jaar.</span>';
+      return;
+    }
+
+    charts[canvasId] = new Chart(vak, {
+      type: 'doughnut',
+      data: {
+        labels: rijen.map(r => `${GBNM[r.gb] || r.gb} (${r.gb})`),
+        datasets: [{ data: rijen.map(r => r.bedrag), backgroundColor: rijen.map((_, i) => kleuren[i % kleuren.length]), borderWidth: 0 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { display: false } } }
+    });
+
+    legenda.innerHTML = rijen.map((r, i) =>
+      `<span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:${kleuren[i % kleuren.length]}"></span>${GBNM[r.gb] || r.gb} (${r.gb}) ${fmt(r.bedrag)}</span>`
+    ).join('');
+  };
+
+  const alleGb = Object.keys(perGb);
+  schijf('c-bel-kosten', 'bel-legend-kosten', alleGb.filter(gb => gb < '7000'));
+  schijf('c-bel-inkoop', 'bel-legend-inkoop', alleGb.filter(gb => gb >= '7000'));
 
   const subkop = (tekst) => `<tr><td colspan="4" style="padding:10px 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">${tekst}</td></tr>`;
   const rij = (gb, bedrag, richting, label, kleur) => {
@@ -478,21 +577,88 @@ const gekozenJaar = () => document.getElementById('f-jaar-bel')?.value || HUIDIG
  * aangifteformulier: winst uit onderneming, box 1. Bedragen zonder euroteken en
  * met een komma, zoals de invulvelden ze verwachten.
  */
+/**
+ * Waar elke grootboekrekening terechtkomt op het aangifteformulier.
+ *
+ * De belastingdienst vraagt niet om je grootboek, maar om een handvol
+ * verzamelposten. Deze tabel legt vast welke rekening bij welk veld hoort,
+ * zodat je bij het invullen niet hoeft te gokken.
+ *
+ * 7000, 7010 en 7020 staan er bewust niet in: die gaan via de inkoopwaarde
+ * van de omzet, niet als losse kostenpost.
+ */
+export const AANGIFTE_VELD = {
+  '4235': 'Kleine aanschaf inventaris',
+  '4290': 'Overige kosten',
+  '4350': 'Overige kosten',
+  '4410': 'Telefoon / internet',
+  '4640': 'Reiskosten',
+  '4760': 'Overige kosten',
+  '4810': 'Verkoopkosten',
+  '4815': 'Verkoopkosten',
+  '4895': 'Verkoopkosten',
+  '7100': 'Verkoopkosten',
+  '7900': 'Verkoopkosten'
+};
+
+/** Volgorde waarin de velden op het formulier staan. */
+const VELD_VOLGORDE = [
+  'Telefoon / internet', 'Reiskosten', 'Kleine aanschaf inventaris',
+  'Inkoop', 'Verkoopkosten', 'Overige kosten'
+];
+
+/**
+ * Telt de bankboekingen op per veld van het aangifteformulier.
+ * Geeft per veld het bedrag plus de rekeningen waar het uit is opgebouwd,
+ * zodat je een bedrag altijd terug kunt zoeken in je grootboek.
+ */
+export function aangifteVelden(belTX, { cogs = 0, hnviInkoop = 0, handmatig = [] } = {}) {
+  const velden = {};
+  const voegToe = (veld, bedrag, bron) => {
+    velden[veld] = velden[veld] || { bedrag: 0, bronnen: [] };
+    velden[veld].bedrag += bedrag;
+    if (bron) velden[veld].bronnen.push(bron);
+  };
+
+  // Kosten uit de bank, gegroepeerd per grootboekrekening.
+  const perGb = {};
+  for (const t of belTX || []) {
+    if (!isKostenpost(t)) continue;
+    const gb = String(t.gb);
+    perGb[gb] = (perGb[gb] || 0) + (Number(t.bedrag) || 0);
+  }
+  for (const [gb, bedrag] of Object.entries(perGb)) {
+    if (!(bedrag > 0)) continue;
+    voegToe(AANGIFTE_VELD[gb] || 'Overige kosten', bedrag, `${gb} ${GBNM[gb] || ''}`.trim());
+  }
+
+  // Inkoop is de inkoopwaarde van wat verkocht is, niet wat je betaalde.
+  if (cogs > 0) voegToe('Inkoop', cogs, 'voorraad — verkochte artikelen');
+  if (hnviInkoop > 0) voegToe('Inkoop', hnviInkoop, 'HNVI — verkochte loten');
+
+  for (const k of handmatig || []) {
+    const bedrag = Number(k.bedrag) || 0;
+    if (bedrag > 0) voegToe('Overige kosten', bedrag, `handmatig: ${k.label}`);
+  }
+
+  return VELD_VOLGORDE
+    .filter(v => velden[v]?.bedrag > 0)
+    .map(v => ({ veld: v, bedrag: velden[v].bedrag, bronnen: velden[v].bronnen }));
+}
+
 export function aangifteTekst(jaar = gekozenJaar()) {
   const belTX = jaar === 'all'
     ? [...state.HIST_TX, ...state.TX]
     : (jaar === HUIDIG_JAAR ? state.TX : state.HIST_TX.filter(t => t.datum.startsWith(jaar)));
 
   // Omzet uit bank (gb 8000, 8010, 8020)
-  const omzetBank = belTX.filter(t => isInkomst(t) && isOmzet(t.gb)).reduce((s, t) => s + t.bedrag, 0);
+  const omzetBank = nettoOmzet(belTX).netto;
   
   // Directe kosten. Handelsvoorraad en HNVI vallen hierbuiten: die tellen via
   // de inkoopwaarde van de omzet, anders staat dezelfde inkoop er dubbel in.
   const vrdRek = voorraadRekeningen(state.COVERS);
   const prijzenUitBank = inkoopprijzenUitBank([...state.HIST_TX, ...state.TX], state.COVERS);
-  const kostenOverig = belTX
-    .filter(t => isUitgave(t) && t.gb !== '7010' && !vrdRek.includes(String(t.gb)))
-    .reduce((s, t) => s + t.bedrag, 0);
+  const kostenOverig = belTX.filter(isKostenpost).reduce((s, t) => s + t.bedrag, 0);
 
   const hnviJaar = jaar === 'all' ? state.HNVI_LOTS : state.HNVI_LOTS.filter(i => i.datum && i.datum.startsWith(jaar));
   const hnviBank = belTX.filter(t => isUitgave(t) && t.gb === '7010').reduce((s, t) => s + (Number(t.bedrag) || 0), 0);
@@ -559,6 +725,17 @@ export function aangifteTekst(jaar = gekozenJaar()) {
     regel('MKB-winstvrijstelling (14,2%)', mkb),
     regel('Belastbare winst', belastbaar),
     ``,
+    `IN TE VULLEN OP HET AANGIFTEFORMULIER`,
+    `Inkomsten uit overig werk — winst uit onderneming`,
+    ``,
+    regel('Omzet', omzet),
+    ...aangifteVelden(belTX, { cogs, hnviInkoop, handmatig })
+      .map(v => regel(v.veld, v.bedrag)),
+    ``,
+    `Toelichting per regel:`,
+    ...aangifteVelden(belTX, { cogs, hnviInkoop, handmatig })
+      .map(v => `  ${v.veld}: ${v.bronnen.join(', ')}`),
+    ``,
     `BALANS PER 31 DECEMBER`,
     regel('Voorraad (inkoopwaarde)', eind),
     ``,
@@ -585,6 +762,11 @@ export function downloadAangifte() {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+export function downloadAangiftePdf() {
+  const jaar = gekozenJaar();
+  downloadPdf(aangifteTekst(jaar), `aangifte-${jaar}.pdf`, `Aangifte ${jaar}`);
 }
 
 /** Klein venster met de tekst, zodat je meteen ziet wat er gekopieerd is. */
@@ -629,7 +811,17 @@ export function openExtraKosten() {
         </div>
         <button type="button" class="pm-kruis" data-sluit aria-label="Sluiten">&times;</button>
       </header>
-      <div class="pm-inhoud"><div id="xk-rijen" style="padding:16px 20px">${rijen}</div></div>
+      <div class="pm-inhoud">
+        <div style="padding:16px 20px 0">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 34px;gap:8px;margin-bottom:8px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em">
+            <span>Omschrijving</span><span style="text-align:right">Bedrag</span><span></span>
+          </div>
+        </div>
+        <div id="xk-rijen" style="padding:0 20px 16px">${rijen}</div>
+        <p style="padding:0 20px 16px;margin:0;font-size:12px;color:var(--text-muted)">
+          Met de rode knop haal je een post weg. Verwijderen is pas definitief als je op Opslaan klikt.
+        </p>
+      </div>
       <footer class="pm-voet">
         <button type="button" class="btn btn-sm" id="xk-erbij">Regel erbij</button>
         <div class="pm-knoppen">
@@ -641,6 +833,11 @@ export function openExtraKosten() {
 
   const sluit = koppelVenster(laag);
   const rijenVak = laag.querySelector('#xk-rijen');
+
+  rijenVak.addEventListener('click', ev => {
+    const knop = ev.target.closest('.xk-weg');
+    if (knop) knop.closest('.xk-rij')?.remove();
+  });
 
   laag.querySelector('#xk-erbij').addEventListener('click', () => {
     const n = rijenVak.querySelectorAll('.xk-rij').length;
@@ -666,8 +863,9 @@ function rijHtml(k, i) {
              style="padding:8px 10px;font:inherit;font-size:13px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm)">
       <input class="xk-bedrag" type="number" step="0.01" min="0" placeholder="0,00" value="${k.bedrag ?? ''}"
              style="padding:8px 10px;font:inherit;font-size:13px;text-align:right;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm)">
-      <button type="button" onclick="this.closest('.xk-rij').remove()" aria-label="Regel verwijderen"
-              style="border:1px solid var(--border);background:var(--surface);border-radius:var(--radius-sm);cursor:pointer;color:var(--text-muted)">&times;</button>
+      <button type="button" class="xk-weg" aria-label="Deze aftrekpost verwijderen"
+              title="Deze aftrekpost verwijderen"
+              style="border:1px solid var(--neg,#c0392b);background:transparent;border-radius:var(--radius-sm);cursor:pointer;color:var(--neg,#c0392b);font-size:16px;line-height:1">&times;</button>
     </div>`;
 }
 
