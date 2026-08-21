@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260821m';
+import { getClient, heeftClient } from './supabase.js?v=20260821n';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -461,6 +461,8 @@ export async function deleteFromSupabase(id, type = 'auto') {
             .eq('user_id', userId);
           if (!error) {
             console.log(`✅ Deleted from ${table}: ${id}`);
+            // Refresh UI na verwijdering van ander apparaat
+            setTimeout(() => window.hertekenHuidigePagina?.(), 300);
             return true;
           }
           lastError = error;
@@ -473,6 +475,8 @@ export async function deleteFromSupabase(id, type = 'auto') {
             .eq('user_id', userId);
           if (!error) {
             console.log(`✅ Deleted from ${table}: ${id}`);
+            // Refresh UI na verwijdering van ander apparaat
+            setTimeout(() => window.hertekenHuidigePagina?.(), 300);
             return true;
           }
           lastError = error;
