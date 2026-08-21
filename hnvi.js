@@ -1,10 +1,10 @@
 // hnvi.js — HNVI/Xtenate voorraadbeheer, inclusief AI-factuurimport.
 
-import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260821q';
-import { maakSorteerbaar } from './tables.js?v=20260821q';
-import { openApiKeyModal } from './modals.js?v=20260821q';
-import { saveHnviData, state } from './storage.js?v=20260821q';
-import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821q';
+import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260821r';
+import { maakSorteerbaar } from './tables.js?v=20260821r';
+import { openApiKeyModal } from './modals.js?v=20260821r';
+import { saveHnviData, state } from './storage.js?v=20260821r';
+import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821r';
 
 export function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
@@ -234,13 +234,44 @@ export function updateHNVIDeleteBtn() {
   }
 }
 
-export function verwijderGeselecteerdeHNVI() {
+export async function verwijderGeselecteerdeHNVI() {
+  console.log('🗑️  verwijderGeselecteerdeHNVI called');
+  
   const checked = [...document.querySelectorAll('.hnvi-check:checked')];
-  if (checked.length === 0) return;
-  if (!window.confirm(`Weet je zeker dat je ${checked.length} item(s) wilt verwijderen?`)) return;
+  if (checked.length === 0) {
+    console.log('Geen items geselecteerd');
+    return;
+  }
+  
+  if (!window.confirm(`Weet je zeker dat je ${checked.length} item(s) wilt verwijderen?`)) {
+    console.log('Verwijdering geannuleerd');
+    return;
+  }
+  
   const teVerwijderen = new Set(checked.map(c => c.dataset.key));
+  const lotsToDel = state.HNVI_LOTS.filter(i => teVerwijderen.has(String(i._key||i.id)));
+  
+  console.log(`Verwijdert ${lotsToDel.length} loten:`, lotsToDel.map(l => l.id));
+  
+  // Verwijder uit state
   state.HNVI_LOTS = state.HNVI_LOTS.filter(i => !teVerwijderen.has(String(i._key||i.id)));
   saveHnviData();
+  
+  // Stuur ELKE deletion naar Supabase
+  for (const lot of lotsToDel) {
+    try {
+      console.log(`Deleting lot ${lot.id} from Supabase...`);
+      const ok = await deleteFromSupabase(lot.id, 'hnvi');
+      if (!ok) {
+        console.warn(`Delete van lot ${lot.id} faalde, in wachtrij`);
+        addToPendingQueue(lot, 'delete', false);
+      }
+    } catch (err) {
+      console.error(`Exception deleting lot ${lot.id}:`, err);
+      addToPendingQueue(lot, 'delete', false);
+    }
+  }
+  
   renderHNVI();
 }
 
