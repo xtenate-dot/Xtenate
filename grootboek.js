@@ -1,25 +1,25 @@
 // grootboek.js — Grootboek: compacte saldotabel per rekening, met doorklik
 // naar de losse boekingen van één rekening.
 
-import { GBNM, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, rekBadge, teltBij, typeBadge, vulMaandSelect, weergaveNaam } from './helpers.js?v=20260821e';
-import { state } from './storage.js?v=20260821e';
-import { maakSorteerbaar } from './tables.js?v=20260821e';
+import { GBNM, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, rekBadge, teltBij, typeBadge, vulMaandSelect, weergaveNaam } from './helpers.js?v=20260821f';
+import { state } from './storage.js?v=20260821f';
+import { maakSorteerbaar } from './tables.js?v=20260821f';
 
 const el = id => document.getElementById(id);
 const waarde = id => (el(id) ? el(id).value.trim() : '');
 
 /** Welke rubriek hoort bij een grootboeknummer. */
 export function rubriekVan(gb) {
-  const code = String(gb);
-  if (code === '600' || code === '601') return 'prive';
-  if (code.startsWith('8')) return 'omzet';
-  if (code.startsWith('7')) return 'inkoop';
-  if (code.startsWith('4')) return 'kosten';
-  return 'overig';
+  const eersteC = String(gb).charAt(0);
+  if (eersteC <= '3') return 'balans';
+  if (eersteC === '4' || eersteC === '5' || eersteC === '6') return 'bedrijfskosten';
+  if (eersteC === '7') return 'inkoop';
+  if (eersteC === '8') return 'omzet';
+  return 'overig';  // 9 en hoger
 }
 
-const RUBRIEK_NAAM = { omzet: 'Omzet', inkoop: 'Inkoop', kosten: 'Kosten', prive: 'Privé', overig: 'Overig' };
-const RUBRIEK_VOLGORDE = ['prive', 'kosten', 'inkoop', 'omzet', 'overig'];
+const RUBRIEK_NAAM = { balans: 'Balans', bedrijfskosten: 'Bedrijfskosten', inkoop: 'Inkoop', omzet: 'Omzet', overig: 'Overig' };
+const RUBRIEK_VOLGORDE = ['balans', 'bedrijfskosten', 'inkoop', 'omzet', 'overig'];
 
 /** Welke rekening staat er open in de detailweergave; null = overzicht. */
 let geopendeRekening = null;

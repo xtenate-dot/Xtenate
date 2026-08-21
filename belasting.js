@@ -1,9 +1,9 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc , palette } from './charts.js?v=20260821e';
-import { GBNM, ddmm, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821e';
-import { downloadModelPdf } from './pdf.js?v=20260821e';
-import { state } from './storage.js?v=20260821e';
+import { charts, dc , palette } from './charts.js?v=20260821f';
+import { GBNM, ddmm, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821f';
+import { downloadModelPdf } from './pdf.js?v=20260821f';
+import { state } from './storage.js?v=20260821f';
 
 const HUIDIG_JAAR = '2026';
 

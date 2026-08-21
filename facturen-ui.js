@@ -5,8 +5,8 @@
 // Fase 7, stap 3b: de indeling staat, de inhoud volgt in stap 4 (Debiteuren)
 // en stap 5 (Crediteuren).
 
-import { openstaandSaldo } from './facturen.js?v=20260821e';
-import { esc, fmt } from './helpers.js?v=20260821e';
+import { openstaandSaldo } from './facturen.js?v=20260821f';
+import { esc, fmt } from './helpers.js?v=20260821f';
 
 const el = id => document.getElementById(id);
 
