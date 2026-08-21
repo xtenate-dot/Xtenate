@@ -1,10 +1,10 @@
 // hnvi.js — HNVI/Xtenate voorraadbeheer, inclusief AI-factuurimport.
 
-import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260821p';
-import { maakSorteerbaar } from './tables.js?v=20260821p';
-import { openApiKeyModal } from './modals.js?v=20260821p';
-import { saveHnviData, state } from './storage.js?v=20260821p';
-import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821p';
+import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260821q';
+import { maakSorteerbaar } from './tables.js?v=20260821q';
+import { openApiKeyModal } from './modals.js?v=20260821q';
+import { saveHnviData, state } from './storage.js?v=20260821q';
+import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821q';
 
 export function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
@@ -180,18 +180,34 @@ export async function wisHNVIVerkoop(id) {
 }
 
 export async function verwijderHNVIItem(key) {
-  if (!window.confirm('Dit lot verwijderen?')) return;
+  console.log(`🗑️  verwijderHNVIItem called: key=${key}`);
+  
+  if (!window.confirm('Dit lot verwijderen?')) {
+    console.log('Verwijdering geannuleerd');
+    return;
+  }
+  
   const teVerwijderen = state.HNVI_LOTS.find(i => String(i._key||i.id) === String(key));
-  if (!teVerwijderen) return;
+  console.log(`Found lot to delete:`, teVerwijderen);
+  
+  if (!teVerwijderen) {
+    console.warn('Lot niet gevonden!');
+    return;
+  }
   
   state.HNVI_LOTS = state.HNVI_LOTS.filter(i => String(i._key||i.id) !== String(key));
   saveHnviData();
+  console.log(`Removed from state, calling deleteFromSupabase...`);
   
   try {
     const ok = await deleteFromSupabase(teVerwijderen.id, 'hnvi');
-    if (!ok) addToPendingQueue(teVerwijderen, 'delete', false);
+    console.log(`deleteFromSupabase returned:`, ok);
+    if (!ok) {
+      console.log(`Delete failed, adding to pending queue`);
+      addToPendingQueue(teVerwijderen, 'delete', false);
+    }
   } catch (err) {
-    console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
+    console.error('Exception in verwijderHNVIItem:', err);
     addToPendingQueue(teVerwijderen, 'delete', false);
   }
   
