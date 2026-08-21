@@ -68,7 +68,7 @@ export function renderBeheer() {
   if (!doel) return;
 
   doel.innerHTML =
-    groep('Gegevens', [
+    groep('Administratie', [
       tegel({
         titel: 'Controle', uitleg: 'Controlepunten in je administratie',
         icoon: I.controle, pagina: 'controle', merk: controleMerk()
@@ -86,35 +86,9 @@ export function renderBeheer() {
         icoon: I.sync, actie: 'openSyncModal()'
       })
     ]) +
-    groep('Onderhoud', [
+    groep('Voorzichtig', [
       tegel({
-        titel: 'Gegevenscontrole', uitleg: 'Afwijkingen nalopen en per stuk kiezen',
-        icoon: I.gegevens, actie: 'openGegevenscontrole()'
-      }),
-      tegel({
-        titel: 'Herstel uitvoeren', uitleg: 'Met reservekopie en controle vooraf',
-        icoon: I.herstel, actie: 'openUitvoeren()'
-      }),
-      tegel({
-        titel: 'Migratie', uitleg: 'Overzetten naar Supabase',
-        icoon: I.migratie, actie: 'openMigratieModal()'
-      })
-    ]) +
-    groep('Systeem', [
-      tegel({
-        titel: 'Opslagdiagnose', uitleg: 'Kijken wat er in de browseropslag staat',
-        icoon: I.diagnose, actie: 'openOpslagDiagnose()'
-      }),
-      tegel({
-        titel: 'Supabase testen', uitleg: 'Controleren of de verbinding werkt',
-        icoon: I.zelftest, actie: 'openZelftestModal()'
-      }),
-      tegel({
-        titel: 'API sleutel', uitleg: 'Sleutel instellen of vervangen',
-        icoon: I.sleutel, actie: 'openApiKeyModal()'
-      }),
-      tegel({
-        titel: 'Data wissen', uitleg: 'Alles verwijderen uit deze browser',
+        titel: 'Data wissen', uitleg: 'Alles verwijderen uit deze browser — niet ongedaan te maken!',
         icoon: I.wissen, actie: 'openWisModal()', gevaarlijk: true
       })
     ]);
