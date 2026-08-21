@@ -47,3 +47,30 @@
   .toolbar select, .toolbar input { flex: 1 1 44%; min-width: 0; }
   .btn-ml { margin-left: 0; flex: 1 1 100%; justify-content: center; }
 }
+
+/* Belastingpagina op een telefoon.
+   De schijven staan dan onder elkaar (grid2 klapt al om bij 860px), maar ze
+   mogen wat lager worden zodat de legenda niet van het scherm valt. */
+@media (max-width: 560px) {
+  .metrics { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
+  .metric { padding: var(--sp-3); }
+  .metric .val { font-size: 17px; }
+
+  /* Grafiekvlakken krimpen mee met de schermbreedte. */
+  #p-belasting .card > div[style*="height:250px"],
+  #p-belasting .card > div[style*="height:210px"] { height: 190px !important; }
+
+  /* Legenda's onder elkaar in plaats van naast elkaar: op een smal scherm
+     werden de bedragen anders afgekapt. */
+  #bel-legend, #bel-legend-kosten, #bel-legend-inkoop {
+    flex-direction: column;
+    gap: 6px !important;
+  }
+
+  /* De berekening blijft leesbaar door label en bedrag te laten afbreken. */
+  .ib-row { font-size: 13px; }
+}
+
+@media (max-width: 380px) {
+  .metrics { grid-template-columns: 1fr; }
+}

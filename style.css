@@ -57,7 +57,7 @@
   --sidebar-w: 216px;
   --sidebar-w-collapsed: 60px;
   --topbar-h: 56px;
-  --content-max: 1180px;
+  --content-max: 100%;   /* volle breedte: de tabellen en grafieken hebben de ruimte nodig */
 
   font-size: 14px;
   color-scheme: light;

@@ -1,9 +1,9 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc , palette } from './charts.js?v=20260821a';
-import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821a';
-import { downloadPdf } from './pdf.js?v=20260821a';
-import { state } from './storage.js?v=20260821a';
+import { charts, dc , palette } from './charts.js?v=20260821b';
+import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821b';
+import { downloadModelPdf } from './pdf.js?v=20260821b';
+import { state } from './storage.js?v=20260821b';
 
 const HUIDIG_JAAR = '2026';
 
@@ -38,16 +38,6 @@ export function handmatigeKosten(jaar) {
  * 7010 staat er nooit bij: HNVI heeft zijn eigen afhandeling.
  */
 /**
- * Rekeningen die geen kosten zijn, ook al staat er een uitgave op.
- *
- * 2000 en 1090 zijn kruisposten: geld dat van je eigen rekening naar je eigen
- * rekening gaat. Dat staat er twee keer in, één keer af en één keer bij, en is
- * geen kostenpost. Zou je het toch meetellen, dan drukt een overboeking je
- * winst terwijl er niets is uitgegeven.
- */
-export const KRUISPOSTEN = ['2000', '1090'];
-
-/**
  * Een uitgave op een omzetrekening is een terugbetaling aan een klant. Die
  * hoort van de omzet af, niet bij de kosten. Op de winst maakt dat niets uit,
  * maar het omzetbedrag dat je aan de belastingdienst doorgeeft moet netto zijn.
@@ -62,8 +52,11 @@ export function nettoOmzet(belTX) {
 export function isKostenpost(t) {
   if (!isUitgave(t)) return false;
   const gb = String(t.gb);
+  // Alleen de winst-en-verliesrekeningen tellen mee. Alles onder 4000 is
+  // balans: bank, kruisposten, privé, schulden. Daar gaat geld heen en weer
+  // zonder dat het je resultaat raakt, dus als kostenpost hoort het nergens.
+  if (!(Number(gb) >= 4000)) return false;
   if (isOmzet(gb)) return false;              // terugbetaling, gaat van de omzet af
-  if (KRUISPOSTEN.includes(gb)) return false; // eigen overboeking
   if (gb === '7010') return false;            // HNVI, loopt via loten
   if (voorraadRekeningen().includes(gb)) return false; // voorraad, loopt via inkoopwaarde
   return true;
@@ -292,12 +285,12 @@ export function renderBelasting() {
       tekst: `${fmt(omzetSplit.af)} aan uitgaven staat op een omzetrekening — terugbetalingen aan klanten. Die is van de omzet afgetrokken (bruto ${fmt(omzetSplit.bij)}, netto ${fmt(omzetSplit.netto)}) en telt niet als kostenpost.`
     });
   }
-  const kruis = belTX.filter(t => isUitgave(t) && KRUISPOSTEN.includes(String(t.gb)))
+  const balans = belTX.filter(t => isUitgave(t) && !(Number(t.gb) >= 4000))
     .reduce((som, t) => som + (Number(t.bedrag) || 0), 0);
-  if (kruis > 0) {
+  if (balans > 0) {
     punten.push({
       soort: 'gunstig',
-      tekst: `${fmt(kruis)} staat op kruisposten (overboeking tussen je eigen rekeningen). Dat is buiten de kosten gehouden, anders zou een overboeking je winst drukken.`
+      tekst: `${fmt(balans)} staat op balansrekeningen onder 4000 — kruisposten, privé en overboekingen tussen je eigen rekeningen. Die zijn buiten de kosten gehouden: ze veranderen wel je banksaldo, maar niet je resultaat.`
     });
   }
 
@@ -305,12 +298,12 @@ export function renderBelasting() {
   if (hnviMissing > 0.01) {
     punten.unshift({
       soort: 'waarschuwing',
-      tekst: `HNVI-inkoop niet volledig ingevoerd: € ${fmt(bank7010)} op GB 7010, maar € ${fmt(hnviLoten)} in loten. Nog in te voeren: € ${fmt(hnviMissing)}.`
+      tekst: `HNVI-inkoop niet volledig ingevoerd: ${fmt(bank7010)} op GB 7010, maar ${fmt(hnviLoten)} in loten. Nog in te voeren: ${fmt(hnviMissing)}.`
     });
   } else if (bank7010 > 0) {
     punten.unshift({
       soort: 'gunstig',
-      tekst: `HNVI-controle OK: € ${fmt(bank7010)} op GB 7010 = € ${fmt(hnviLoten)} in loten ingevoerd.`
+      tekst: `HNVI-controle OK: ${fmt(bank7010)} op GB 7010 = ${fmt(hnviLoten)} in loten ingevoerd.`
     });
   }
 
@@ -460,7 +453,7 @@ export function renderBelasting() {
   for (const t of belTX) {
     if (!isUitgave(t)) continue;
     const gb = String(t.gb);
-    if (isOmzet(gb) || KRUISPOSTEN.includes(gb)) continue;  // terugbetalingen en eigen overboekingen
+    if (!(Number(gb) >= 4000) || isOmzet(gb)) continue;  // balans en terugbetalingen tellen niet mee
     perGb[gb] = (perGb[gb] || 0) + (Number(t.bedrag) || 0);
   }
 
@@ -646,7 +639,7 @@ export function aangifteVelden(belTX, { cogs = 0, hnviInkoop = 0, handmatig = []
     .map(v => ({ veld: v, bedrag: velden[v].bedrag, bronnen: velden[v].bronnen }));
 }
 
-export function aangifteTekst(jaar = gekozenJaar()) {
+export function aangifteModel(jaar = gekozenJaar()) {
   const belTX = jaar === 'all'
     ? [...state.HIST_TX, ...state.TX]
     : (jaar === HUIDIG_JAAR ? state.TX : state.HIST_TX.filter(t => t.datum.startsWith(jaar)));
@@ -698,50 +691,96 @@ export function aangifteTekst(jaar = gekozenJaar()) {
   const mkb = winst > 0 ? winst * 0.142 : 0;
   const belastbaar = Math.max(0, winst - mkb);
 
-  const bedrag = n => (Math.round(n * 100) / 100).toLocaleString('nl-NL', {
+  const velden = aangifteVelden(belTX, { cogs, hnviInkoop, handmatig });
+  const omzetSplit = nettoOmzet(belTX);
+
+  // Het document als blokken, niet als kant-en-klare tekst. Zo kunnen het
+  // tekstbestand en de pdf dezelfde cijfers tonen zonder dat er twee keer
+  // opmaak in de code staat.
+  return {
+    jaar,
+    titel: 'Aangifte inkomstenbelasting — winst uit onderneming',
+    ondertitel: `Boekjaar ${jaar === 'all' ? 'alle jaren' : jaar}`,
+    blokken: [
+      { type: 'kop', tekst: 'Opbrengsten' },
+      { type: 'regel', label: 'Netto-omzet', bedrag: omzet },
+
+      { type: 'kop', tekst: 'Inkoopwaarde van de omzet' },
+      { type: 'regel', label: 'Verkochte voorraad', bedrag: cogs },
+      { type: 'regel', label: 'Verkochte HNVI-loten', bedrag: hnviInkoop },
+      { type: 'regel', label: 'Totaal inkoopwaarde', bedrag: inkoopwaarde, totaal: true },
+
+      { type: 'kop', tekst: 'Overige bedrijfskosten' },
+      { type: 'regel', label: 'Kosten uit de administratie', bedrag: kostenOverig },
+      ...handmatig.map(k => ({ type: 'regel', label: k.label || 'Overige post', bedrag: Number(k.bedrag) || 0 })),
+      { type: 'regel', label: 'Totaal overige kosten', bedrag: overigeKosten, totaal: true },
+
+      { type: 'kop', tekst: 'Resultaat' },
+      { type: 'regel', label: 'Winst uit onderneming', bedrag: winst },
+      { type: 'regel', label: 'MKB-winstvrijstelling (14,2%)', bedrag: mkb, aftrek: true },
+      { type: 'regel', label: 'Belastbare winst', bedrag: belastbaar, totaal: true },
+
+      { type: 'kop', tekst: 'In te vullen op het aangifteformulier' },
+      { type: 'tekst', tekst: 'Bij "Inkomsten uit overig werk — winst uit onderneming" vul je deze bedragen in:' },
+      { type: 'regel', label: 'Omzet', bedrag: omzet },
+      ...velden.map(v => ({ type: 'regel', label: v.veld, bedrag: v.bedrag })),
+
+      { type: 'kop', tekst: 'Waar komen die bedragen vandaan' },
+      {
+        type: 'toelichting',
+        label: 'Omzet',
+        bedrag: omzet,
+        tekst: omzetSplit.af > 0
+          ? `Ontvangen op de omzetrekeningen ${bedragTekst(omzetSplit.bij)}, minus ${bedragTekst(omzetSplit.af)} aan terugbetalingen aan klanten${hnviOmzet > 0 ? `, plus ${bedragTekst(hnviOmzet)} uit verkochte HNVI-loten` : ''}.`
+          : `Ontvangen op de omzetrekeningen${hnviOmzet > 0 ? `, plus ${bedragTekst(hnviOmzet)} uit verkochte HNVI-loten` : ''}.`
+      },
+      ...velden.map(v => ({
+        type: 'toelichting', label: v.veld, bedrag: v.bedrag,
+        tekst: v.bronnen.join(' · ')
+      })),
+
+      { type: 'kop', tekst: 'Balans per 31 december' },
+      { type: 'regel', label: 'Voorraad (inkoopwaarde)', bedrag: eind },
+
+      { type: 'voet', tekst: `Opgesteld met de Xtenate-administratie op ${new Date().toLocaleDateString('nl-NL')}. Indicatie op basis van je eigen invoer; laat de aangifte controleren.` }
+    ]
+  };
+}
+
+/** Bedrag zonder euroteken, met Nederlandse punten en komma. */
+function bedragTekst(n) {
+  return (Math.round(n * 100) / 100).toLocaleString('nl-NL', {
     minimumFractionDigits: 2, maximumFractionDigits: 2
   });
-  const regel = (label, n) => `${label.padEnd(46, '.')} ${bedrag(n).padStart(12)}`;
+}
 
-  return [
-    `AANGIFTE INKOMSTENBELASTING — WINST UIT ONDERNEMING`,
-    `Boekjaar ${jaar === 'all' ? 'alle jaren' : jaar}`,
-    ``,
-    `OPBRENGSTEN`,
-    regel('Netto-omzet', omzet),
-    ``,
-    `INKOOPWAARDE VAN DE OMZET`,
-    regel('Inkoopwaarde verkochte voorraad', cogs),
-    regel('Inkoopwaarde verkochte HNVI-loten', hnviInkoop),
-    regel('Totaal inkoopwaarde', inkoopwaarde),
-    ``,
-    `OVERIGE BEDRIJFSKOSTEN`,
-    regel('Kosten uit de administratie', kostenOverig),
-    ...handmatig.map(k => regel(k.label || 'Overige post', Number(k.bedrag) || 0)),
-    regel('Totaal overige kosten', overigeKosten),
-    ``,
-    `RESULTAAT`,
-    regel('Winst uit onderneming', winst),
-    regel('MKB-winstvrijstelling (14,2%)', mkb),
-    regel('Belastbare winst', belastbaar),
-    ``,
-    `IN TE VULLEN OP HET AANGIFTEFORMULIER`,
-    `Inkomsten uit overig werk — winst uit onderneming`,
-    ``,
-    regel('Omzet', omzet),
-    ...aangifteVelden(belTX, { cogs, hnviInkoop, handmatig })
-      .map(v => regel(v.veld, v.bedrag)),
-    ``,
-    `Toelichting per regel:`,
-    ...aangifteVelden(belTX, { cogs, hnviInkoop, handmatig })
-      .map(v => `  ${v.veld}: ${v.bronnen.join(', ')}`),
-    ``,
-    `BALANS PER 31 DECEMBER`,
-    regel('Voorraad (inkoopwaarde)', eind),
-    ``,
-    `Opgesteld met de Xtenate-administratie op ${new Date().toLocaleDateString('nl-NL')}.`,
-    `Indicatie op basis van je eigen invoer; laat de aangifte controleren.`
-  ].join('\n');
+/**
+ * Het aangiftemodel als platte tekst, voor kopiëren naar het klembord en voor
+ * het tekstbestand. Bedragen worden rechts uitgelijnd met puntjes ertussen.
+ */
+export function aangifteTekst(jaar = gekozenJaar()) {
+  const doc = aangifteModel(jaar);
+  const BREED = 62;
+  const regels = [doc.titel.toUpperCase(), doc.ondertitel];
+
+  for (const b of doc.blokken) {
+    if (b.type === 'kop') {
+      regels.push('', b.tekst.toUpperCase());
+    } else if (b.type === 'regel') {
+      const bed = (b.aftrek ? '-' : '') + bedragTekst(b.bedrag);
+      // De streep hoort boven het totaal: hij sluit de regels erboven af.
+      if (b.totaal) regels.push(' '.repeat(Math.max(0, BREED - bed.length)) + '-'.repeat(bed.length));
+      const label = b.label + ' ';
+      regels.push(label.padEnd(BREED - bed.length, '.') + bed);
+    } else if (b.type === 'toelichting') {
+      regels.push(`  ${b.label} (${bedragTekst(b.bedrag)})`, `    ${b.tekst}`);
+    } else if (b.type === 'tekst') {
+      regels.push('', b.tekst);
+    } else if (b.type === 'voet') {
+      regels.push('', b.tekst);
+    }
+  }
+  return regels.join('\n');
 }
 
 export function kopieerAangifte() {
@@ -766,7 +805,7 @@ export function downloadAangifte() {
 
 export function downloadAangiftePdf() {
   const jaar = gekozenJaar();
-  downloadPdf(aangifteTekst(jaar), `aangifte-${jaar}.pdf`, `Aangifte ${jaar}`);
+  downloadModelPdf(aangifteModel(jaar), `aangifte-${jaar}.pdf`);
 }
 
 /** Klein venster met de tekst, zodat je meteen ziet wat er gekopieerd is. */

@@ -6,7 +6,7 @@
 import { opslagDiagnose, opslagDiagnoseAlsTekst, opslagSnapshot, opslagSnapshotAlsTekst,
   overrideDetail, overrideDetailAlsTekst, negeerDetail, backupBestand,
   negeerAnalyse, downloadNegeerlijst }
-  from './opslagdiagnose.js?v=20260821a';
+  from './opslagdiagnose.js?v=20260821b';
 
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
