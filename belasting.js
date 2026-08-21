@@ -1,9 +1,9 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc , palette } from './charts.js?v=20260821d';
-import { GBNM, ddmm, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821d';
-import { downloadModelPdf } from './pdf.js?v=20260821d';
-import { state } from './storage.js?v=20260821d';
+import { charts, dc , palette } from './charts.js?v=20260821e';
+import { GBNM, ddmm, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821e';
+import { downloadModelPdf } from './pdf.js?v=20260821e';
+import { state } from './storage.js?v=20260821e';
 
 const HUIDIG_JAAR = '2026';
 
@@ -214,6 +214,86 @@ export function prijsPerStuk(art, prijzenUitBank, jaar) {
   if (!p) return 0;
   // Prijs van het jaar zelf; kocht je dat jaar niets in, dan het gemiddelde.
   return (jaar && jaar !== 'all' ? p.jaren?.[jaar] : null) ?? p.gemiddeld ?? 0;
+}
+
+/**
+ * Controleert of de belastinggegevens consistent zijn. Dit rolt door de
+ * berekening heen en meldt waarschuwingen waar de gebruiker moet kijken.
+ */
+export function controlereBelasting() {
+  const jaar = gekozenJaar();
+  const belTX = jaar === 'all'
+    ? [...state.HIST_TX, ...state.TX]
+    : (jaar === HUIDIG_JAAR ? state.TX : state.HIST_TX.filter(t => t.datum.startsWith(jaar)));
+  
+  const problemen = [];
+  
+  // Checklist
+  for (const t of belTX) {
+    if (!t.id || !t.datum || !Number.isFinite(t.bedrag)) {
+      problemen.push(`Boeking ${t.id || '?'} mist veld: datum=${t.datum} bedrag=${t.bedrag}`);
+    }
+  }
+  
+  // Percentages
+  const pct = aftrekPercentages();
+  for (const id of Object.keys(pct)) {
+    if (!Number.isFinite(pct[id]) || pct[id] < 0 || pct[id] > 100) {
+      problemen.push(`Percentage boeking ${id} is ongeldig: ${pct[id]}`);
+    }
+  }
+  
+  // HNVI
+  for (const lot of state.HNVI_LOTS || []) {
+    if (!lot.datum || !Number.isFinite(lot.inkoop)) {
+      problemen.push(`HNVI-lot ${lot.id || '?'} mist datum of inkoop`);
+    }
+  }
+  
+  // Voorraad
+  for (const art of state.COVERS || []) {
+    if (!Number.isFinite(art.voorraad) || !Number.isFinite(art.inkoopprijs)) {
+      problemen.push(`Artikel ${art.artikel} mist voorraad (${art.voorraad}) of inkoopprijs (${art.inkoopprijs})`);
+    }
+    if (art.jaren) {
+      for (const [j, gegevens] of Object.entries(art.jaren)) {
+        if (!Number.isFinite(gegevens?.verkocht) || !Number.isFinite(gegevens?.eind)) {
+          problemen.push(`Artikel ${art.artikel} jaar ${j}: verkocht=${gegevens?.verkocht} eind=${gegevens?.eind}`);
+        }
+      }
+    }
+  }
+  
+  return problemen;
+}
+
+export function openControleDialog() {
+  const problemen = controlereBelasting();
+  const titel = problemen.length ? '⚠️ Controleopmerkingen' : '✓ Alles OK';
+  const laag = document.createElement('div');
+  laag.className = 'pm-laag';
+  laag.innerHTML = `
+    <div class="pm-venster" role="dialog" aria-modal="true" style="max-width:560px">
+      <header class="pm-kop">
+        <div>
+          <h3>${titel}</h3>
+          <p class="pm-sub">${problemen.length || 'Alle gegevens zijn volledig en consistent'}</p>
+        </div>
+        <button type="button" class="pm-kruis" data-sluit aria-label="Sluiten">&times;</button>
+      </header>
+      <div class="pm-inhoud" style="padding:16px 20px">
+        ${problemen.length
+          ? `<ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.6">
+              ${problemen.map(p => `<li style="margin:6px 0">${escHtml(p)}</li>`).join('')}
+             </ul>`
+          : `<p style="font-size:13px;color:var(--text-muted)">Alle datavelden zijn ingevuld en logisch consistent.</p>`}
+      </div>
+      <footer class="pm-voet">
+        <button type="button" class="btn" data-sluit>Sluiten</button>
+      </footer>
+    </div>`;
+  
+  const sluit = koppelVenster(laag);
 }
 
 export function renderBelasting() {
@@ -512,6 +592,7 @@ export function renderBelasting() {
       <button type="button" class="btn btn-sm" onclick="kopieerAangifte()">Kopieer aangifte</button>
       <button type="button" class="btn btn-sm" onclick="downloadAangifte()">Download als tekst</button>
       <button type="button" class="btn btn-sm" onclick="downloadAangiftePdf()">Download als pdf</button>
+      <button type="button" class="btn btn-sm" onclick="openControleDialog()">Controle</button>
     </div>`;
 
   const omzData = [
