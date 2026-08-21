@@ -2,12 +2,28 @@
 // badges). Geen afhankelijkheden van andere modules.
 
 export const GBNM = {
+  // Balans (0-3, 600-601)
   '600':'Privé storting','601':'Privé opname',
+  '1520':'Vorderingen overig',
+  '2000':'Schulden overig','2080':'Bankposten in transit',
+  
+  // Bedrijfskosten (4-6)
+  '4230':'Kantoorbenodigdheden',
   '4235':'Kleine aanschaf inv.','4290':'Overige zakelijke aank.','4350':'Bankkosten',
+  '4410':'Huur/huisvesting',
+  '4640':'Reiskosten',
   '4760':'Abonnement','4810':'Reclame','4815':'Website','4895':'Overige verkoopkosten',
+  
+  // Inkoop (7000-7900)
   '7000':'Inkoop AliExpress','7010':'Inkoop HNVI','7020':'Inkoop MijnMagie',
-  '7100':'Inkoop verzendartikelen','7900':'Transportkosten',
-  '8000':'Omzet Xtenate','8010':'Omzet Bol.com','8020':'Omzet Helmetstore'
+  '7100':'Inkoop verzendartikelen','7350':'Uitbestede diensten',
+  '7900':'Transportkosten',
+  
+  // Omzet (8000-8020)
+  '8000':'Omzet Xtenate','8010':'Omzet Bol.com','8020':'Omzet Helmetstore',
+  
+  // Overig (9000+)
+  '9999':'Testregel'
 };
 
 // Rekening 1010 heet bewust gewoon 'Bank': er kunnen meerdere banken naast

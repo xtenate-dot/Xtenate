@@ -1,16 +1,20 @@
 // grootboek.js — Grootboek: compacte saldotabel per rekening, met doorklik
 // naar de losse boekingen van één rekening.
 
-import { GBNM, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, rekBadge, teltBij, typeBadge, vulMaandSelect, weergaveNaam } from './helpers.js?v=20260821f';
-import { state } from './storage.js?v=20260821f';
-import { maakSorteerbaar } from './tables.js?v=20260821f';
+import { GBNM, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, rekBadge, teltBij, typeBadge, vulMaandSelect, weergaveNaam } from './helpers.js?v=20260821h';
+import { state } from './storage.js?v=20260821h';
+import { maakSorteerbaar } from './tables.js?v=20260821h';
 
 const el = id => document.getElementById(id);
 const waarde = id => (el(id) ? el(id).value.trim() : '');
 
 /** Welke rubriek hoort bij een grootboeknummer. */
 export function rubriekVan(gb) {
-  const eersteC = String(gb).charAt(0);
+  const gbStr = String(gb);
+  // Privé-rekeningen (600, 601) zijn BALANSREKENINGEN, niet bedrijfskosten
+  if (gbStr === '600' || gbStr === '601') return 'balans';
+  
+  const eersteC = gbStr.charAt(0);
   if (eersteC <= '3') return 'balans';
   if (eersteC === '4' || eersteC === '5' || eersteC === '6') return 'bedrijfskosten';
   if (eersteC === '7') return 'inkoop';
