@@ -1,10 +1,10 @@
 // hnvi.js — HNVI/Xtenate voorraadbeheer, inclusief AI-factuurimport.
 
-import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260821r';
-import { maakSorteerbaar } from './tables.js?v=20260821r';
-import { openApiKeyModal } from './modals.js?v=20260821r';
-import { saveHnviData, state } from './storage.js?v=20260821r';
-import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821r';
+import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260821s';
+import { maakSorteerbaar } from './tables.js?v=20260821s';
+import { openApiKeyModal } from './modals.js?v=20260821s';
+import { saveHnviData, state } from './storage.js?v=20260821s';
+import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821s';
 
 export function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
@@ -59,6 +59,7 @@ export function renderHNVI() {
       <td style="white-space:nowrap">
         <span class="sell-link" onclick="openHNVISell('${esc(i.id)}')">${i.status==='voorraad'?'Verkoop':'Wijzig'}</span>
         ${i.status==='verkocht'?`<span class="sell-link" style="color:var(--text-muted)" onclick="wisHNVIVerkoop('${esc(i.id)}')">Wis</span>`:''}
+        <span class="sell-link" style="color:var(--red)" onclick="verwijderHNVIItem('${esc(i._key||i.id)}')">Verwijder</span>
       </td>
     </tr>`;
   }).join('') : `<tr data-geen-sort="1"><td colspan="8">${leegVlak(
