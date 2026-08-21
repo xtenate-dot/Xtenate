@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260821k';
+import { getClient, heeftClient } from './supabase.js?v=20260821l';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -100,6 +100,86 @@ export function addToPendingQueue(boeking, operation, isHistoric = false) {
 }
 
 // ===== LOAD FROM SUPABASE =====
+
+/**
+ * Laad alle HNVI-loten van Supabase
+ */
+export async function loadHnviFromSupabase() {
+  if (!heeftClient()) return [];
+  
+  try {
+    const sb = await getClient();
+    
+    const { data, error } = await sb
+      .from('hnvi_loten')
+      .select('*')
+      .is('deleted_at', null)
+      .order('datum');
+    
+    if (error) {
+      console.warn('⚠️  HNVI load failed:', error.message);
+      return [];
+    }
+    
+    if (!data || data.length === 0) return [];
+    
+    return data.map(lot => ({
+      id: parseInt(lot.legacy_id) || lot.legacy_id,
+      datum: lot.datum,
+      omschr: lot.omschrijving,
+      inkoop: lot.inkoop,
+      verkoop: lot.verkoop,
+      status: lot.status,
+      noot: lot.notitie
+    }));
+  } catch (err) {
+    console.warn('Error in loadHnviFromSupabase:', err);
+    return [];
+  }
+}
+
+/**
+ * Laad alle Covers (voorraadartikelen) van Supabase
+ */
+export async function loadCoversFromSupabase() {
+  if (!heeftClient()) return [];
+  
+  try {
+    const sb = await getClient();
+    
+    const { data, error } = await sb
+      .from('voorraadartikelen')
+      .select('*')
+      .is('deleted_at', null)
+      .order('artikel');
+    
+    if (error) {
+      console.warn('⚠️  Covers load failed:', error.message);
+      return [];
+    }
+    
+    if (!data || data.length === 0) return [];
+    
+    return data.map(c => ({
+      id: parseInt(c.legacy_id) || c.legacy_id,
+      artikel: c.artikel,
+      categorie: c.productgroep_id || 'overig',  // Fallback
+      inkoop: c.inkoopprijs || 0,
+      inkoopprijs: c.inkoopprijs || 0,
+      voorraad: c.voorraad || 0,
+      prijs: c.verkoopprijs || 0,
+      omzet2026: 0,  // Dit zit niet in de tabel
+      zoekterm: c.zoekterm || '',
+      minVoorraad: c.min_voorraad,
+      handelsvoorraad: true,  // Default
+      inkoopGb: '7000',  // Default
+      jaren: {}  // Kan uit Supabase data worden afgeleid via ingekocht/verkocht
+    }));
+  } catch (err) {
+    console.warn('Error in loadCoversFromSupabase:', err);
+    return [];
+  }
+}
 
 export async function loadBoekingenFromSupabase() {
   if (!heeftClient()) {
@@ -219,6 +299,7 @@ export async function saveToSupabase(boeking, isHistoric) {
 
 /**
  * Sla HNVI lot op naar Supabase
+ * hnvi_loten tabel: id=UUID, legacy_id=app-id, datum/omschrijving/inkoop/verkoop/status/notitie
  */
 export async function saveHnviToSupabase(lot) {
   if (!heeftClient()) {
@@ -239,13 +320,13 @@ export async function saveHnviToSupabase(lot) {
     
     const record = {
       user_id: userId,
-      id: lot.id,
+      legacy_id: String(lot.id),  // App ID als text in legacy_id
       datum: lot.datum,
       omschrijving: lot.omschr || null,
-      inkoop: parseFloat(lot.inkoop || 0),
+      inkoop: lot.inkoop ? parseFloat(lot.inkoop) : 0,
       verkoop: lot.verkoop ? parseFloat(lot.verkoop) : null,
       status: lot.status || 'voorraad',
-      noot: lot.noot || null,
+      notitie: lot.noot || null,
       updated_at: new Date().toISOString()
     };
     
@@ -253,7 +334,7 @@ export async function saveHnviToSupabase(lot) {
     await sb
       .from('hnvi_loten')
       .delete()
-      .eq('id', lot.id)
+      .eq('legacy_id', String(lot.id))
       .eq('user_id', userId);
     
     const { error } = await sb.from('hnvi_loten').insert([record]);
@@ -273,6 +354,8 @@ export async function saveHnviToSupabase(lot) {
 
 /**
  * Sla Cover (artikel voorraad) op naar Supabase
+ * voorraadartikelen tabel: id=UUID, legacy_id=app-id, 
+ * productgroep_id=UUID (knoppelink naar groepen, niet in de app beschikbaar)
  */
 export async function saveCoverToSupabase(cover) {
   if (!heeftClient()) {
@@ -291,19 +374,27 @@ export async function saveCoverToSupabase(cover) {
       return false;
     }
     
+    // Bereken ingekocht en verkocht van jaren-data
+    let totalIngekocht = 0;
+    let totalVerkocht = 0;
+    if (cover.jaren) {
+      Object.values(cover.jaren).forEach(jaar => {
+        totalIngekocht += (jaar.inkoop || 0);
+        totalVerkocht += (jaar.verkocht || 0);
+      });
+    }
+    
     const record = {
       user_id: userId,
-      id: cover.id,
+      legacy_id: String(cover.id),  // App ID als text in legacy_id
       artikel: cover.artikel,
-      productgroep_id: cover.categorie || null,
+      productgroep_id: null,  // TODO: moet gekoppeld worden aan groepen-tabel
       voorraad: cover.voorraad || 0,
-      inkoopprijs: cover.inkoopprijs ? parseFloat(cover.inkoopprijs) : 0,
-      verkoopprijs: cover.prijs ? parseFloat(cover.prijs) : 0,
-      inkoop_gb: cover.inkoopGb || '7000',
-      handelsvoorraad: cover.handelsvoorraad ? true : false,
+      inkoopprijs: cover.inkoopprijs ? parseFloat(cover.inkoopprijs) : null,
+      verkoopprijs: cover.prijs ? parseFloat(cover.prijs) : null,
       min_voorraad: cover.minVoorraad || null,
-      jaren: cover.jaren ? JSON.stringify(cover.jaren) : null,
-      omzet_2026: cover.omzet2026 || 0,
+      ingekocht: totalIngekocht,
+      verkocht: totalVerkocht,
       zoekterm: cover.zoekterm || null,
       updated_at: new Date().toISOString()
     };
@@ -312,7 +403,7 @@ export async function saveCoverToSupabase(cover) {
     await sb
       .from('voorraadartikelen')
       .delete()
-      .eq('id', cover.id)
+      .eq('legacy_id', String(cover.id))
       .eq('user_id', userId);
     
     const { error } = await sb.from('voorraadartikelen').insert([record]);
@@ -374,11 +465,11 @@ export async function deleteFromSupabase(id, type = 'auto') {
           }
           lastError = error;
         } else {
-          // Hard delete for voorraadartikelen and hnvi_loten
+          // Hard delete for voorraadartikelen and hnvi_loten (use legacy_id)
           const { error } = await sb
             .from(table)
             .delete()
-            .eq('id', id)
+            .eq('legacy_id', String(id))
             .eq('user_id', userId);
           if (!error) {
             console.log(`✅ Deleted from ${table}: ${id}`);

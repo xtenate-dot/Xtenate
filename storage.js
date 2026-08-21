@@ -6,13 +6,15 @@
 // Fase 3A: Import Supabase client v2 (pending queue + RLS)
 import { 
   loadBoekingenFromSupabase,
+  loadHnviFromSupabase,
+  loadCoversFromSupabase,
   loadPendingQueue,
   syncPendingQueue,
   pendingQueue,
   isSupabaseReady,
   addToPendingQueue,
   savePendingQueue
-} from './supabase-client-v2.js?v=20260821k';
+} from './supabase-client-v2.js?v=20260821l';
 
 export const state = {
   TX: [],
@@ -250,6 +252,8 @@ export async function loadDataHybrid() {
     try {
       console.log('🔄 Attempting to load from Supabase...');
       const result = await loadBoekingenFromSupabase();
+      const hnviData = await loadHnviFromSupabase();
+      const coversData = await loadCoversFromSupabase();
       
       if (result && (result.TX.length > 0 || result.HIST_TX.length > 0)) {
         state.TX = result.TX;
@@ -263,10 +267,27 @@ export async function loadDataHybrid() {
         state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
         state.loadedFromSupabase = false;
       }
+      
+      // HNVI en Covers
+      if (hnviData && hnviData.length > 0) {
+        state.HNVI_LOTS = hnviData;
+        console.log(`✅ HNVI loaded from Supabase: ${hnviData.length} loten`);
+      } else {
+        state.HNVI_LOTS = load('xtenate_hnvi', []);
+      }
+      
+      if (coversData && coversData.length > 0) {
+        state.COVERS = coversData;
+        console.log(`✅ Covers loaded from Supabase: ${coversData.length} artikelen`);
+      } else {
+        state.COVERS = load('xtenate_covers', []);
+      }
     } catch (err) {
       console.warn(`⚠️  Supabase load failed: ${err.message}, falling back to localStorage`);
       state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
       state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
+      state.HNVI_LOTS = load('xtenate_hnvi', []);
+      state.COVERS = load('xtenate_covers', []);
       state.loadedFromSupabase = false;
     }
   } else {
@@ -274,6 +295,8 @@ export async function loadDataHybrid() {
     console.log('⚠️  Supabase not ready, loading from localStorage');
     state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
     state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
+    state.HNVI_LOTS = load('xtenate_hnvi', []);
+    state.COVERS = load('xtenate_covers', []);
     state.loadedFromSupabase = false;
   }
   
