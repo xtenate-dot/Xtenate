@@ -1,9 +1,9 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc , palette } from './charts.js?v=20260821c';
-import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821c';
-import { downloadModelPdf } from './pdf.js?v=20260821c';
-import { state } from './storage.js?v=20260821c';
+import { charts, dc , palette } from './charts.js?v=20260821d';
+import { GBNM, ddmm, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821d';
+import { downloadModelPdf } from './pdf.js?v=20260821d';
+import { state } from './storage.js?v=20260821d';
 
 const HUIDIG_JAAR = '2026';
 
@@ -48,7 +48,74 @@ export function nettoOmzet(belTX) {
   return { bij, af, netto: bij - af };
 }
 
-/** Telt deze uitgave mee als bedrijfskosten? */
+const SOORT_SLEUTEL = 'xtenate_inkomenssoort';
+
+/**
+ * Twee manieren waarop dit inkomen in de aangifte kan staan.
+ *
+ * 'onderneming' — winst uit onderneming. Hierbij geldt de MKB-winstvrijstelling
+ *   van 14,2%, die je belastbare winst verlaagt.
+ * 'overig' — resultaat uit overig werk. Deze vrijstelling geldt dan niet, dus
+ *   je betaalt over de hele winst.
+ *
+ * Welke van de twee op jou van toepassing is hangt af van je situatie, niet van
+ * een instelling in dit programma. De keuze staat hier zodat de schatting klopt
+ * met de rubriek waarin je de aangifte invult.
+ */
+export function inkomenssoort() {
+  return localStorage.getItem(SOORT_SLEUTEL) === 'overig' ? 'overig' : 'onderneming';
+}
+
+export function zetInkomenssoort(soort) {
+  localStorage.setItem(SOORT_SLEUTEL, soort === 'overig' ? 'overig' : 'onderneming');
+}
+
+/** Het vrijstellingspercentage dat bij de gekozen rubriek hoort. */
+export function mkbTarief() {
+  return inkomenssoort() === 'overig' ? 0 : 0.142;
+}
+
+/** Geschatte inkomstenbelasting over een winst, in de eerste twee schijven. */
+export function ibOver(winst) {
+  if (!(winst > 0)) return 0;
+  const belastbaar = Math.max(0, winst - winst * mkbTarief());
+  return belastbaar <= 38441
+    ? belastbaar * 0.3697
+    : 38441 * 0.3697 + (belastbaar - 38441) * 0.495;
+}
+
+const PCT_SLEUTEL = 'xtenate_aftrek_pct';
+
+/**
+ * Aftrekpercentage per boeking.
+ *
+ * Sommige aankopen zijn maar deels zakelijk: een laptop die je ook privé
+ * gebruikt trek je bijvoorbeeld voor 60% af. Dat verschilt per aankoop, dus
+ * leggen we het per boeking vast in plaats van per rekening.
+ */
+export function aftrekPercentages() {
+  try {
+    const rauw = JSON.parse(localStorage.getItem(PCT_SLEUTEL) || '{}');
+    return rauw && typeof rauw === 'object' ? rauw : {};
+  } catch { return {}; }
+}
+
+export function bewaarPercentages(kaart) {
+  localStorage.setItem(PCT_SLEUTEL, JSON.stringify(kaart || {}));
+}
+
+/** Het percentage voor één boeking; zonder instelling is alles aftrekbaar. */
+export function percentageVan(t, kaart = aftrekPercentages()) {
+  const p = Number(kaart[String(t?.id)]);
+  return Number.isFinite(p) && p >= 0 && p <= 100 ? p : 100;
+}
+
+/** Het bedrag dat na toepassing van het percentage aftrekbaar is. */
+export function aftrekbaarBedrag(t, kaart = aftrekPercentages()) {
+  return (Number(t?.bedrag) || 0) * percentageVan(t, kaart) / 100;
+}
+
+/** Telt deze uitgave mee als bedrijfskosten? *//** Telt deze uitgave mee als bedrijfskosten? */
 export function isKostenpost(t) {
   if (!isUitgave(t)) return false;
   const gb = String(t.gb);
@@ -173,7 +240,8 @@ export function renderBelasting() {
   const alleTX = [...state.HIST_TX, ...state.TX];
   const vrdRek = voorraadRekeningen(state.COVERS);
   const isVoorraadInkoop = t => t.gb === '7010' || vrdRek.includes(String(t.gb));
-  const kostenOverig = belTX.filter(isKostenpost).reduce((s,t)=>s+t.bedrag,0);
+  const pctKaart = aftrekPercentages();
+  const kostenOverig = belTX.filter(isKostenpost).reduce((s,t)=>s+aftrekbaarBedrag(t,pctKaart),0);
 
   // Wat er dit jaar op die voorraadrekeningen is uitgegeven. Niet als kosten
   // geteld, maar wel getoond zodat je ziet waar het gebleven is.
@@ -242,13 +310,13 @@ export function renderBelasting() {
   // IB berekening (huidig)
   const calcIB = (w) => {
     if (w <= 0) return w * 0.3697; // negatief = mogelijke teruggave
-    const mkb = w * 0.142;
+    const mkb = w * mkbTarief();
     const belastbaar = Math.max(0, w - mkb);
     return belastbaar <= 38441 ? belastbaar * 0.3697 : 38441 * 0.3697 + (belastbaar-38441) * 0.495;
   };
   const ib = calcIB(winst);
   const ibJaar = calcIB(winstJaar);
-  const mkb = winst > 0 ? Math.round(winst * 0.142) : 0;
+  const mkb = winst > 0 ? Math.round(winst * mkbTarief()) : 0;
   const belastbaar = winst > 0 ? Math.max(0, winst - mkb) : 0;
 
   document.getElementById('bel-metrics').innerHTML = `
@@ -418,17 +486,28 @@ export function renderBelasting() {
     ${voorraadInkoopBank > 0 ? `<div class="ib-row" style="color:var(--text-muted);font-size:11px"><span>Inkoop voorraad dit jaar (${vrdRek.join(', ')}) — geen kostenpost</span><span>${fmt(voorraadInkoopBank)}</span></div>` : ''}
     <div class="ib-row"><span style="font-weight:600">Winst / verlies</span><span style="font-weight:600" class="${winst>=0?'pos':'neg'}">${fmt(winst)}</span></div>
     ${winst > 0 ? `
-    <div class="ib-row"><span>MKB-winstvrijstelling (14,2%)</span><span class="neg">– ${fmt(mkb)}</span></div>
+    ${mkbTarief() > 0 ? `<div class="ib-row"><span>MKB-winstvrijstelling (14,2%)</span><span class="neg">– ${fmt(mkb)}</span></div>` : `<div class="ib-row" style="color:var(--text-muted);font-size:11px"><span>Geen MKB-winstvrijstelling (resultaat uit overig werk)</span><span>${fmt(0)}</span></div>`}
     <div class="ib-row"><span>Belastbaar inkomen</span><span>${fmt(Math.round(belastbaar))}</span></div>
     <div class="ib-row"><span>Tarief schijf 1 (36,97%)</span><span></span></div>
     <div class="ib-total"><span>Geschatte inkomstenbelasting</span><span class="neg">${fmt(Math.round(ib))}</span></div>` : `
     <div class="ib-total"><span>${ib < 0 ? 'Geschatte teruggave (bij ander inkomen)' : 'Geen belasting verschuldigd'}</span><span class="${ib<0?'pos':''}">${ib<0?'+ '+fmt(Math.abs(Math.round(ib))):'€\u202f0,00'}</span></div>`}
+
+    <div style="margin-top:.9rem;padding:12px 14px;border-radius:var(--radius-sm);background:${winst > 0 ? 'var(--red-bg,rgba(192,57,43,.07))' : 'var(--green-bg,rgba(39,174,96,.09))'}">
+      <div style="font-weight:600;font-size:13px;margin-bottom:3px">${winst > 0
+        ? `Je moet hierover ongeveer ${fmt(Math.round(ib))} betalen`
+        : `Dit jaar is er verlies — geen belasting over deze inkomsten`}</div>
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.5">${winst > 0
+        ? `Dit is de belasting over deze onderneming alleen. Heb je daarnaast loon waarop al belasting is ingehouden, dan verrekent de Belastingdienst dat; wat je uiteindelijk betaalt of terugkrijgt hangt dus ook van je andere inkomsten af.`
+        : `Een verlies mag je verrekenen met ander inkomen in hetzelfde jaar. Dat kan een teruggave van ongeveer ${fmt(Math.abs(Math.round(ib)))} opleveren, maar alleen als je genoeg ander belast inkomen hebt.`}</div>
+    </div>
 
     <div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted)">
       <strong>Projectie heel jaar</strong> (op basis van ${maandenMet} maanden): omzet ${fmt(omzetJaar)} · kosten ${fmt(kostenJaar)} · winst ${fmt(winstJaar)} · geschatte IB ${ibJaar<0?'teruggave '+fmt(Math.abs(Math.round(ibJaar))):fmt(Math.round(ibJaar))}
     </div>
 
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border)">
+      <button type="button" class="btn btn-sm" onclick="openInkomenssoort()">Rubriek: ${inkomenssoort() === 'overig' ? 'overig werk' : 'onderneming'}</button>
+      <button type="button" class="btn btn-sm" onclick="openPercentages()">Aftrekpercentages</button>
       <button type="button" class="btn btn-sm" onclick="openExtraKosten()">Aftrekposten aanvullen${handmatig.length ? ` (${handmatig.length})` : ''}</button>
       <button type="button" class="btn btn-sm" onclick="kopieerAangifte()">Kopieer aangifte</button>
       <button type="button" class="btn btn-sm" onclick="downloadAangifte()">Download als tekst</button>
@@ -615,10 +694,11 @@ export function aangifteVelden(belTX, { cogs = 0, hnviInkoop = 0, handmatig = []
 
   // Kosten uit de bank, gegroepeerd per grootboekrekening.
   const perGb = {};
+  const kaart = aftrekPercentages();
   for (const t of belTX || []) {
     if (!isKostenpost(t)) continue;
     const gb = String(t.gb);
-    perGb[gb] = (perGb[gb] || 0) + (Number(t.bedrag) || 0);
+    perGb[gb] = (perGb[gb] || 0) + aftrekbaarBedrag(t, kaart);
   }
   for (const [gb, bedrag] of Object.entries(perGb)) {
     if (!(bedrag > 0)) continue;
@@ -651,7 +731,7 @@ export function aangifteModel(jaar = gekozenJaar()) {
   // de inkoopwaarde van de omzet, anders staat dezelfde inkoop er dubbel in.
   const vrdRek = voorraadRekeningen(state.COVERS);
   const prijzenUitBank = inkoopprijzenUitBank([...state.HIST_TX, ...state.TX], state.COVERS);
-  const kostenOverig = belTX.filter(isKostenpost).reduce((s, t) => s + t.bedrag, 0);
+  const kostenOverig = belTX.filter(isKostenpost).reduce((s, t) => s + aftrekbaarBedrag(t), 0);
 
   const hnviJaar = jaar === 'all' ? state.HNVI_LOTS : state.HNVI_LOTS.filter(i => i.datum && i.datum.startsWith(jaar));
   const hnviBank = belTX.filter(t => isUitgave(t) && t.gb === '7010').reduce((s, t) => s + (Number(t.bedrag) || 0), 0);
@@ -688,7 +768,7 @@ export function aangifteModel(jaar = gekozenJaar()) {
   const inkoopwaarde = cogs + hnviInkoop;
   const overigeKosten = kostenOverig + handmatig.reduce((s, k) => s + (Number(k.bedrag) || 0), 0);
   const winst = omzet - inkoopwaarde - overigeKosten;
-  const mkb = winst > 0 ? winst * 0.142 : 0;
+  const mkb = winst > 0 ? winst * mkbTarief() : 0;
   const belastbaar = Math.max(0, winst - mkb);
 
   const velden = aangifteVelden(belTX, { cogs, hnviInkoop, handmatig });
@@ -717,11 +797,16 @@ export function aangifteModel(jaar = gekozenJaar()) {
 
       { type: 'kop', tekst: 'Resultaat' },
       { type: 'regel', label: 'Winst uit onderneming', bedrag: winst },
-      { type: 'regel', label: 'MKB-winstvrijstelling (14,2%)', bedrag: mkb, aftrek: true },
+      ...(mkbTarief() > 0
+        ? [{ type: 'regel', label: 'MKB-winstvrijstelling (14,2%)', bedrag: mkb, aftrek: true }]
+        : []),
       { type: 'regel', label: 'Belastbare winst', bedrag: belastbaar, totaal: true },
+      { type: 'regel', label: winst > 0 ? 'Geschatte inkomstenbelasting hierover' : 'Geen belasting (verlies)', bedrag: Math.max(0, ibOver(winst)) },
+      { type: 'tekst', tekst: winst > 0
+        ? `Dit is de belasting over deze inkomsten alleen. Wat je uiteindelijk betaalt of terugkrijgt hangt ook af van je andere inkomsten en wat daarop al is ingehouden.`
+        : `Bij verlies betaal je hierover niets. Verrekening met ander inkomen kan een teruggave opleveren.` },
 
       { type: 'kop', tekst: 'In te vullen op het aangifteformulier' },
-      { type: 'tekst', tekst: 'Bij "Inkomsten uit overig werk — winst uit onderneming" vul je deze bedragen in:' },
       { type: 'regel', label: 'Omzet', bedrag: omzet },
       ...velden.map(v => ({ type: 'regel', label: v.veld, bedrag: v.bedrag })),
 
@@ -913,6 +998,187 @@ function rijHtml(k, i) {
  * klik ernaast. Esc gaat in de capture-fase, zodat de algemene Escape-handler
  * van de app er niet doorheen loopt.
  */
+/**
+ * Venster om te kiezen in welke rubriek dit inkomen valt. Dat bepaalt of de
+ * MKB-winstvrijstelling meetelt, en dat scheelt direct in de belasting.
+ */
+export function openInkomenssoort() {
+  const nu = inkomenssoort();
+  const laag = document.createElement('div');
+  laag.className = 'pm-laag';
+  laag.innerHTML = `
+    <div class="pm-venster" role="dialog" aria-modal="true" style="max-width:560px">
+      <header class="pm-kop">
+        <div>
+          <h3>In welke rubriek vul je dit in?</h3>
+          <p class="pm-sub">Dit bepaalt of de MKB-winstvrijstelling van 14,2% meetelt.</p>
+        </div>
+        <button type="button" class="pm-kruis" data-sluit aria-label="Sluiten">&times;</button>
+      </header>
+      <div class="pm-inhoud" style="padding:16px 20px">
+        <label style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:10px;cursor:pointer">
+          <input type="radio" name="soort" value="onderneming"${nu === 'onderneming' ? ' checked' : ''} style="margin-top:3px">
+          <span>
+            <strong style="display:block;font-size:13px">Winst uit onderneming</strong>
+            <span style="font-size:12px;color:var(--text-muted);line-height:1.5">De Belastingdienst ziet je als ondernemer voor de inkomstenbelasting. De MKB-winstvrijstelling van 14,2% geldt: je betaalt over 85,8% van de winst.</span>
+          </span>
+        </label>
+        <label style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer">
+          <input type="radio" name="soort" value="overig"${nu === 'overig' ? ' checked' : ''} style="margin-top:3px">
+          <span>
+            <strong style="display:block;font-size:13px">Resultaat uit overig werk</strong>
+            <span style="font-size:12px;color:var(--text-muted);line-height:1.5">Je verdient er iets bij, maar bent geen ondernemer voor de inkomstenbelasting. De MKB-winstvrijstelling geldt dan niet: je betaalt over de hele winst.</span>
+          </span>
+        </label>
+        <p style="margin:14px 0 0;font-size:12px;color:var(--text-muted);line-height:1.6">
+          Welke van de twee klopt hangt af van je situatie, niet van deze instelling. De Belastingdienst kijkt onder meer naar hoeveel klanten je hebt, of je zelf je prijzen bepaalt, hoeveel je investeert en of je ondernemersrisico loopt. Twijfel je, gebruik dan de OndernemersCheck van de Belastingdienst of vraag het na bij een adviseur.
+        </p>
+      </div>
+      <footer class="pm-voet">
+        <div class="pm-knoppen">
+          <button type="button" class="btn" data-sluit>Annuleren</button>
+          <button type="button" class="btn btn-primary" id="soort-bewaar">Opslaan</button>
+        </div>
+      </footer>
+    </div>`;
+
+  const sluit = koppelVenster(laag);
+  laag.querySelector('#soort-bewaar').addEventListener('click', () => {
+    zetInkomenssoort(laag.querySelector('input[name="soort"]:checked')?.value);
+    sluit();
+    renderBelasting();
+  });
+}
+
+/**
+ * Venster waarin je per boeking het aftrekpercentage zet.
+ *
+ * Je kiest eerst een grootboekrekening en ziet dan alle uitgaven van dat jaar
+ * met datum, omschrijving en bedrag. Per regel vul je in hoeveel procent
+ * zakelijk is; onderaan zie je meteen wat dat aan aftrek oplevert.
+ */
+export function openPercentages(startGb = '4235') {
+  const jaar = gekozenJaar();
+  const belTX = jaar === 'all'
+    ? [...state.HIST_TX, ...state.TX]
+    : (jaar === HUIDIG_JAAR ? state.TX : state.HIST_TX.filter(t => t.datum.startsWith(jaar)));
+
+  const kosten = belTX.filter(isKostenpost);
+  const rekeningen = [...new Set(kosten.map(t => String(t.gb)))].sort();
+  const gb = rekeningen.includes(startGb) ? startGb : (rekeningen[0] || startGb);
+
+  const laag = document.createElement('div');
+  laag.className = 'pm-laag';
+  laag.innerHTML = `
+    <div class="pm-venster" role="dialog" aria-modal="true" style="max-width:760px">
+      <header class="pm-kop">
+        <div>
+          <h3>Aftrekpercentage per boeking — ${jaar}</h3>
+          <p class="pm-sub">Deels zakelijke aankopen trek je maar deels af. Zet per boeking hoeveel procent zakelijk is; 100% is de standaard.</p>
+        </div>
+        <button type="button" class="pm-kruis" data-sluit aria-label="Sluiten">&times;</button>
+      </header>
+      <div class="pm-inhoud">
+        <div style="padding:14px 20px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <label for="pc-gb" style="font-size:12px;color:var(--text-muted)">Grootboekrekening</label>
+          <select id="pc-gb" style="padding:7px 10px;font:inherit;font-size:13px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm)">
+            ${rekeningen.map(r => `<option value="${r}"${r === gb ? ' selected' : ''}>${r} — ${escHtml(GBNM[r] || 'onbekend')}</option>`).join('')}
+          </select>
+          <input id="pc-zoek" type="search" placeholder="Zoek op omschrijving of naam"
+                 style="flex:1;min-width:170px;padding:7px 10px;font:inherit;font-size:13px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm)">
+        </div>
+        <div id="pc-lijst" style="padding:12px 20px 16px"></div>
+      </div>
+      <footer class="pm-voet">
+        <div id="pc-totaal" style="font-size:12px;color:var(--text-muted)"></div>
+        <div class="pm-knoppen">
+          <button type="button" class="btn" data-sluit>Annuleren</button>
+          <button type="button" class="btn btn-primary" id="pc-bewaar">Opslaan</button>
+        </div>
+      </footer>
+    </div>`;
+
+  const sluit = koppelVenster(laag);
+  const kaart = { ...aftrekPercentages() };
+  const kiezer = laag.querySelector('#pc-gb');
+  const zoek = laag.querySelector('#pc-zoek');
+  const lijst = laag.querySelector('#pc-lijst');
+  const totaalVak = laag.querySelector('#pc-totaal');
+
+  const teken = () => {
+    const term = zoek.value.trim().toLowerCase();
+    const rijen = kosten
+      .filter(t => String(t.gb) === kiezer.value)
+      .filter(t => !term || `${t.naam || ''} ${t.omschr || ''}`.toLowerCase().includes(term))
+      .sort((a, b) => a.datum.localeCompare(b.datum));
+
+    if (!rijen.length) {
+      lijst.innerHTML = '<p style="margin:8px 0;font-size:13px;color:var(--text-muted)">Geen boekingen op deze rekening in dit jaar.</p>';
+      totaalVak.textContent = '';
+      return;
+    }
+
+    lijst.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="text-align:left;color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em">
+          <th style="padding:6px 8px 6px 0;width:78px">Datum</th>
+          <th style="padding:6px 8px 6px 0">Omschrijving</th>
+          <th style="padding:6px 8px;text-align:right;width:92px">Bedrag</th>
+          <th style="padding:6px 8px;text-align:right;width:74px">Zakelijk</th>
+          <th style="padding:6px 0 6px 8px;text-align:right;width:92px">Aftrekbaar</th>
+        </tr></thead>
+        <tbody>${rijen.map(t => `
+          <tr data-id="${escHtml(String(t.id))}" style="border-top:1px solid var(--border)">
+            <td style="padding:7px 8px 7px 0;color:var(--text-muted)">${ddmm(t.datum)}</td>
+            <td style="padding:7px 8px 7px 0">${escHtml(t.naam || t.omschr || '—')}</td>
+            <td style="padding:7px 8px;text-align:right">${fmt(t.bedrag)}</td>
+            <td style="padding:7px 8px;text-align:right">
+              <input class="pc-pct" type="number" min="0" max="100" step="1" value="${percentageVan(t, kaart)}"
+                     style="width:62px;padding:5px 6px;font:inherit;font-size:13px;text-align:right;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm)">
+            </td>
+            <td class="pc-uit" style="padding:7px 0 7px 8px;text-align:right;color:var(--text-muted)">${fmt(aftrekbaarBedrag(t, kaart))}</td>
+          </tr>`).join('')}</tbody>
+      </table>`;
+
+    const werkBij = () => {
+      let bruto = 0, netto = 0;
+      for (const rij of lijst.querySelectorAll('tr[data-id]')) {
+        const t = rijen.find(x => String(x.id) === rij.dataset.id);
+        if (!t) continue;
+        const veld = rij.querySelector('.pc-pct');
+        let pct = Number(veld.value);
+        if (!Number.isFinite(pct) || pct < 0) pct = 0;
+        if (pct > 100) pct = 100;
+        kaart[String(t.id)] = pct;
+        bruto += Number(t.bedrag) || 0;
+        const deel = (Number(t.bedrag) || 0) * pct / 100;
+        netto += deel;
+        rij.querySelector('.pc-uit').textContent = fmt(deel);
+      }
+      totaalVak.textContent = `Totaal op deze rekening ${fmt(bruto)} · aftrekbaar ${fmt(netto)}`;
+    };
+
+    lijst.addEventListener('input', e => { if (e.target.classList.contains('pc-pct')) werkBij(); });
+    werkBij();
+  };
+
+  kiezer.addEventListener('change', teken);
+  zoek.addEventListener('input', teken);
+  teken();
+
+  laag.querySelector('#pc-bewaar').addEventListener('click', () => {
+    // Alleen afwijkende percentages bewaren: 100% is de standaard en hoeft
+    // niet opgeslagen, anders groeit de opslag met elke boeking mee.
+    const schoon = {};
+    for (const [id, pct] of Object.entries(kaart)) {
+      if (Number(pct) !== 100) schoon[id] = Number(pct);
+    }
+    bewaarPercentages(schoon);
+    sluit();
+    renderBelasting();
+  });
+}
+
 function koppelVenster(laag) {
   document.body.appendChild(laag);
   const sluit = () => { document.removeEventListener('keydown', opToets, true); laag.remove(); };

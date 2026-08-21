@@ -123,7 +123,7 @@ export function modelNaarPdf(doc) {
     ruimte(REGELHOOGTE);
     y -= REGELHOOGTE;
     pagina.tekst.push({ tekst: label, x: links, y, corps: CORPS, vet });
-    pagina.tekst.push({ tekst: '€ ' + bedrag, x: rechts - breedte('€ ' + bedrag, CORPS), y, corps: CORPS, vet });
+    pagina.tekst.push({ tekst: bedrag, x: rechts - breedte(bedrag, CORPS), y, corps: CORPS, vet });
   };
 
   y -= 22;
@@ -139,14 +139,14 @@ export function modelNaarPdf(doc) {
       y -= 4;
 
     } else if (b.type === 'regel') {
-      zetRegel(b.label, (b.aftrek ? '\u2013 ' : '') + bedragNl(b.bedrag),
+      zetRegel(b.label, (b.aftrek ? '\u2013 \u20AC ' : '\u20AC ') + bedragNl(b.bedrag),
                { vet: !!b.totaal, streep: !!b.totaal });
 
     } else if (b.type === 'toelichting') {
       ruimte(REGELHOOGTE * 2);
       y -= REGELHOOGTE;
       pagina.tekst.push({
-        tekst: `${b.label} \u2014 ${bedragNl(b.bedrag)}`,
+        tekst: `${b.label} \u2014 \u20AC ${bedragNl(b.bedrag)}`,
         x: links, y, corps: CORPS, vet: true
       });
       for (const deel of breekAf(b.tekst, A4.breed - MARGE * 2 - 14, CORPS - 1)) {
