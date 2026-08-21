@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260821i';
+import { getClient, heeftClient } from './supabase.js?v=20260821j';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -198,6 +198,123 @@ export async function saveToSupabase(boeking, isHistoric) {
     
     console.log(`✅ Synced to Supabase: ${boeking.id}`);
     return true;
+  } catch (err) {
+    console.error('Error in saveToSupabase:', err);
+    return false;
+  }
+}
+
+/**
+ * Sla HNVI lot op naar Supabase
+ */
+export async function saveHnviToSupabase(lot) {
+  if (!heeftClient()) {
+    console.log('⚠️  Supabase not ready, skipping HNVI save');
+    return false;
+  }
+  
+  try {
+    const sb = await getClient();
+    
+    const session = await sb.auth.getSession();
+    const userId = session?.data?.session?.user?.id;
+    
+    if (!userId) {
+      console.warn('⚠️  No user ID available for HNVI save');
+      return false;
+    }
+    
+    const record = {
+      user_id: userId,
+      id: lot.id,
+      datum: lot.datum,
+      omschrijving: lot.omschr || null,
+      inkoop: parseFloat(lot.inkoop || 0),
+      verkoop: lot.verkoop ? parseFloat(lot.verkoop) : null,
+      status: lot.status || 'voorraad',
+      noot: lot.noot || null,
+      updated_at: new Date().toISOString()
+    };
+    
+    // Upsert (delete old, insert new)
+    await sb
+      .from('hnvi_loten')
+      .delete()
+      .eq('id', lot.id)
+      .eq('user_id', userId);
+    
+    const { error } = await sb.from('hnvi_loten').insert([record]);
+    
+    if (error) {
+      console.error(`❌ HNVI save failed (${lot.id}):`, error);
+      return false;
+    }
+    
+    console.log(`✅ HNVI synced to Supabase: ${lot.id}`);
+    return true;
+  } catch (err) {
+    console.error('Error in saveHnviToSupabase:', err);
+    return false;
+  }
+}
+
+/**
+ * Sla Cover (artikel voorraad) op naar Supabase
+ */
+export async function saveCoverToSupabase(cover) {
+  if (!heeftClient()) {
+    console.log('⚠️  Supabase not ready, skipping Cover save');
+    return false;
+  }
+  
+  try {
+    const sb = await getClient();
+    
+    const session = await sb.auth.getSession();
+    const userId = session?.data?.session?.user?.id;
+    
+    if (!userId) {
+      console.warn('⚠️  No user ID available for Cover save');
+      return false;
+    }
+    
+    const record = {
+      user_id: userId,
+      id: cover.id,
+      artikel: cover.artikel,
+      productgroep_id: cover.categorie || null,
+      voorraad: cover.voorraad || 0,
+      inkoopprijs: cover.inkoopprijs ? parseFloat(cover.inkoopprijs) : 0,
+      verkoopprijs: cover.prijs ? parseFloat(cover.prijs) : 0,
+      inkoop_gb: cover.inkoopGb || '7000',
+      handelsvoorraad: cover.handelsvoorraad ? true : false,
+      min_voorraad: cover.minVoorraad || null,
+      jaren: cover.jaren ? JSON.stringify(cover.jaren) : null,
+      omzet_2026: cover.omzet2026 || 0,
+      zoekterm: cover.zoekterm || null,
+      updated_at: new Date().toISOString()
+    };
+    
+    // Upsert
+    await sb
+      .from('voorraadartikelen')
+      .delete()
+      .eq('id', cover.id)
+      .eq('user_id', userId);
+    
+    const { error } = await sb.from('voorraadartikelen').insert([record]);
+    
+    if (error) {
+      console.error(`❌ Cover save failed (${cover.id}):`, error);
+      return false;
+    }
+    
+    console.log(`✅ Cover synced to Supabase: ${cover.id}`);
+    return true;
+  } catch (err) {
+    console.error('Error in saveCoverToSupabase:', err);
+    return false;
+  }
     
   } catch (err) {
     console.error(`❌ Supabase save error (${boeking.id}):`, err);
@@ -207,7 +324,12 @@ export async function saveToSupabase(boeking, isHistoric) {
 
 // ===== DELETE FROM SUPABASE (SOFT DELETE) =====
 
-export async function deleteFromSupabase(id) {
+/**
+ * Delete from appropriate table. 
+ * For now: tries to delete from covers first (most common), then HNVI, then boekingen.
+ * This is a workaround; in production you'd want to know which table upfront.
+ */
+export async function deleteFromSupabase(id, type = 'auto') {
   if (!heeftClient()) return false;
   
   try {
@@ -222,19 +344,48 @@ export async function deleteFromSupabase(id) {
       return false;
     }
     
-    const { error } = await sb
-      .from('boekingen')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('legacy_id', String(id))
-      .eq('user_id', userId);
+    // Determine which table based on type hint or try all
+    let tables = [];
+    if (type === 'cover' || type === 'auto') tables.push('voorraadartikelen');
+    if (type === 'hnvi' || type === 'auto') tables.push('hnvi_loten');
+    if (type === 'boeking' || type === 'auto') tables.push('boekingen');
     
-    if (error) {
-      console.error(`❌ Supabase soft delete failed (${id}):`, error);
-      return false;
+    let lastError = null;
+    for (const table of tables) {
+      try {
+        if (table === 'boekingen') {
+          // Soft delete for boekingen
+          const { error } = await sb
+            .from(table)
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('legacy_id', String(id))
+            .eq('user_id', userId);
+          if (!error) {
+            console.log(`✅ Deleted from ${table}: ${id}`);
+            return true;
+          }
+          lastError = error;
+        } else {
+          // Hard delete for voorraadartikelen and hnvi_loten
+          const { error } = await sb
+            .from(table)
+            .delete()
+            .eq('id', id)
+            .eq('user_id', userId);
+          if (!error) {
+            console.log(`✅ Deleted from ${table}: ${id}`);
+            return true;
+          }
+          lastError = error;
+        }
+      } catch (err) {
+        lastError = err;
+        // Continue to next table
+      }
     }
     
-    console.log(`✅ Soft-deleted in Supabase: ${id}`);
-    return true;
+    console.error(`❌ Delete failed for ${id}:`, lastError);
+    return false;
     
   } catch (err) {
     console.error(`❌ Supabase delete error (${id}):`, err);

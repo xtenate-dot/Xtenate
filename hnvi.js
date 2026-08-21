@@ -1,10 +1,10 @@
 // hnvi.js — HNVI/Xtenate voorraadbeheer, inclusief AI-factuurimport.
 
-import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260821i';
-import { maakSorteerbaar } from './tables.js?v=20260821i';
-import { openApiKeyModal } from './modals.js?v=20260821i';
-import { saveHnviData, state } from './storage.js?v=20260821i';
-import { saveToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821i';
+import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260821j';
+import { maakSorteerbaar } from './tables.js?v=20260821j';
+import { openApiKeyModal } from './modals.js?v=20260821j';
+import { saveHnviData, state } from './storage.js?v=20260821j';
+import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821j';
 
 export function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
@@ -148,11 +148,11 @@ export async function saveHNVI() {
   
   // Naar Supabase sturen (of wachtrij als offline)
   try {
-    const ok = await saveToSupabase(gewijzigdLot, false);
-    if (!ok) addToPendingQueue(gewijzigdLot, 'update', false);
+    const ok = await saveHnviToSupabase(gewijzigdLot);
+    if (!ok) addToPendingQueue(gewijzigdLot, 'hnvi', false);
   } catch (err) {
     console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
-    addToPendingQueue(gewijzigdLot, 'update', false);
+    addToPendingQueue(gewijzigdLot, 'hnvi', false);
   }
   
   closeHNVIModal();
@@ -169,11 +169,11 @@ export async function wisHNVIVerkoop(id) {
   saveHnviData();
   
   try {
-    const ok = await saveToSupabase(bijgewerkt, false);
-    if (!ok) addToPendingQueue(bijgewerkt, 'update', false);
+    const ok = await saveHnviToSupabase(bijgewerkt);
+    if (!ok) addToPendingQueue(bijgewerkt, 'hnvi', false);
   } catch (err) {
     console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
-    addToPendingQueue(bijgewerkt, 'update', false);
+    addToPendingQueue(bijgewerkt, 'hnvi', false);
   }
   
   renderHNVI();
@@ -188,7 +188,7 @@ export async function verwijderHNVIItem(key) {
   saveHnviData();
   
   try {
-    const ok = await deleteFromSupabase(teVerwijderen.id);
+    const ok = await deleteFromSupabase(teVerwijderen.id, 'hnvi');
     if (!ok) addToPendingQueue(teVerwijderen, 'delete', false);
   } catch (err) {
     console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
