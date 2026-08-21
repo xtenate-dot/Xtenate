@@ -5,8 +5,8 @@
 // ongewijzigd: elke tegel roept dezelfde globale functie aan als het
 // zijbalk-item, dus er verandert niets aan wat ze doen.
 
-import { draaiControles } from './controle.js?v=20260821j';
-import { esc } from './helpers.js?v=20260821j';
+import { draaiControles } from './controle.js?v=20260821k';
+import { esc } from './helpers.js?v=20260821k';
 
 const el = id => document.getElementById(id);
 

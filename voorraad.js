@@ -1,11 +1,11 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821j';
+import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821k';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260821j';
-import { maakSorteerbaar } from './tables.js?v=20260821j';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821j';
+} from './storage.js?v=20260821k';
+import { maakSorteerbaar } from './tables.js?v=20260821k';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821k';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
