@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260821j';
+import { getClient, heeftClient } from './supabase.js?v=20260821k';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -59,25 +59,38 @@ export function clearPendingQueueItem(key) {
 
 export function addToPendingQueue(boeking, operation, isHistoric = false) {
   const key = `${operation}_${boeking.id}_${Date.now()}`;
-  
+
+  // Voorraadartikelen en HNVI-loten hebben heel andere velden dan een boeking.
+  // Die mogen niet worden teruggeknipt tot boekingsvelden, anders staat er
+  // straks een lege regel in de wachtrij en is de wijziging alsnog kwijt.
+  const isBoeking = operation !== 'hnvi' && operation !== 'cover';
+
+  let data = null;
+  if (operation !== 'delete') {
+    data = isBoeking
+      ? {
+          id: boeking.id,
+          datum: boeking.datum,
+          bedrag: boeking.bedrag,
+          naam: boeking.naam,
+          omschr: boeking.omschr,
+          type: boeking.type,
+          rek: boeking.rek,
+          gb: boeking.gb
+        }
+      : { ...boeking };
+  }
+
   pendingQueue[key] = {
     id: boeking.id,
     operation: operation,
+    soort: operation === 'hnvi' ? 'hnvi' : operation === 'cover' ? 'cover' : 'auto',
     isHistoric: isHistoric,
     status: 'pending',
     timestamp: Date.now(),
     attempts: 0,
     maxAttempts: 3,
-    data: operation === 'delete' ? null : {
-      id: boeking.id,
-      datum: boeking.datum,
-      bedrag: boeking.bedrag,
-      naam: boeking.naam,
-      omschr: boeking.omschr,
-      type: boeking.type,
-      rek: boeking.rek,
-      gb: boeking.gb
-    }
+    data
   };
   
   savePendingQueue();
@@ -315,11 +328,6 @@ export async function saveCoverToSupabase(cover) {
     console.error('Error in saveCoverToSupabase:', err);
     return false;
   }
-    
-  } catch (err) {
-    console.error(`❌ Supabase save error (${boeking.id}):`, err);
-    return false;
-  }
 }
 
 // ===== DELETE FROM SUPABASE (SOFT DELETE) =====
@@ -424,7 +432,11 @@ export async function syncPendingQueue() {
       let success = false;
       
       if (pending.operation === 'delete') {
-        success = await deleteFromSupabase(pending.id);
+        success = await deleteFromSupabase(pending.id, pending.soort || 'auto');
+      } else if (pending.operation === 'hnvi') {
+        success = await saveHnviToSupabase(pending.data);
+      } else if (pending.operation === 'cover') {
+        success = await saveCoverToSupabase(pending.data);
       } else {
         success = await saveToSupabase(pending.data, pending.isHistoric);
       }
