@@ -1,11 +1,11 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821i';
+import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821j';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260821i';
-import { maakSorteerbaar } from './tables.js?v=20260821i';
-import { saveToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821i';
+} from './storage.js?v=20260821j';
+import { maakSorteerbaar } from './tables.js?v=20260821j';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821j';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -355,7 +355,7 @@ export async function verwijderArtikel(id) {
   
   // Naar Supabase sturen
   try {
-    const ok = await deleteFromSupabase(c.id);
+    const ok = await deleteFromSupabase(c.id, 'cover');
     if (!ok) addToPendingQueue(c, 'delete', false);
   } catch (err) {
     console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
@@ -378,7 +378,7 @@ export async function verwijderVoorraadSelectie() {
   // Elk artikel naar Supabase sturen
   for (const artikel of weg) {
     try {
-      const ok = await deleteFromSupabase(artikel.id);
+      const ok = await deleteFromSupabase(artikel.id, 'cover');
       if (!ok) addToPendingQueue(artikel, 'delete', false);
     } catch (err) {
       console.warn('Supabase niet bereikbaar voor artikel, in wachtrij gezet:', err);
@@ -648,11 +648,11 @@ export async function saveCover() {
   
   // Naar Supabase sturen
   try {
-    const ok = await saveToSupabase(obj, false);
-    if (!ok) addToPendingQueue(obj, 'update', false);
+    const ok = await saveCoverToSupabase(obj);
+    if (!ok) addToPendingQueue(obj, 'cover', false);
   } catch (err) {
     console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
-    addToPendingQueue(obj, 'update', false);
+    addToPendingQueue(obj, 'cover', false);
   }
   
   closeCoverModal();
