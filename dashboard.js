@@ -1,12 +1,12 @@
 // dashboard.js — Home: het financiële dashboard.
 
-import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260821f';
+import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260821h';
 import {
   BEGINSALDO_2026, GBNM, calcIB, ddmm, esc, fmt, fmtKort, isInkomst, isOmzet, isUitgave,
   maandLabel, rekBadge, saldoDelta, typeBadge, weergaveNaam
-} from './helpers.js?v=20260821f';
-import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260821f';
-import { maakSorteerbaar } from './tables.js?v=20260821f';
+} from './helpers.js?v=20260821h';
+import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260821h';
+import { maakSorteerbaar } from './tables.js?v=20260821h';
 
 const HOOFDREKENING = '1010'; // de bankrekening waarop het beginsaldo staat
 

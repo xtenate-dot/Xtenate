@@ -6,8 +6,8 @@
 // importfunctie leest; de overige kolommen zijn ingevuld met gegevens die het
 // bestand voor jou leesbaar maken maar bij het inlezen worden overgeslagen.
 
-import { GBNM, REKNM, isInkomst, maandLabel } from './helpers.js?v=20260821f';
-import { HOME_TOTALS, MAAND_SALDOS, groepNaam, state } from './storage.js?v=20260821f';
+import { GBNM, REKNM, isInkomst, maandLabel } from './helpers.js?v=20260821h';
+import { HOME_TOTALS, MAAND_SALDOS, groepNaam, state } from './storage.js?v=20260821h';
 
 const CREDITKAART = '1030';
 
