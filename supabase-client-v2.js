@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260821l';
+import { getClient, heeftClient } from './supabase.js?v=20260821m';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -322,11 +322,11 @@ export async function saveHnviToSupabase(lot) {
       user_id: userId,
       legacy_id: String(lot.id),  // App ID als text in legacy_id
       datum: lot.datum,
-      omschrijving: lot.omschr || null,
+      omschrijving: lot.omschr || '',  // NOT NULL - use empty string not null
       inkoop: lot.inkoop ? parseFloat(lot.inkoop) : 0,
       verkoop: lot.verkoop ? parseFloat(lot.verkoop) : null,
       status: lot.status || 'voorraad',
-      notitie: lot.noot || null,
+      notitie: lot.noot || '',  // NOT NULL - use empty string not null
       updated_at: new Date().toISOString()
     };
     
@@ -395,7 +395,7 @@ export async function saveCoverToSupabase(cover) {
       min_voorraad: cover.minVoorraad || null,
       ingekocht: totalIngekocht,
       verkocht: totalVerkocht,
-      zoekterm: cover.zoekterm || null,
+      zoekterm: cover.zoekterm || '',  // NOT NULL - use empty string not null
       updated_at: new Date().toISOString()
     };
     
