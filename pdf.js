@@ -123,7 +123,7 @@ export function modelNaarPdf(doc) {
     ruimte(REGELHOOGTE);
     y -= REGELHOOGTE;
     pagina.tekst.push({ tekst: label, x: links, y, corps: CORPS, vet });
-    pagina.tekst.push({ tekst: bedrag, x: rechts - breedte(bedrag, CORPS), y, corps: CORPS, vet });
+    pagina.tekst.push({ tekst: '€ ' + bedrag, x: rechts - breedte('€ ' + bedrag, CORPS), y, corps: CORPS, vet });
   };
 
   y -= 22;

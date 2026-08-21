@@ -51,6 +51,14 @@
 /* Belastingpagina op een telefoon.
    De schijven staan dan onder elkaar (grid2 klapt al om bij 860px), maar ze
    mogen wat lager worden zodat de legenda niet van het scherm valt. */
+
+@media (max-width: 900px) {
+  /* Op tablet: grafieken gaan onder de berekening in plaats van ernaast */
+  #p-belasting > div[style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 560px) {
   .metrics { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
   .metric { padding: var(--sp-3); }

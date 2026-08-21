@@ -1,9 +1,9 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc , palette } from './charts.js?v=20260821b';
-import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821b';
-import { downloadModelPdf } from './pdf.js?v=20260821b';
-import { state } from './storage.js?v=20260821b';
+import { charts, dc , palette } from './charts.js?v=20260821c';
+import { GBNM, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821c';
+import { downloadModelPdf } from './pdf.js?v=20260821c';
+import { state } from './storage.js?v=20260821c';
 
 const HUIDIG_JAAR = '2026';
 
@@ -767,13 +767,13 @@ export function aangifteTekst(jaar = gekozenJaar()) {
     if (b.type === 'kop') {
       regels.push('', b.tekst.toUpperCase());
     } else if (b.type === 'regel') {
-      const bed = (b.aftrek ? '-' : '') + bedragTekst(b.bedrag);
+      const bed = (b.aftrek ? '- € ' : '€ ') + bedragTekst(b.bedrag);
       // De streep hoort boven het totaal: hij sluit de regels erboven af.
       if (b.totaal) regels.push(' '.repeat(Math.max(0, BREED - bed.length)) + '-'.repeat(bed.length));
       const label = b.label + ' ';
       regels.push(label.padEnd(BREED - bed.length, '.') + bed);
     } else if (b.type === 'toelichting') {
-      regels.push(`  ${b.label} (${bedragTekst(b.bedrag)})`, `    ${b.tekst}`);
+      regels.push(`  ${b.label} (€ ${bedragTekst(b.bedrag)})`, `    ${b.tekst}`);
     } else if (b.type === 'tekst') {
       regels.push('', b.tekst);
     } else if (b.type === 'voet') {
