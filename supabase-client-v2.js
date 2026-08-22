@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260821x';
+import { getClient, heeftClient } from './supabase.js?v=20260821y';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -163,12 +163,16 @@ export async function loadCoversFromSupabase() {
     const huidigJaar = String(new Date().getFullYear());
 
     return data.map(c => {
-      // Staat de jaren-kolom gevuld, dan is die leidend. Zo niet, dan bouwen we
-      // een benadering uit de totalen ingekocht/verkocht op het huidige jaar.
+      // jaren kan null/leeg zijn uit Supabase (vooral oude records)
       let jaren = {};
-      if (c.jaren && typeof c.jaren === 'object' && Object.keys(c.jaren).length) {
+      if (c.jaren && typeof c.jaren === 'object') {
         jaren = c.jaren;
-      } else if (c.ingekocht || c.verkocht) {
+      } else if (typeof c.jaren === 'string') {
+        try { jaren = JSON.parse(c.jaren); } catch (e) { jaren = {}; }
+      }
+
+      // Als jaren leeg is maar we hebben wel ingekochte stuks, probeer ze te reconstrueren
+      if (!Object.keys(jaren).length && (c.ingekocht || c.verkocht)) {
         jaren[huidigJaar] = {
           inkoop: c.ingekocht || 0,
           verkocht: c.verkocht || 0,
@@ -418,22 +422,21 @@ export async function saveCoverToSupabase(cover) {
     
     const record = {
       user_id: userId,
-      legacy_id: String(cover.id),  // App ID als text in legacy_id
+      legacy_id: String(cover.id),
       artikel: cover.artikel,
-      productgroep_id: null,  // uuid-kolom; de app gebruikt tekst-ids, zie 'categorie'
+      productgroep_id: null,
       voorraad: cover.voorraad || 0,
       inkoopprijs: cover.inkoopprijs ? parseFloat(cover.inkoopprijs) : null,
       verkoopprijs: cover.prijs ? parseFloat(cover.prijs) : null,
       min_voorraad: cover.minVoorraad || null,
       ingekocht: totalIngekocht,
       verkocht: totalVerkocht,
-      zoekterm: cover.zoekterm || '',  // NOT NULL - use empty string not null
+      zoekterm: cover.zoekterm || '',
       updated_at: new Date().toISOString(),
-      // Onder deze streep: de kolommen uit de ALTER TABLE
       inkooprekening: String(cover.inkoopGb || '7000'),
       categorie: String(cover.categorie || 'overig'),
       handelsvoorraad: cover.handelsvoorraad !== false,
-      jaren: cover.jaren || {}
+      jaren: cover.jaren && Object.keys(cover.jaren).length > 0 ? cover.jaren : null
     };
     
     if (coverKolommenOntbreken) {
@@ -448,6 +451,7 @@ export async function saveCoverToSupabase(cover) {
       .eq('user_id', userId);
     
     let { error } = await sb.from('voorraadartikelen').insert([record]);
+    if (!error && record.jaren) { console.log(`✅ jaren opgeslagen: ${cover.artikel}`); }
     
     // Ontbreekt een van de nieuwe kolommen, dan één keer opnieuw zonder.
     if (error && !coverKolommenOntbreken && isOnbekendeKolomFout(error)) {
