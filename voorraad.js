@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260821y';
+import { PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260821z';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260821y';
-import { maakSorteerbaar } from './tables.js?v=20260821y';
-import { inkoopprijzenUitBank, prijsPerStuk } from './belasting.js?v=20260821y';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821y';
+} from './storage.js?v=20260821z';
+import { maakSorteerbaar } from './tables.js?v=20260821z';
+import { inkoopprijzenUitBank, prijsPerStuk } from './belasting.js?v=20260821z';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821z';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -1059,21 +1059,31 @@ export async function handleImportVoorraad(event) {
     // Sync ALLEEN de zojuist toegevoegde/bijgewerkte artikelen naar Supabase
     status.innerHTML = `⏳ Syncing ${toegevoegd + bijgewerkt} items to Supabase...`;
     console.log(`📤 Syncing ${toegevoegd + bijgewerkt} covers to Supabase...`);
+    console.log(`   staat.COVERS.length = ${state.COVERS.length}`);
+    console.log(`   Math.max(toegevoegd=${toegevoegd}, bijgewerkt=${bijgewerkt}) = ${Math.max(toegevoegd, bijgewerkt)}`);
     
     let syncOk = 0, syncFailed = 0;
     const recentArticles = state.COVERS.slice(-Math.max(toegevoegd, bijgewerkt) || state.COVERS.length);
+    console.log(`   recentArticles = ${recentArticles.length} items`);
     
     for (const artikel of recentArticles) {
+      console.log(`   → Saving ${artikel.artikel}...`);
       try {
         const ok = await saveCoverToSupabase(artikel);
-        if (ok) syncOk++;
-        else syncFailed++;
+        if (ok) {
+          syncOk++;
+          console.log(`     ✅ ${artikel.artikel}`);
+        } else {
+          syncFailed++;
+          console.log(`     ⚠️  ${artikel.artikel} returned false`);
+        }
       } catch (err) {
         syncFailed++;
-        console.error(`❌ ${artikel.artikel}:`, err.message);
+        console.error(`     ❌ ${artikel.artikel}:`, err.message);
       }
     }
     
+    console.log(`📊 Import sync result: ${syncOk} ok, ${syncFailed} failed`);
     status.innerHTML = `✅ ${toegevoegd} toegevoegd, ${bijgewerkt} bijgewerkt<br><small style="color:var(--text-muted)">✅ ${syncOk} naar Supabase · ${syncFailed ? syncFailed + ' mislukt' : 'alles OK'}</small>`;
     
     setTimeout(() => {
