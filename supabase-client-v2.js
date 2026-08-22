@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260821v';
+import { getClient, heeftClient } from './supabase.js?v=20260821w';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -163,11 +163,12 @@ export async function loadCoversFromSupabase() {
     const huidigJaar = String(new Date().getFullYear());
 
     return data.map(c => {
-      // De tabel heeft geen kolom per boekjaar; wel de totalen ingekocht en
-      // verkocht. Die zetten we terug op het huidige jaar, zodat de aantallen
-      // en de inkoopprijs-uit-bank blijven werken na een herstart.
-      const jaren = {};
-      if (c.ingekocht || c.verkocht) {
+      // Staat de jaren-kolom gevuld, dan is die leidend. Zo niet, dan bouwen we
+      // een benadering uit de totalen ingekocht/verkocht op het huidige jaar.
+      let jaren = {};
+      if (c.jaren && typeof c.jaren === 'object' && Object.keys(c.jaren).length) {
+        jaren = c.jaren;
+      } else if (c.ingekocht || c.verkocht) {
         jaren[huidigJaar] = {
           inkoop: c.ingekocht || 0,
           verkocht: c.verkocht || 0,
@@ -183,7 +184,7 @@ export async function loadCoversFromSupabase() {
       return {
         id: parseInt(c.legacy_id) || c.legacy_id,
         artikel: c.artikel,
-        categorie: c.productgroep_id || 'overig',  // Fallback
+        categorie: c.categorie || 'overig',
         inkoop: c.ingekocht || 0,
         inkoopprijs: ip,
         voorraad: c.voorraad || 0,
@@ -191,8 +192,8 @@ export async function loadCoversFromSupabase() {
         omzet2026: c.verkocht || 0,
         zoekterm: c.zoekterm || '',
         minVoorraad: c.min_voorraad,
-        handelsvoorraad: true,  // Default
-        inkoopGb: '7000',  // Default
+        handelsvoorraad: c.handelsvoorraad !== false,
+        inkoopGb: c.inkooprekening || '7000',
         jaren
       };
     });
@@ -378,6 +379,16 @@ export async function saveHnviToSupabase(lot) {
  * voorraadartikelen tabel: id=UUID, legacy_id=app-id, 
  * productgroep_id=UUID (knoppelink naar groepen, niet in de app beschikbaar)
  */
+// Kolommen die pas bestaan na de ALTER TABLE. Ontbreken ze, dan slaan we het
+// artikel alsnog op zonder die velden in plaats van de sync te laten klappen.
+const OPTIONELE_COVER_KOLOMMEN = ['inkooprekening', 'categorie', 'handelsvoorraad', 'jaren'];
+let coverKolommenOntbreken = false;
+
+function isOnbekendeKolomFout(error) {
+  const tekst = `${error?.message || ''} ${error?.hint || ''} ${error?.details || ''}`.toLowerCase();
+  return error?.code === 'PGRST204' || tekst.includes('could not find') || tekst.includes('column');
+}
+
 export async function saveCoverToSupabase(cover) {
   if (!heeftClient()) {
     console.log('⚠️  Supabase not ready, skipping Cover save');
@@ -409,7 +420,7 @@ export async function saveCoverToSupabase(cover) {
       user_id: userId,
       legacy_id: String(cover.id),  // App ID als text in legacy_id
       artikel: cover.artikel,
-      productgroep_id: null,  // TODO: moet gekoppeld worden aan groepen-tabel
+      productgroep_id: null,  // uuid-kolom; de app gebruikt tekst-ids, zie 'categorie'
       voorraad: cover.voorraad || 0,
       inkoopprijs: cover.inkoopprijs ? parseFloat(cover.inkoopprijs) : null,
       verkoopprijs: cover.prijs ? parseFloat(cover.prijs) : null,
@@ -417,8 +428,17 @@ export async function saveCoverToSupabase(cover) {
       ingekocht: totalIngekocht,
       verkocht: totalVerkocht,
       zoekterm: cover.zoekterm || '',  // NOT NULL - use empty string not null
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      // Onder deze streep: de kolommen uit de ALTER TABLE
+      inkooprekening: String(cover.inkoopGb || '7000'),
+      categorie: String(cover.categorie || 'overig'),
+      handelsvoorraad: cover.handelsvoorraad !== false,
+      jaren: cover.jaren || {}
     };
+    
+    if (coverKolommenOntbreken) {
+      OPTIONELE_COVER_KOLOMMEN.forEach(k => delete record[k]);
+    }
     
     // Upsert
     await sb
@@ -427,7 +447,16 @@ export async function saveCoverToSupabase(cover) {
       .eq('legacy_id', String(cover.id))
       .eq('user_id', userId);
     
-    const { error } = await sb.from('voorraadartikelen').insert([record]);
+    let { error } = await sb.from('voorraadartikelen').insert([record]);
+    
+    // Ontbreekt een van de nieuwe kolommen, dan één keer opnieuw zonder.
+    if (error && !coverKolommenOntbreken && isOnbekendeKolomFout(error)) {
+      console.warn('⚠️  Nieuwe kolommen ontbreken in voorraadartikelen; ALTER TABLE nog niet uitgevoerd?');
+      console.warn('    Groep, inkooprekening en jaartallen worden nu niet bewaard.');
+      coverKolommenOntbreken = true;
+      OPTIONELE_COVER_KOLOMMEN.forEach(k => delete record[k]);
+      ({ error } = await sb.from('voorraadartikelen').insert([record]));
+    }
     
     if (error) {
       console.error(`❌ Cover save failed (${cover.id}):`, error);
