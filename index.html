@@ -561,6 +561,7 @@
     <label style="font-size:11.5px">Verplaats naar</label>
     <select id="bulk-cat" aria-label="Doelgroep"></select>
     <button class="btn btn-primary btn-sm" onclick="verplaatsVoorraadSelectie()">Verplaatsen</button>
+    <button class="btn btn-sm" onclick="zetHandelsvoorraadSelectie(true)" title="Zet deze artikelen op handelsvoorraad, zodat de inkoopprijs uit de bank wordt afgeleid">Handelsvoorraad: Ja</button>
     <button class="btn btn-danger btn-sm" onclick="verwijderVoorraadSelectie()">Verwijderen</button>
     <button class="btn btn-ghost btn-sm" onclick="wisVoorraadSelectie()">Selectie wissen</button>
   </div>
@@ -909,7 +910,8 @@
         
       </select>
     </div>
-    <div class="form-group"><label>Inkoopprijs per stuk (€)</label><input type="text" inputmode="decimal" id="cv-inkoopprijs" placeholder="leeg = uit de bank"></div>
+    <div class="form-group"><label>Inkoopprijs per stuk (€)</label><input type="text" inputmode="decimal" id="cv-inkoopprijs" placeholder="leeg = uit de bank">
+      <div id="cv-inkoopprijs-hint" style="font-size:11px;line-height:1.45;margin-top:5px;color:var(--text-muted)"></div></div>
     <div class="form-group"><label>Verkoopprijs (€)</label><input type="text" inputmode="decimal" id="cv-prijs" placeholder="bijv. 31,95"></div>
     <div class="form-group"><label>Ingekocht totaal (stuks)</label><input type="number" id="cv-ink" placeholder="0" min="0"></div>
     <div class="form-group"><label>Verkocht totaal (stuks)</label><input type="number" id="cv-vk" placeholder="0" min="0"></div>
@@ -999,6 +1001,6 @@
 </div>
 </div>
 
-<script type="module" src="app.js?v=20260821v"></script>
+<script type="module" src="app.js?v=20260821w"></script>
 </body>
 </html>

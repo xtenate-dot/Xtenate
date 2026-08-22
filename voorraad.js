@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821v';
+import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821w';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260821v';
-import { maakSorteerbaar } from './tables.js?v=20260821v';
-import { inkoopprijzenUitBank, prijsPerStuk } from './belasting.js?v=20260821v';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821v';
+} from './storage.js?v=20260821w';
+import { maakSorteerbaar } from './tables.js?v=20260821w';
+import { inkoopprijzenUitBank, prijsPerStuk } from './belasting.js?v=20260821w';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821w';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -384,6 +384,34 @@ export function selecteerAlleVoorraad(vinkje) {
   renderBulkbalk();
 }
 
+/**
+ * Zet de geselecteerde artikelen in één keer op (of af van) handelsvoorraad.
+ * Handig na een import: pas dan kan de inkoopprijs uit de bank komen.
+ */
+export async function zetHandelsvoorraadSelectie(aan = true) {
+  const gekozen = state.COVERS.filter(c => selectie.has(String(c.id)));
+  if (!gekozen.length) return;
+
+  gekozen.forEach(c => {
+    c.handelsvoorraad = !!aan;
+    if (aan && !c.inkoopGb) c.inkoopGb = '7000';
+  });
+  saveCoversData();
+  renderCovers();
+
+  let ok = 0;
+  for (const c of gekozen) {
+    try {
+      if (await saveCoverToSupabase(c)) ok++;
+      else addToPendingQueue(c, 'cover', false);
+    } catch (err) {
+      console.warn(`Sync van ${c.artikel} faalde:`, err);
+      addToPendingQueue(c, 'cover', false);
+    }
+  }
+  console.log(`Handelsvoorraad ${aan ? 'aan' : 'uit'} voor ${gekozen.length} artikelen · ${ok} gesynct`);
+}
+
 function renderBulkbalk() {
   const balk = el('voorraad-bulk');
   const n = selectie.size;
@@ -614,8 +642,67 @@ export function openCoverModal() {
   zetJaarLabels();
   el('cv-cat').value = actieveTab === 'alle' ? standaardGroep() : actieveTab;
   zetKeuzeStandaarden();
+  if (el('cv-inkoopprijs-hint')) el('cv-inkoopprijs-hint').textContent = '';
   el('modal-cover').classList.add('open');
   el('cv-naam').focus();
+}
+
+/**
+ * Legt uit wat de bank voor dit artikel kan afleiden. Geeft een korte tekst
+ * terug voor onder het inkoopprijs-veld, zodat zichtbaar is waarom er wel of
+ * geen prijs uit de bank komt in plaats van een stil streepje.
+ */
+function bankPrijsUitleg({ handelsvoorraad, inkoopGb, jaren, inkoopprijs }) {
+  const handmatig = Number(inkoopprijs);
+  if (Number.isFinite(handmatig) && handmatig > 0) {
+    return { kleur: 'var(--text-muted)', tekst: `Je vult hier zelf ${fmt(handmatig)} in. Maak het veld leeg om de bank te gebruiken.` };
+  }
+  if (handelsvoorraad === false) {
+    return {
+      kleur: 'var(--amber, #d19a3a)',
+      tekst: 'Geen bankprijs: "Telt mee als handelsvoorraad" staat op Nee. De inkoop is dan meteen kosten, dus er wordt geen voorraadwaarde per stuk berekend. Zet dit op Ja voor een prijs uit de bank.'
+    };
+  }
+  const gb = String(inkoopGb || '7000');
+  if (gb !== '7000' && gb !== '7020') {
+    return { kleur: 'var(--amber, #d19a3a)', tekst: `Geen bankprijs: rekening ${gb} telt niet als handelsvoorraad.` };
+  }
+
+  const stuks = Object.values(jaren || {}).reduce((s, j) => s + (Number(j?.inkoop) || 0), 0);
+  if (!(stuks > 0)) {
+    return {
+      kleur: 'var(--amber, #d19a3a)',
+      tekst: `Geen bankprijs: er staan 0 ingekochte stuks op ${gb}. De app deelt het bankbedrag door het aantal stuks, dus vul "Ingekocht totaal" in of importeer de Excel opnieuw.`
+    };
+  }
+
+  const prijs = Number(prijsPerStuk({ handelsvoorraad, inkoopGb: gb, jaren, inkoopprijs: null },
+    bankPrijzen, gekozenJaar === 'nu' ? HUIDIG_JAAR : gekozenJaar));
+  if (!(prijs > 0)) {
+    return {
+      kleur: 'var(--amber, #d19a3a)',
+      tekst: `Geen bankprijs: wel ${stuks} stuks, maar geen uitgaven geboekt op rekening ${gb}. Boek de inkoopfactuur op ${gb}, dan verschijnt de prijs vanzelf.`
+    };
+  }
+  return {
+    kleur: 'var(--green, #4ea87a)',
+    tekst: `Uit de bank: ${fmt(prijs)} per stuk — het bedrag op ${gb} gedeeld door ${stuks} ingekochte stuks. Laat leeg om dit te blijven volgen.`
+  };
+}
+
+/** Ververst het hintregeltje onder het inkoopprijs-veld in de bewerk-modal. */
+function ververInkoopprijsHint() {
+  const doel = el('cv-inkoopprijs-hint');
+  if (!doel) return;
+  const c = state.COVERS.find(x => String(x.id) === String(state.editCoverId));
+  const { kleur, tekst } = bankPrijsUitleg({
+    handelsvoorraad: el('cv-handelsvoorraad')?.value === 'nee' ? false : true,
+    inkoopGb: el('cv-inkoop-gb')?.value || '7000',
+    jaren: c?.jaren || {},
+    inkoopprijs: el('cv-inkoopprijs')?.value
+  });
+  doel.style.color = kleur;
+  doel.textContent = tekst;
 }
 
 export function openCoverEdit(id) {
@@ -655,6 +742,18 @@ export function openCoverEdit(id) {
   
   el('cv-26').removeEventListener('input', berekenEindstand);
   el('cv-26').addEventListener('input', berekenEindstand);
+
+  // De hint moet meebewegen met de velden waar hij van afhangt.
+  ververBankPrijzen();
+  ververInkoopprijsHint();
+  ['cv-handelsvoorraad', 'cv-inkoop-gb', 'cv-inkoopprijs', 'cv-ink'].forEach(veld => {
+    const node = el(veld);
+    if (!node) return;
+    node.removeEventListener('change', ververInkoopprijsHint);
+    node.removeEventListener('input', ververInkoopprijsHint);
+    node.addEventListener('change', ververInkoopprijsHint);
+    node.addEventListener('input', ververInkoopprijsHint);
+  });
 }
 
 export function closeCoverModal() { el('modal-cover').classList.remove('open'); }
