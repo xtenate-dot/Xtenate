@@ -1,9 +1,9 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc , palette } from './charts.js?v=20260821w';
-import { GBNM, ddmm, fmt, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821w';
-import { downloadModelPdf } from './pdf.js?v=20260821w';
-import { state } from './storage.js?v=20260821w';
+import { charts, dc , palette } from './charts.js?v=20260821x';
+import { GBNM, ddmm, fmt, gbCode, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821x';
+import { downloadModelPdf } from './pdf.js?v=20260821x';
+import { state } from './storage.js?v=20260821x';
 
 const HUIDIG_JAAR = '2026';
 
@@ -139,12 +139,12 @@ export function voorraadRekeningen() {
 
 export function isHandelsvoorraad(art) {
   if (art?.handelsvoorraad === false) return false;
-  const gb = String(art?.inkoopGb || '7000');
+  const gb = gbCode(art?.inkoopGb) || '7000';
   return gb === '7000' || gb === '7020';
 }
 
 export function inkoopRekeningVan(art) {
-  return String(art?.inkoopGb || '7000');
+  return gbCode(art?.inkoopGb) || '7000';
 }
 
 /**
@@ -174,7 +174,7 @@ export function inkoopprijzenUitBank(alleTX, covers) {
 
   for (const t of alleTX || []) {
     if (!isUitgave(t)) continue;
-    const gb = String(t.gb);
+    const gb = gbCode(t.gb);
     if (!stuks[gb]) continue;
     const jr = String(t.datum || '').slice(0, 4);
     bedrag[gb] = bedrag[gb] || {};
@@ -612,7 +612,7 @@ export function renderBelasting() {
   const perGb = {};
   for (const t of belTX) {
     if (!isUitgave(t)) continue;
-    const gb = String(t.gb);
+    const gb = gbCode(t.gb);
     if (!(Number(gb) >= 4000) || isOmzet(gb)) continue;  // balans en terugbetalingen tellen niet mee
     perGb[gb] = (perGb[gb] || 0) + (Number(t.bedrag) || 0);
   }

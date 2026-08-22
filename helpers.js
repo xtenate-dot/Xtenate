@@ -58,7 +58,15 @@ export const fmt = n => '€\u202f' + Number(n).toLocaleString('nl-NL', {minimum
 
 export const ddmm = d => d.slice(8,10) + '-' + d.slice(5,7);
 
-export const isOmzet = gb => ['8000','8010','8020'].includes(gb);
+/**
+ * Maakt een grootboeknummer vergelijkbaar, ongeacht hoe het is opgeslagen.
+ * Een numeric-kolom in de database levert '7000.00' op en een los ingetypte
+ * waarde soms ' 7000'. Zonder deze normalisatie mislukt een vergelijking als
+ * gb === '7000' stilzwijgend, en dat is lastig te zien.
+ */
+export const gbCode = v => String(v ?? '').trim().replace(/\.0+$/, '');
+
+export const isOmzet = gb => ['8000', '8010', '8020'].includes(gbCode(gb));
 
 export const isUitgave = t => t.type === 'uitgave';
 

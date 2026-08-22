@@ -3,9 +3,9 @@
 import {
   GBNM, REKNM, bedragUit, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, maandLabel, rekBadge,
   typeBadge, vulMaandSelect, weergaveNaam
-} from './helpers.js?v=20260821w';
-import { MAAND_SALDOS, saveHistTxData, saveTxData, state } from './storage.js?v=20260821w';
-import { maakSorteerbaar } from './tables.js?v=20260821w';
+} from './helpers.js?v=20260821x';
+import { MAAND_SALDOS, saveHistTxData, saveTxData, state } from './storage.js?v=20260821x';
+import { maakSorteerbaar } from './tables.js?v=20260821x';
 
 // Fase 3A: Supabase pending queue
 import {
@@ -13,7 +13,7 @@ import {
   syncPendingQueue,
   pendingQueue,
   isSupabaseReady
-} from './supabase-client-v2.js?v=20260821w';
+} from './supabase-client-v2.js?v=20260821x';
 
 const el = id => document.getElementById(id);
 
