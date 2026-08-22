@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260821u';
+import { getClient, heeftClient } from './supabase.js?v=20260821v';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -160,21 +160,42 @@ export async function loadCoversFromSupabase() {
     
     if (!data || data.length === 0) return [];
     
-    return data.map(c => ({
-      id: parseInt(c.legacy_id) || c.legacy_id,
-      artikel: c.artikel,
-      categorie: c.productgroep_id || 'overig',  // Fallback
-      inkoop: c.inkoopprijs || 0,
-      inkoopprijs: c.inkoopprijs || 0,
-      voorraad: c.voorraad || 0,
-      prijs: c.verkoopprijs || 0,
-      omzet2026: 0,  // Dit zit niet in de tabel
-      zoekterm: c.zoekterm || '',
-      minVoorraad: c.min_voorraad,
-      handelsvoorraad: true,  // Default
-      inkoopGb: '7000',  // Default
-      jaren: {}  // Kan uit Supabase data worden afgeleid via ingekocht/verkocht
-    }));
+    const huidigJaar = String(new Date().getFullYear());
+
+    return data.map(c => {
+      // De tabel heeft geen kolom per boekjaar; wel de totalen ingekocht en
+      // verkocht. Die zetten we terug op het huidige jaar, zodat de aantallen
+      // en de inkoopprijs-uit-bank blijven werken na een herstart.
+      const jaren = {};
+      if (c.ingekocht || c.verkocht) {
+        jaren[huidigJaar] = {
+          inkoop: c.ingekocht || 0,
+          verkocht: c.verkocht || 0,
+          eind: c.voorraad || 0
+        };
+      }
+
+      // Belangrijk: een lege prijs blijft leeg. Zou hier 0 staan, dan telt het
+      // artikel mee als "prijs bekend, waarde nul" en klopt de voorraadwaarde niet.
+      const ip = c.inkoopprijs == null ? null : Number(c.inkoopprijs);
+      const vp = c.verkoopprijs == null ? null : Number(c.verkoopprijs);
+
+      return {
+        id: parseInt(c.legacy_id) || c.legacy_id,
+        artikel: c.artikel,
+        categorie: c.productgroep_id || 'overig',  // Fallback
+        inkoop: c.ingekocht || 0,
+        inkoopprijs: ip,
+        voorraad: c.voorraad || 0,
+        prijs: vp,
+        omzet2026: c.verkocht || 0,
+        zoekterm: c.zoekterm || '',
+        minVoorraad: c.min_voorraad,
+        handelsvoorraad: true,  // Default
+        inkoopGb: '7000',  // Default
+        jaren
+      };
+    });
   } catch (err) {
     console.warn('Error in loadCoversFromSupabase:', err);
     return [];

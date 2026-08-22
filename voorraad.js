@@ -1,11 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821u';
+import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821v';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260821u';
-import { maakSorteerbaar } from './tables.js?v=20260821u';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821u';
+} from './storage.js?v=20260821v';
+import { maakSorteerbaar } from './tables.js?v=20260821v';
+import { inkoopprijzenUitBank, prijsPerStuk } from './belasting.js?v=20260821v';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821v';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -62,10 +63,48 @@ function standVan(c) {
   };
 }
 
+/**
+ * Inkoopprijzen die uit de bank af te leiden zijn: bedrag op de inkooprekening
+ * gedeeld door het aantal ingekochte stuks. Wordt per render één keer berekend,
+ * want het loopt over alle boekingen heen.
+ */
+let bankPrijzen = null;
+function ververBankPrijzen() {
+  try {
+    bankPrijzen = inkoopprijzenUitBank([...state.HIST_TX, ...state.TX], state.COVERS);
+  } catch (err) {
+    console.warn('Inkoopprijzen uit bank niet beschikbaar:', err);
+    bankPrijzen = null;
+  }
+}
+
+/**
+ * De inkoopprijs per stuk die we voor dit artikel gebruiken. Staat er een
+ * bedrag bij het artikel, dan wint dat. Zo niet, dan leiden we hem af uit de
+ * bankboekingen op de inkooprekening. Levert null op als geen van beide kan.
+ */
+function inkoopprijsVan(c) {
+  const handmatig = Number(c.inkoopprijs);
+  if (Number.isFinite(handmatig) && handmatig > 0) return handmatig;
+  if (!bankPrijzen) return null;
+  const jaar = gekozenJaar === 'nu' ? HUIDIG_JAAR : gekozenJaar;
+  const uitBank = Number(prijsPerStuk(c, bankPrijzen, jaar));
+  return Number.isFinite(uitBank) && uitBank > 0 ? uitBank : null;
+}
+
 function waardeVan(c, stand) {
   if (stand.voorraad == null) return null;
-  if (c.inkoopprijs == null || c.inkoopprijs === '') return null;
-  return stand.voorraad * Number(c.inkoopprijs);
+  const prijs = inkoopprijsVan(c);
+  if (prijs == null) return null;
+  return stand.voorraad * prijs;
+}
+
+/** Wat de voorraad zou opbrengen als alles tegen de verkoopprijs weggaat. */
+function verkoopwaardeVan(c, stand) {
+  if (stand.voorraad == null) return null;
+  const vk = verkoopprijs(c);
+  if (vk == null || !(vk > 0)) return null;
+  return stand.voorraad * vk;
 }
 
 function status(c, stand) {
@@ -155,26 +194,56 @@ function renderKerncijfers(lijst) {
   const waarde = metPrijs.reduce((s, x) => s + waardeVan(x.c, x.s), 0);
   const zonderPrijs = standen.filter(x => x.s.voorraad > 0 && waardeVan(x.c, x.s) === null).length;
 
+  const metVk = standen.filter(x => verkoopwaardeVan(x.c, x.s) !== null);
+  const verkoopwaarde = metVk.reduce((s, x) => s + verkoopwaardeVan(x.c, x.s), 0);
+  const zonderVk = standen.filter(x => x.s.voorraad > 0 && verkoopwaardeVan(x.c, x.s) === null).length;
+
+  const tabNaam = actieveTab === 'alle' ? 'alle groepen' : groepNaam(actieveTab);
+
   if (gekozenJaar === 'nu') {
     const laag = standen.filter(x => status(x.c, x.s) === 'laag').length;
     const uit = standen.filter(x => status(x.c, x.s) === 'uit').length;
+    // Marge alleen over de artikelen waar we allebei de prijzen van kennen,
+    // anders vergelijk je een volledige verkoopwaarde met een halve inkoop.
+    const beide = standen.filter(x => waardeVan(x.c, x.s) !== null && verkoopwaardeVan(x.c, x.s) !== null);
+    const inkoopBeide = beide.reduce((s, x) => s + waardeVan(x.c, x.s), 0);
+    const verkoopBeide = beide.reduce((s, x) => s + verkoopwaardeVan(x.c, x.s), 0);
+    const marge = verkoopBeide - inkoopBeide;
+    const margePct = inkoopBeide > 0 ? Math.round(marge / verkoopBeide * 100) : null;
+
     el('voorraad-kpi').innerHTML = `
       <div class="kpi">
-        <div class="kpi-lbl">Totale voorraadwaarde</div>
+        <div class="kpi-lbl">Voorraadwaarde (inkoop)</div>
         <div class="kpi-val">${fmt(waarde)}</div>
-        <div class="kpi-sub">${zonderPrijs > 0 ? `${zonderPrijs} artikel${zonderPrijs === 1 ? '' : 'en'} zonder inkoopprijs` : 'tegen inkoopprijs'}</div>
+        <div class="kpi-sub">${zonderPrijs > 0
+          ? `${zonderPrijs} artikel${zonderPrijs === 1 ? '' : 'en'} zonder inkoopprijs`
+          : `${tabNaam} · tegen inkoopprijs`}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">Verkoopwaarde</div>
+        <div class="kpi-val pos">${fmt(verkoopwaarde)}</div>
+        <div class="kpi-sub">${zonderVk > 0
+          ? `${zonderVk} artikel${zonderVk === 1 ? '' : 'en'} zonder verkoopprijs`
+          : 'als alles verkocht wordt'}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">Verwachte marge</div>
+        <div class="kpi-val ${marge >= 0 ? 'pos' : 'neg'}">${beide.length ? fmt(marge) : '—'}</div>
+        <div class="kpi-sub">${beide.length
+          ? `${margePct != null ? margePct + '% · ' : ''}over ${beide.length} artikel${beide.length === 1 ? '' : 'en'}`
+          : 'nog geen prijzen bekend'}</div>
       </div>
       <div class="kpi">
         <div class="kpi-lbl">Aantal producten</div>
         <div class="kpi-val">${lijst.length}</div>
         <div class="kpi-sub">${stuks} stuks op voorraad</div>
       </div>
-      <div class="kpi">
+      <div class="kpi kpi--secondary">
         <div class="kpi-lbl">Lage voorraad</div>
         <div class="kpi-val ${laag > 0 ? 'neg' : ''}">${laag}</div>
         <div class="kpi-sub">${laag > 0 ? 'bijbestellen' : 'niets onder de drempel'}</div>
       </div>
-      <div class="kpi">
+      <div class="kpi kpi--secondary">
         <div class="kpi-lbl">Uitverkocht</div>
         <div class="kpi-val ${uit > 0 ? 'muted' : ''}">${uit}</div>
         <div class="kpi-sub">van ${lijst.length} artikelen</div>
@@ -221,6 +290,7 @@ const STATUS_BADGE = {
 };
 
 export function renderCovers() {
+  ververBankPrijzen();
   renderTabs();
   vulJaarKeuze();
   vulGroepKeuzes();
@@ -253,6 +323,8 @@ export function renderCovers() {
     ? lijst.map(c => {
         const stand = standVan(c);
         const vk = verkoopprijs(c);
+        const ip = inkoopprijsVan(c);
+        const handmatigeIp = Number(c.inkoopprijs) > 0;
         const waarde = waardeVan(c, stand);
         const omzet = !jaarModus && vk != null ? stand.verkocht * vk : null;
         const rechts = jaarModus ? (stand.verkocht || 0) : (omzet ? fmt(omzet) : '—');
@@ -262,6 +334,11 @@ export function renderCovers() {
           <td style="font-weight:${stand.voorraad > 0 ? 500 : 400}">${esc(c.artikel)}</td>
           ${toonGroep ? `<td class="muted">${esc(groepNaam(c.categorie))}</td>` : ''}
           <td style="text-align:right" data-v="${stand.voorraad ?? -1}">${stand.voorraad ?? '—'}</td>
+          <td style="text-align:right" data-v="${ip ?? -1}"${!handmatigeIp && ip != null ? ' title="Afgeleid uit de bankboekingen op de inkooprekening"' : ''}>${
+            ip == null ? '<span class="muted">—</span>'
+                       : `${fmt(ip)}${handmatigeIp ? '' : '<span class="muted" style="font-size:10px"> ~</span>'}`}</td>
+          <td style="text-align:right" data-v="${waarde ?? -1}">${waarde == null ? '<span class="muted">—</span>' : fmt(waarde)}</td>
+          <td style="text-align:right" data-v="${vk ?? -1}">${vk == null ? '<span class="muted">—</span>' : fmt(vk)}</td>
           <td style="text-align:right" data-v="${stand.inkoop ?? -1}">${stand.inkoop || '—'}</td>
           <td style="text-align:right" data-v="${stand.verkocht ?? -1}">${stand.verkocht || '—'}</td>
           <td style="text-align:right" class="${!jaarModus && omzet ? 'pos' : ''}" data-v="${jaarModus ? (stand.verkocht || 0) : (omzet ?? 0)}">${rechts}</td>
@@ -277,7 +354,7 @@ export function renderCovers() {
           </td>
         </tr>`;
       }).join('')
-    : `<tr data-geen-sort="1"><td colspan="${toonGroep ? 10 : 9}"><div class="empty">
+    : `<tr data-geen-sort="1"><td colspan="${toonGroep ? 13 : 12}"><div class="empty">
         <div class="empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
         <div class="empty-title">${basis.length ? 'Geen artikelen binnen deze filters' : 'Nog geen artikelen in deze groep'}</div>
         <div class="empty-text">${basis.length
@@ -812,9 +889,9 @@ export async function handleImportVoorraad(event) {
           id: `imp-${Date.now()}-${Math.random()}`,
           artikel: artikelNaam,
           categorie: standaardGroep(),
-          prijs: nieuwData.prijs || 0,
+          prijs: nieuwData.prijs || null,
           inkoop: 0,
-          inkoopprijs: 0,
+          inkoopprijs: null,   // onbekend, niet nul — anders lijkt de waarde €0
           voorraad: Object.values(nieuwData.jaren)[Object.keys(nieuwData.jaren).length - 1]?.eind || 0,
           jaren: nieuwData.jaren
         });

@@ -1,12 +1,12 @@
 // dashboard.js — Home: het financiële dashboard.
 
-import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260821u';
+import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260821v';
 import {
   BEGINSALDO_2026, GBNM, calcIB, ddmm, esc, fmt, fmtKort, isInkomst, isOmzet, isUitgave,
   maandLabel, rekBadge, saldoDelta, typeBadge, weergaveNaam
-} from './helpers.js?v=20260821u';
-import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260821u';
-import { maakSorteerbaar } from './tables.js?v=20260821u';
+} from './helpers.js?v=20260821v';
+import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260821v';
+import { maakSorteerbaar } from './tables.js?v=20260821v';
 
 const HOOFDREKENING = '1010'; // de bankrekening waarop het beginsaldo staat
 
@@ -62,10 +62,26 @@ function berekenBanksaldo(jaar) {
 /** Waarde van de voorraad: HNVI-loten tegen inkoopprijs, plus het aantal covers. */
 function berekenVoorraad() {
   const inVoorraad = state.HNVI_LOTS.filter(l => l.status === 'voorraad');
+  const lotenWaarde = inVoorraad.reduce((s, l) => s + (Number(l.inkoop) || 0), 0);
+
+  // Voorraadwaarde van de artikelen: aantal x inkoopprijs. Artikelen zonder
+  // bekende inkoopprijs tellen niet mee in het bedrag, maar wel in het aantal.
+  let coversWaarde = 0, coversStuks = 0, zonderPrijs = 0;
+  for (const c of state.COVERS) {
+    const aantal = Number(c.voorraad) || 0;
+    coversStuks += aantal;
+    const prijs = Number(c.inkoopprijs);
+    if (Number.isFinite(prijs) && prijs > 0) coversWaarde += aantal * prijs;
+    else if (aantal > 0) zonderPrijs++;
+  }
+
   return {
-    waarde: inVoorraad.reduce((s, l) => s + (Number(l.inkoop) || 0), 0),
+    waarde: lotenWaarde + coversWaarde,
+    lotenWaarde,
+    coversWaarde,
     loten: inVoorraad.length,
-    covers: state.COVERS.reduce((s, c) => s + c.voorraad, 0)
+    covers: coversStuks,
+    zonderPrijs
   };
 }
 
@@ -134,7 +150,9 @@ export function renderHome() {
         ib <= 0 ? 'pos' : 'neg',
         winst > 0 ? `reserveer ± ${fmt(reservering)}` : 'geen winst dit jaar', ' kpi--secondary') +
     kpi('Voorraadwaarde', fmt(voorraad.waarde), '',
-        `${voorraad.loten} loten · ${voorraad.covers} covers`, ' kpi--secondary');
+        voorraad.zonderPrijs > 0
+          ? `${voorraad.loten} loten · ${voorraad.covers} covers · ${voorraad.zonderPrijs} zonder inkoopprijs`
+          : `${voorraad.loten} loten · ${voorraad.covers} covers`, ' kpi--secondary');
 
   // ---------- Uitschieters ----------
   const topIn = [...homeTX].filter(isInkomst).sort((a, b) => b.bedrag - a.bedrag).slice(0, 2);
