@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { PRIJS_COVER, esc, fmt } from './helpers.js?v=20260821w';
+import { PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260821x';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260821w';
-import { maakSorteerbaar } from './tables.js?v=20260821w';
-import { inkoopprijzenUitBank, prijsPerStuk } from './belasting.js?v=20260821w';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821w';
+} from './storage.js?v=20260821x';
+import { maakSorteerbaar } from './tables.js?v=20260821x';
+import { inkoopprijzenUitBank, prijsPerStuk } from './belasting.js?v=20260821x';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821x';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -311,6 +311,7 @@ export function renderCovers() {
 
   const basis = artikelenVoorTab();
   renderKerncijfers(basis);
+  renderWaardeDiagnose(basis);
 
   let lijst = basis;
   if (statusFilter) lijst = lijst.filter(c => status(c, standVan(c)) === statusFilter);
@@ -410,6 +411,61 @@ export async function zetHandelsvoorraadSelectie(aan = true) {
     }
   }
   console.log(`Handelsvoorraad ${aan ? 'aan' : 'uit'} voor ${gekozen.length} artikelen · ${ok} gesynct`);
+}
+
+/**
+ * Als de voorraadwaarde nul is terwijl er wel voorraad ligt, laat dan zien
+ * waar het op vastloopt: op de instelling, op de aantallen of op de bank.
+ * Dat scheelt zoeken in de afzonderlijke artikelen.
+ */
+function renderWaardeDiagnose(lijst) {
+  const doel = el('voorraad-diagnose');
+  if (!doel) return;
+
+  const standen = lijst.map(c => ({ c, s: standVan(c) }));
+  const metVoorraad = standen.filter(x => x.s.voorraad > 0);
+  const zonder = metVoorraad.filter(x => waardeVan(x.c, x.s) === null);
+
+  if (!metVoorraad.length || !zonder.length) { doel.style.display = 'none'; return; }
+
+  const jaar = gekozenJaar === 'nu' ? HUIDIG_JAAR : gekozenJaar;
+  const geenHandel = zonder.filter(x => x.c.handelsvoorraad === false).length;
+
+  // Per inkooprekening: hoeveel stuks staan er, en hoeveel is er geboekt?
+  const perRekening = {};
+  for (const { c } of zonder) {
+    if (c.handelsvoorraad === false) continue;
+    const gb = gbCode(c.inkoopGb) || '7000';
+    perRekening[gb] = perRekening[gb] || { stuks: 0, artikelen: 0, bedrag: 0 };
+    perRekening[gb].artikelen++;
+    perRekening[gb].stuks += Object.values(c.jaren || {}).reduce((s, j) => s + (Number(j?.inkoop) || 0), 0);
+  }
+  for (const t of [...state.HIST_TX, ...state.TX]) {
+    if (t.type !== 'uitgave') continue;
+    const gb = gbCode(t.gb);
+    if (!perRekening[gb]) continue;
+    if (String(t.datum || '').slice(0, 4) !== String(jaar)) continue;
+    perRekening[gb].bedrag += Number(t.bedrag) || 0;
+  }
+
+  const regels = [];
+  if (geenHandel) {
+    regels.push(`<li><strong>${geenHandel}</strong> artikel${geenHandel === 1 ? '' : 'en'} staat op <em>handelsvoorraad: Nee</em>. Selecteer ze en gebruik de knop “Handelsvoorraad: Ja”.</li>`);
+  }
+  for (const [gb, v] of Object.entries(perRekening)) {
+    if (!(v.stuks > 0)) {
+      regels.push(`<li>Rekening <strong>${gb}</strong>: ${v.artikelen} artikel${v.artikelen === 1 ? '' : 'en'}, maar <strong>0 ingekochte stuks</strong> in ${jaar}. Importeer de Excel opnieuw of vul “Ingekocht totaal” in.</li>`);
+    } else if (!(v.bedrag > 0)) {
+      regels.push(`<li>Rekening <strong>${gb}</strong>: ${v.stuks} stuks ingekocht, maar <strong>geen uitgaven</strong> geboekt op ${gb} in ${jaar}. Controleer of je inkoopfacturen op deze rekening staan.</li>`);
+    } else {
+      regels.push(`<li>Rekening <strong>${gb}</strong>: ${fmt(v.bedrag)} over ${v.stuks} stuks — dat is ${fmt(v.bedrag / v.stuks)} per stuk. Verschijnt dit niet in de tabel, ververs dan de pagina.</li>`);
+    }
+  }
+
+  doel.style.display = '';
+  doel.innerHTML = `
+    <div style="font-weight:600;margin-bottom:6px">Waarom ${zonder.length} artikel${zonder.length === 1 ? '' : 'en'} nog geen inkoopprijs ${zonder.length === 1 ? 'heeft' : 'hebben'}</div>
+    <ul style="margin:0;padding-left:18px;line-height:1.6">${regels.join('')}</ul>`;
 }
 
 function renderBulkbalk() {

@@ -8,10 +8,10 @@
 // nodig is. Alle gebruikte functies zijn alleen-lezend; deze module wijzigt
 // nooit data.
 
-import { draaiControles } from './controle.js?v=20260821w';
-import { factuurSamenvatting } from './facturen.js?v=20260821w';
-import { esc, fmt } from './helpers.js?v=20260821w';
-import { STANDAARD_MIN_VOORRAAD, state } from './storage.js?v=20260821w';
+import { draaiControles } from './controle.js?v=20260821x';
+import { factuurSamenvatting } from './facturen.js?v=20260821x';
+import { esc, fmt } from './helpers.js?v=20260821x';
+import { STANDAARD_MIN_VOORRAAD, state } from './storage.js?v=20260821x';
 
 const el = id => document.getElementById(id);
 
