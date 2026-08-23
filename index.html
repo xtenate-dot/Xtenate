@@ -887,18 +887,19 @@
 </div>
 </div>
 
-<!-- MODAL: VOORRAAD NAAR CLOUD -->
+<!-- MODAL: ALLES NAAR CLOUD -->
 <div class="modal-overlay" id="modal-voorraad-sync">
 <div class="modal">
-  <h3>Voorraad naar cloud</h3>
+  <h3>Alles naar cloud</h3>
   <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px;line-height:1.55">
-    Kies welke groepen je naar Supabase stuurt. Wat je uitvinkt blijft alleen in deze browser staan.
+    Stuurt alles wat in deze browser staat naar Supabase, zodat je telefoon en computer hetzelfde zien.
+    Wat er al staat wordt overschreven met deze versie.
   </p>
   <div id="voorraad-sync-groepen" style="margin-bottom:12px"></div>
-  <div id="voorraad-sync-status" style="font-size:12px;color:var(--text-muted);min-height:18px"></div>
+  <div id="voorraad-sync-status" style="font-size:12px;color:var(--text-muted);min-height:34px;line-height:1.5"></div>
   <div class="modal-acties">
     <button class="btn btn-ghost" onclick="sluitVoorraadSyncModal()">Annuleren</button>
-    <button class="btn btn-primary" id="voorraad-sync-knop" onclick="startVoorraadSync()">Versturen</button>
+    <button class="btn btn-primary" id="voorraad-sync-knop" onclick="startVoorraadSync()">Alles versturen</button>
   </div>
 </div>
 </div>
@@ -1042,6 +1043,6 @@
 </div>
 </div>
 
-<script type="module" src="app.js?v=20260822a"></script>
+<script type="module" src="app.js?v=20260822b"></script>
 </body>
 </html>
