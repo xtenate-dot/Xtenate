@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260822a';
+import { getClient, heeftClient } from './supabase.js?v=20260822b';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -322,6 +322,144 @@ export async function saveToSupabase(boeking, isHistoric) {
     console.error('Error in saveToSupabase:', err);
     return false;
   }
+}
+
+// ===== ALLES IN EEN KEER NAAR SUPABASE =====
+
+/** Bouwt het databaserecord voor een boeking. */
+function boekingRecord(boeking, isHistoric, userId) {
+  return {
+    user_id: userId,
+    legacy_id: String(boeking.id),
+    legacy_source: isHistoric ? 'hist_tx' : 'tx',
+    datum: boeking.datum,
+    bedrag: parseFloat(boeking.bedrag),
+    naam: boeking.naam || null,
+    omschr: boeking.omschr || null,
+    type: boeking.type,
+    rek: boeking.rek,
+    gb: boeking.gb,
+    archief_jaar: isHistoric ? parseInt(String(boeking.datum).substring(0, 4)) : null,
+    btw_bedrag: 0,
+    btw_percentage: 0,
+    updated_at: new Date().toISOString()
+  };
+}
+
+/** Bouwt het databaserecord voor een HNVI-lot. */
+function hnviRecord(lot, userId) {
+  return {
+    user_id: userId,
+    legacy_id: String(lot.id),
+    datum: lot.datum || null,
+    omschrijving: lot.omschr || '',
+    inkoop: parseFloat(lot.inkoop) || 0,
+    verkoop: lot.verkoop != null ? parseFloat(lot.verkoop) : null,
+    status: lot.status || 'voorraad',
+    notitie: lot.noot || '',
+    updated_at: new Date().toISOString()
+  };
+}
+
+/** Bouwt het databaserecord voor een voorraadartikel. */
+function coverRecord(cover, userId) {
+  let ingekocht = 0, verkocht = 0;
+  for (const j of Object.values(cover.jaren || {})) {
+    ingekocht += (j.inkoop || 0);
+    verkocht += (j.verkocht || 0);
+  }
+  const record = {
+    user_id: userId,
+    legacy_id: String(cover.id),
+    artikel: cover.artikel,
+    productgroep_id: null,
+    voorraad: cover.voorraad || 0,
+    inkoopprijs: cover.inkoopprijs ? parseFloat(cover.inkoopprijs) : null,
+    verkoopprijs: cover.prijs ? parseFloat(cover.prijs) : null,
+    min_voorraad: cover.minVoorraad || null,
+    ingekocht,
+    verkocht,
+    zoekterm: cover.zoekterm || '',
+    updated_at: new Date().toISOString(),
+    inkooprekening: String(cover.inkoopGb || '7000'),
+    categorie: String(cover.categorie || 'overig'),
+    handelsvoorraad: cover.handelsvoorraad !== false,
+    jaren: cover.jaren && Object.keys(cover.jaren).length ? cover.jaren : null,
+    prijsfactor: Number(cover.prijsFactor) > 0 ? Number(cover.prijsFactor) : 1
+  };
+  if (coverKolommenOntbreken) OPTIONELE_COVER_KOLOMMEN.forEach(k => delete record[k]);
+  return record;
+}
+
+/**
+ * Stuurt een lijst records in blokken naar een tabel. Per blok wordt eerst de
+ * oude versie weggehaald en daarna de nieuwe weggeschreven, zodat een tweede
+ * keer versturen geen dubbele regels oplevert.
+ */
+async function stuurInBlokken(sb, tabel, records, userId, onVoortgang, label) {
+  const BLOK = 100;
+  let ok = 0, mislukt = 0;
+
+  for (let i = 0; i < records.length; i += BLOK) {
+    const blok = records.slice(i, i + BLOK);
+    const ids = blok.map(r => r.legacy_id);
+    try {
+      await sb.from(tabel).delete().eq('user_id', userId).in('legacy_id', ids);
+      let { error } = await sb.from(tabel).insert(blok);
+
+      // Ontbreken de nieuwe kolommen nog, dan één keer opnieuw zonder.
+      if (error && tabel === 'voorraadartikelen' && !coverKolommenOntbreken && isOnbekendeKolomFout(error)) {
+        console.warn('⚠️  Nieuwe kolommen ontbreken; verstuur zonder groep, rekening, jaren en prijsfactor.');
+        coverKolommenOntbreken = true;
+        blok.forEach(r => OPTIONELE_COVER_KOLOMMEN.forEach(k => delete r[k]));
+        ({ error } = await sb.from(tabel).insert(blok));
+      }
+
+      if (error) { mislukt += blok.length; console.error(`❌ ${label} blok ${i}:`, error.message); }
+      else ok += blok.length;
+    } catch (err) {
+      mislukt += blok.length;
+      console.error(`❌ ${label} blok ${i}:`, err.message);
+    }
+    onVoortgang?.(label, Math.min(i + BLOK, records.length), records.length);
+  }
+  return { ok, mislukt };
+}
+
+/**
+ * Zet alles wat in deze browser staat in één keer in Supabase: boekingen,
+ * voorraadartikelen en HNVI-loten. Bedoeld om een nieuw apparaat in te richten
+ * of om na een import alles gelijk te trekken.
+ */
+export async function syncAllesNaarSupabase(data, keuze, onVoortgang) {
+  if (!heeftClient()) return { fout: 'Geen verbinding met Supabase.' };
+
+  const sb = await getClient();
+  const session = await sb.auth.getSession();
+  const userId = session?.data?.session?.user?.id;
+  if (!userId) return { fout: 'Niet ingelogd bij Supabase.' };
+
+  const uitkomst = {};
+
+  if (keuze.boekingen) {
+    const records = [
+      ...(data.HIST_TX || []).map(b => boekingRecord(b, true, userId)),
+      ...(data.TX || []).map(b => boekingRecord(b, false, userId))
+    ].filter(r => r.datum && Number.isFinite(r.bedrag));
+    uitkomst.boekingen = await stuurInBlokken(sb, 'boekingen', records, userId, onVoortgang, 'Boekingen');
+  }
+
+  if (keuze.voorraad) {
+    const records = (data.COVERS || []).map(c => coverRecord(c, userId));
+    uitkomst.voorraad = await stuurInBlokken(sb, 'voorraadartikelen', records, userId, onVoortgang, 'Voorraad');
+  }
+
+  if (keuze.hnvi) {
+    const records = (data.HNVI_LOTS || []).map(l => hnviRecord(l, userId));
+    uitkomst.hnvi = await stuurInBlokken(sb, 'hnvi_loten', records, userId, onVoortgang, 'HNVI-loten');
+  }
+
+  return uitkomst;
 }
 
 /**

@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260822a';
+import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260822b';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260822a';
-import { maakSorteerbaar } from './tables.js?v=20260822a';
-import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260822a';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260822a';
+} from './storage.js?v=20260822b';
+import { maakSorteerbaar } from './tables.js?v=20260822b';
+import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260822b';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260822b';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -618,21 +618,23 @@ export function openVoorraadSyncModal() {
   const status = el('voorraad-sync-status');
   if (status) status.textContent = '';
 
-  const perGroep = {};
-  for (const c of state.COVERS) {
-    const g = c.categorie || 'overig';
-    perGroep[g] = (perGroep[g] || 0) + 1;
-  }
+  const aantallen = {
+    boekingen: (state.TX?.length || 0) + (state.HIST_TX?.length || 0),
+    voorraad: state.COVERS?.length || 0,
+    hnvi: state.HNVI_LOTS?.length || 0
+  };
+  const mv = (n, enkel, meer) => `${n} ${n === 1 ? enkel : meer}`;
+  const regel = (sleutel, naam, aantal, eenheid) => `
+    <label style="display:flex;align-items:center;gap:9px;padding:8px 2px;cursor:pointer">
+      <input type="checkbox" class="vs-soort" value="${sleutel}" checked${aantal ? '' : ' disabled'}>
+      <span${aantal ? '' : ' style="opacity:.5"'}>${naam}</span>
+      <span style="color:var(--text-muted);font-size:11.5px">${eenheid}</span>
+    </label>`;
 
-  const namen = Object.keys(perGroep).sort((a, b) => perGroep[b] - perGroep[a]);
-  doel.innerHTML = namen.length
-    ? namen.map(g => `
-        <label style="display:flex;align-items:center;gap:9px;padding:7px 2px;cursor:pointer">
-          <input type="checkbox" class="vs-groep" value="${esc(g)}" checked>
-          <span>${esc(groepNaam(g))}</span>
-          <span style="color:var(--text-muted);font-size:11.5px">${perGroep[g]} artikel${perGroep[g] === 1 ? '' : 'en'}</span>
-        </label>`).join('')
-    : '<div class="empty" style="padding:16px">Nog geen artikelen.</div>';
+  doel.innerHTML =
+    regel('boekingen', 'Boekingen', aantallen.boekingen, mv(aantallen.boekingen, 'boeking', 'boekingen')) +
+    regel('voorraad', 'Voorraadartikelen', aantallen.voorraad, mv(aantallen.voorraad, 'artikel', 'artikelen')) +
+    regel('hnvi', 'HNVI-loten', aantallen.hnvi, mv(aantallen.hnvi, 'lot', 'loten'));
 
   el('modal-voorraad-sync').classList.add('open');
 }
@@ -642,35 +644,39 @@ export function sluitVoorraadSyncModal() {
 }
 
 export async function startVoorraadSync() {
-  const gekozen = new Set([...document.querySelectorAll('.vs-groep:checked')].map(i => i.value));
-  const lijst = state.COVERS.filter(c => gekozen.has(c.categorie || 'overig'));
+  const gekozen = new Set([...document.querySelectorAll('.vs-soort:checked')].map(i => i.value));
   const status = el('voorraad-sync-status');
   const knop = el('voorraad-sync-knop');
 
-  if (!lijst.length) {
-    status.textContent = 'Niets geselecteerd.';
+  if (!gekozen.size) { status.textContent = 'Niets geselecteerd.'; return; }
+
+  knop.disabled = true;
+  status.textContent = 'Bezig…';
+
+  const uitkomst = await syncAllesNaarSupabase(
+    { TX: state.TX, HIST_TX: state.HIST_TX, COVERS: state.COVERS, HNVI_LOTS: state.HNVI_LOTS },
+    { boekingen: gekozen.has('boekingen'), voorraad: gekozen.has('voorraad'), hnvi: gekozen.has('hnvi') },
+    (label, gedaan, totaal) => { status.textContent = `${label}: ${gedaan} van ${totaal}…`; }
+  );
+
+  knop.disabled = false;
+
+  if (uitkomst.fout) {
+    status.innerHTML = `<span style="color:var(--red,#d16a6a)">${esc(uitkomst.fout)}</span>`;
     return;
   }
 
-  knop.disabled = true;
-  let ok = 0, mislukt = 0;
-  for (let i = 0; i < lijst.length; i++) {
-    status.textContent = `Bezig: ${i + 1} van ${lijst.length}…`;
-    try {
-      if (await saveCoverToSupabase(lijst[i])) ok++;
-      else { mislukt++; addToPendingQueue(lijst[i], 'cover', false); }
-    } catch (err) {
-      mislukt++;
-      addToPendingQueue(lijst[i], 'cover', false);
-      console.warn(`Sync van ${lijst[i].artikel} faalde:`, err);
-    }
+  const regels = [];
+  let mislukt = 0;
+  for (const [sleutel, naam] of [['boekingen', 'Boekingen'], ['voorraad', 'Voorraad'], ['hnvi', 'HNVI-loten']]) {
+    const r = uitkomst[sleutel];
+    if (!r) continue;
+    mislukt += r.mislukt;
+    regels.push(`${naam}: ${r.ok} verstuurd${r.mislukt ? `, ${r.mislukt} mislukt` : ''}`);
   }
-
-  knop.disabled = false;
-  status.innerHTML = mislukt
-    ? `<span style="color:var(--amber,#d19a3a)">${ok} verstuurd, ${mislukt} in de wachtrij gezet.</span>`
-    : `<span style="color:var(--green,#4ea87a)">Alle ${ok} artikelen staan in de cloud.</span>`;
-  console.log(`Voorraad naar cloud: ${ok} gelukt, ${mislukt} mislukt`);
+  const kleur = mislukt ? 'var(--amber,#d19a3a)' : 'var(--green,#4ea87a)';
+  status.innerHTML = `<span style="color:${kleur}">${regels.join('<br>')}</span>`;
+  console.log('Alles naar cloud:', uitkomst);
 }
 
 function renderBulkbalk() {
@@ -1197,12 +1203,14 @@ export async function handleImportVoorraad(event) {
       // Lees artikelen
       for (let r = headerRow + 1; r < rows.length; r++) {
         const row = rows[r];
-        if (!row[0] || row[0] === '') break;
+        if (!row[0] || row[0] === '') continue;   // lege regel: overslaan, niet stoppen
         
         const artikel = String(row[0]).trim();
-        // Skip totaal-rijen, lege rijen, en rijen die alleen spaties hebben
-        if (!artikel || artikel.toLowerCase().includes('totaal') || artikel === '-') break;
-        if (/^[\s—–]*$/.test(artikel)) break;
+        // Tussentotalen en scheidingsregels zijn geen artikelen. Ze staan midden
+        // in het blad ("Totaal Hoezen", "Totaal Mini beeldjes"), dus we slaan ze
+        // over en lopen door — stoppen zou de helft van de lijst missen.
+        if (!artikel || artikel.toLowerCase().includes('totaal') || artikel === '-') continue;
+        if (/^[\s—–]*$/.test(artikel)) continue;
 
         const prijs = parseFloat(row[colPrijs]) || 0;
         const jaren = {};
