@@ -5,8 +5,8 @@
 // ongewijzigd: elke tegel roept dezelfde globale functie aan als het
 // zijbalk-item, dus er verandert niets aan wat ze doen.
 
-import { draaiControles } from './controle.js?v=20260821z';
-import { esc } from './helpers.js?v=20260821z';
+import { draaiControles } from './controle.js?v=20260822a';
+import { esc } from './helpers.js?v=20260822a';
 
 const el = id => document.getElementById(id);
 
@@ -84,6 +84,10 @@ export function renderBeheer() {
       tegel({
         titel: 'Cloud sync', uitleg: 'Gegevens uitwisselen met de cloud',
         icoon: I.sync, actie: 'openSyncModal()'
+      }),
+      tegel({
+        titel: 'Voorraad naar cloud', uitleg: 'Alle artikelen in een keer naar Supabase sturen',
+        icoon: I.sync, actie: 'openVoorraadSyncModal()'
       })
     ]) +
     groep('Voorzichtig', [

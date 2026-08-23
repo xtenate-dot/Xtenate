@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260821z';
+import { getClient, heeftClient } from './supabase.js?v=20260822a';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -197,6 +197,7 @@ export async function loadCoversFromSupabase() {
         zoekterm: c.zoekterm || '',
         minVoorraad: c.min_voorraad,
         handelsvoorraad: c.handelsvoorraad !== false,
+        prijsFactor: Number(c.prijsfactor) > 0 ? Number(c.prijsfactor) : 1,
         inkoopGb: c.inkooprekening || '7000',
         jaren
       };
@@ -385,7 +386,7 @@ export async function saveHnviToSupabase(lot) {
  */
 // Kolommen die pas bestaan na de ALTER TABLE. Ontbreken ze, dan slaan we het
 // artikel alsnog op zonder die velden in plaats van de sync te laten klappen.
-const OPTIONELE_COVER_KOLOMMEN = ['inkooprekening', 'categorie', 'handelsvoorraad', 'jaren'];
+const OPTIONELE_COVER_KOLOMMEN = ['inkooprekening', 'categorie', 'handelsvoorraad', 'jaren', 'prijsfactor'];
 let coverKolommenOntbreken = false;
 
 function isOnbekendeKolomFout(error) {
@@ -436,7 +437,8 @@ export async function saveCoverToSupabase(cover) {
       inkooprekening: String(cover.inkoopGb || '7000'),
       categorie: String(cover.categorie || 'overig'),
       handelsvoorraad: cover.handelsvoorraad !== false,
-      jaren: cover.jaren && Object.keys(cover.jaren).length > 0 ? cover.jaren : null
+      jaren: cover.jaren && Object.keys(cover.jaren).length > 0 ? cover.jaren : null,
+      prijsfactor: Number(cover.prijsFactor) > 0 ? Number(cover.prijsFactor) : 1
     };
     
     if (coverKolommenOntbreken) {

@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260821z';
+import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260822a';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260821z';
-import { maakSorteerbaar } from './tables.js?v=20260821z';
-import { inkoopprijzenUitBank, prijsPerStuk } from './belasting.js?v=20260821z';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260821z';
+} from './storage.js?v=20260822a';
+import { maakSorteerbaar } from './tables.js?v=20260822a';
+import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260822a';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260822a';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -468,6 +468,211 @@ function renderWaardeDiagnose(lijst) {
     <ul style="margin:0;padding-left:18px;line-height:1.6">${regels.join('')}</ul>`;
 }
 
+// ===== INKOOPVERDELING =====
+
+/** Tijdelijke factoren tijdens het bewerken; pas bij Opslaan gaan ze naar de artikelen. */
+let conceptFactoren = {};
+
+/** Alle artikelen die meedoen in de bankverdeling, gegroepeerd per inkooprekening. */
+function verdelingsPool() {
+  const perRekening = {};
+  for (const c of state.COVERS) {
+    if (!isHandelsvoorraad(c) || heeftHandmatigePrijs(c)) continue;
+    const stuks = Object.values(c.jaren || {}).reduce((s, j) => s + (Number(j?.inkoop) || 0), 0);
+    if (!(stuks > 0)) continue;
+    const gb = gbCode(c.inkoopGb) || '7000';
+    (perRekening[gb] = perRekening[gb] || []).push({ c, stuks });
+  }
+  return perRekening;
+}
+
+export function openVerdeling() {
+  conceptFactoren = {};
+  state.COVERS.forEach(c => { conceptFactoren[c.id] = factorVan(c); });
+  tekenVerdeling();
+  el('modal-verdeling').classList.add('open');
+}
+
+export function sluitVerdeling() {
+  el('modal-verdeling').classList.remove('open');
+}
+
+export function herstelVerdeling() {
+  Object.keys(conceptFactoren).forEach(id => { conceptFactoren[id] = 1; });
+  tekenVerdeling();
+}
+
+/** Wordt aangeroepen bij elke toetsaanslag in een factorveld. */
+export function wijzigFactor(id, waarde) {
+  const f = parseFloat(String(waarde).replace(',', '.'));
+  conceptFactoren[id] = Number.isFinite(f) && f > 0 ? f : 1;
+  tekenVerdeling(String(id));
+}
+
+function tekenVerdeling(behoudFocus) {
+  const doel = el('verdeling-rekeningen');
+  if (!doel) return;
+
+  const pool = verdelingsPool();
+  const jaar = gekozenJaar === 'nu' ? HUIDIG_JAAR : gekozenJaar;
+  const rekeningen = Object.keys(pool).sort();
+
+  if (!rekeningen.length) {
+    doel.innerHTML = `<div class="empty" style="padding:22px">Geen artikelen om te verdelen. Dit gebeurt als er nog geen ingekochte stuks bekend zijn, of als alle artikelen al een eigen inkoopprijs hebben.</div>`;
+    return;
+  }
+
+  // Bankbedrag per rekening, over alle jaren
+  const bedragPer = {};
+  for (const t of [...state.HIST_TX, ...state.TX]) {
+    if (t.type !== 'uitgave') continue;
+    const gb = gbCode(t.gb);
+    if (!pool[gb]) continue;
+    bedragPer[gb] = (bedragPer[gb] || 0) + (Number(t.bedrag) || 0);
+  }
+
+  doel.innerHTML = rekeningen.map(gb => {
+    const rijen = pool[gb];
+    const bedrag = bedragPer[gb] || 0;
+    const gewogen = rijen.reduce((s, r) => s + conceptFactoren[r.c.id] * r.stuks, 0);
+    const basis = gewogen > 0 && bedrag > 0 ? bedrag / gewogen : 0;
+    const totaalStuks = rijen.reduce((s, r) => s + r.stuks, 0);
+    const controle = rijen.reduce((s, r) => s + basis * conceptFactoren[r.c.id] * r.stuks, 0);
+
+    return `
+      <div style="margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 11px;background:var(--bg-subtle,rgba(255,255,255,.03));border-radius:6px;margin-bottom:8px">
+          <div><strong>${esc(gb)} — ${esc(GBNM[gb] || 'Inkoop')}</strong>
+            <span style="color:var(--text-muted);font-size:11.5px"> · ${rijen.length} artikelen · ${totaalStuks} stuks</span></div>
+          <div style="text-align:right">
+            <div style="font-weight:600">${fmt(bedrag)}</div>
+            <div style="font-size:11px;color:var(--text-muted)">basisprijs ${fmt(basis)} per stuk</div>
+          </div>
+        </div>
+        <div style="max-height:320px;overflow:auto">
+        <table class="tbl-compact" style="width:100%">
+          <thead><tr>
+            <th>Artikel</th>
+            <th style="text-align:right;width:70px">Stuks</th>
+            <th style="text-align:right;width:96px">Factor</th>
+            <th style="text-align:right;width:96px">Prijs/stuk</th>
+            <th style="text-align:right;width:104px">Totaal</th>
+          </tr></thead>
+          <tbody>${rijen.map(r => {
+            const f = conceptFactoren[r.c.id];
+            const prijs = basis * f;
+            return `<tr>
+              <td>${esc(r.c.artikel)}</td>
+              <td style="text-align:right">${r.stuks}</td>
+              <td style="text-align:right"><input type="text" inputmode="decimal" value="${f}"
+                  data-factor-id="${esc(r.c.id)}"
+                  oninput="wijzigFactor('${esc(r.c.id)}', this.value)"
+                  style="width:74px;text-align:right;padding:3px 6px;font-size:12px"></td>
+              <td style="text-align:right${Math.abs(f - 1) > 0.001 ? ';font-weight:600' : ''}">${fmt(prijs)}</td>
+              <td style="text-align:right;color:var(--text-muted)">${fmt(prijs * r.stuks)}</td>
+            </tr>`;
+          }).join('')}</tbody>
+          <tfoot><tr style="border-top:2px solid var(--border)">
+            <td colspan="4" style="text-align:right;font-weight:600">Samen</td>
+            <td style="text-align:right;font-weight:600;color:${Math.abs(controle - bedrag) < 0.02 ? 'var(--green,#4ea87a)' : 'var(--red,#d16a6a)'}">${fmt(controle)}</td>
+          </tr></tfoot>
+        </table>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Cursor terugzetten in het veld waar getypt werd
+  if (behoudFocus) {
+    const veld = doel.querySelector(`[data-factor-id="${CSS.escape(behoudFocus)}"]`);
+    if (veld) { veld.focus(); veld.setSelectionRange(veld.value.length, veld.value.length); }
+  }
+}
+
+export async function bewaarVerdeling() {
+  const gewijzigd = [];
+  for (const c of state.COVERS) {
+    const nieuw = conceptFactoren[c.id];
+    if (nieuw == null) continue;
+    if (factorVan(c) !== nieuw) { c.prijsFactor = nieuw; gewijzigd.push(c); }
+  }
+  saveCoversData();
+  sluitVerdeling();
+  renderCovers();
+
+  if (!gewijzigd.length) return;
+  console.log(`📤 ${gewijzigd.length} factoren opslaan naar Supabase...`);
+  for (const c of gewijzigd) {
+    try {
+      if (!await saveCoverToSupabase(c)) addToPendingQueue(c, 'cover', false);
+    } catch (err) {
+      console.warn(`Sync van ${c.artikel} faalde:`, err);
+      addToPendingQueue(c, 'cover', false);
+    }
+  }
+}
+
+// ===== VOORRAAD NAAR CLOUD =====
+
+export function openVoorraadSyncModal() {
+  const doel = el('voorraad-sync-groepen');
+  const status = el('voorraad-sync-status');
+  if (status) status.textContent = '';
+
+  const perGroep = {};
+  for (const c of state.COVERS) {
+    const g = c.categorie || 'overig';
+    perGroep[g] = (perGroep[g] || 0) + 1;
+  }
+
+  const namen = Object.keys(perGroep).sort((a, b) => perGroep[b] - perGroep[a]);
+  doel.innerHTML = namen.length
+    ? namen.map(g => `
+        <label style="display:flex;align-items:center;gap:9px;padding:7px 2px;cursor:pointer">
+          <input type="checkbox" class="vs-groep" value="${esc(g)}" checked>
+          <span>${esc(groepNaam(g))}</span>
+          <span style="color:var(--text-muted);font-size:11.5px">${perGroep[g]} artikel${perGroep[g] === 1 ? '' : 'en'}</span>
+        </label>`).join('')
+    : '<div class="empty" style="padding:16px">Nog geen artikelen.</div>';
+
+  el('modal-voorraad-sync').classList.add('open');
+}
+
+export function sluitVoorraadSyncModal() {
+  el('modal-voorraad-sync').classList.remove('open');
+}
+
+export async function startVoorraadSync() {
+  const gekozen = new Set([...document.querySelectorAll('.vs-groep:checked')].map(i => i.value));
+  const lijst = state.COVERS.filter(c => gekozen.has(c.categorie || 'overig'));
+  const status = el('voorraad-sync-status');
+  const knop = el('voorraad-sync-knop');
+
+  if (!lijst.length) {
+    status.textContent = 'Niets geselecteerd.';
+    return;
+  }
+
+  knop.disabled = true;
+  let ok = 0, mislukt = 0;
+  for (let i = 0; i < lijst.length; i++) {
+    status.textContent = `Bezig: ${i + 1} van ${lijst.length}…`;
+    try {
+      if (await saveCoverToSupabase(lijst[i])) ok++;
+      else { mislukt++; addToPendingQueue(lijst[i], 'cover', false); }
+    } catch (err) {
+      mislukt++;
+      addToPendingQueue(lijst[i], 'cover', false);
+      console.warn(`Sync van ${lijst[i].artikel} faalde:`, err);
+    }
+  }
+
+  knop.disabled = false;
+  status.innerHTML = mislukt
+    ? `<span style="color:var(--amber,#d19a3a)">${ok} verstuurd, ${mislukt} in de wachtrij gezet.</span>`
+    : `<span style="color:var(--green,#4ea87a)">Alle ${ok} artikelen staan in de cloud.</span>`;
+  console.log(`Voorraad naar cloud: ${ok} gelukt, ${mislukt} mislukt`);
+}
+
 function renderBulkbalk() {
   const balk = el('voorraad-bulk');
   const n = selectie.size;
@@ -680,6 +885,7 @@ const VELDEN = ['cv-naam','cv-cat','cv-ink','cv-vk','cv-vrd','cv-26','cv-zoek','
 function zetKeuzeStandaarden() {
   el('cv-handelsvoorraad').value = 'ja';
   el('cv-inkoop-gb').value = '7000';
+  if (el('cv-factor')) el('cv-factor').value = '1';
 }
 
 /** Het jaar waarvoor de modal de eindstand toont. */
@@ -754,6 +960,7 @@ function ververInkoopprijsHint() {
   const { kleur, tekst } = bankPrijsUitleg({
     handelsvoorraad: el('cv-handelsvoorraad')?.value === 'nee' ? false : true,
     inkoopGb: el('cv-inkoop-gb')?.value || '7000',
+    prijsFactor: (() => { const f = parseFloat(String(el('cv-factor')?.value ?? '').replace(',', '.')); return Number.isFinite(f) && f > 0 ? f : 1; })(),
     jaren: c?.jaren || {},
     inkoopprijs: el('cv-inkoopprijs')?.value
   });
@@ -781,6 +988,7 @@ export function openCoverEdit(id) {
   el('cv-min').value = c.minVoorraad ?? '';
   el('cv-handelsvoorraad').value = c.handelsvoorraad === false ? 'nee' : 'ja';
   el('cv-inkoop-gb').value = c.inkoopGb || '7000';
+  if (el('cv-factor')) el('cv-factor').value = factorVan(c);
   el('modal-cover').classList.add('open');
   
   // Event listener: auto-bereken eindstand
@@ -870,6 +1078,7 @@ export async function saveCover() {
     minVoorraad: getal('cv-min'),
     handelsvoorraad: el('cv-handelsvoorraad').value !== 'nee',
     inkoopGb: el('cv-inkoop-gb').value || '7000',
+    prijsFactor: (() => { const f = parseFloat(String(el('cv-factor')?.value ?? '').replace(',', '.')); return Number.isFinite(f) && f > 0 ? f : 1; })(),
     jaren
   };
 

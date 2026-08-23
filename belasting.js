@@ -1,9 +1,9 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc , palette } from './charts.js?v=20260821z';
-import { GBNM, ddmm, fmt, gbCode, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260821z';
-import { downloadModelPdf } from './pdf.js?v=20260821z';
-import { state } from './storage.js?v=20260821z';
+import { charts, dc , palette } from './charts.js?v=20260822a';
+import { GBNM, ddmm, fmt, gbCode, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260822a';
+import { downloadModelPdf } from './pdf.js?v=20260822a';
+import { state } from './storage.js?v=20260822a';
 
 const HUIDIG_JAAR = '2026';
 
@@ -148,6 +148,22 @@ export function inkoopRekeningVan(art) {
 }
 
 /**
+ * De wegingsfactor van een artikel binnen zijn inkooprekening. Standaard 1,
+ * wat betekent: dit artikel kost evenveel als het gemiddelde. Zet je hem op
+ * 0,5 dan is dit artikel half zo duur als de rest, en worden de overige
+ * artikelen automatisch duurder zodat het totaalbedrag van de bank klopt.
+ */
+export function factorVan(art) {
+  const f = Number(art?.prijsFactor);
+  return Number.isFinite(f) && f > 0 ? f : 1;
+}
+
+/** Een zelf ingevulde inkoopprijs zet de bankverdeling voor dit artikel opzij. */
+export function heeftHandmatigePrijs(art) {
+  return Number(art?.inkoopprijs) > 0;
+}
+
+/**
  * Leidt per inkooprekening af wat één stuk gekost heeft.
  *
  * De bank weet het totaalbedrag, de voorraadadministratie weet het aantal
@@ -155,43 +171,65 @@ export function inkoopRekeningVan(art) {
  * door totaal ingekocht. Dat is de methode van de gemiddelde inkoopprijs, en
  * die mag je voor de aangifte gebruiken zolang je hem elk jaar aanhoudt.
  *
+ * Niet elk artikel op dezelfde rekening kost evenveel. Daarom telt elk artikel
+ * mee met zijn eigen factor: we delen het bankbedrag niet door het aantal
+ * stuks, maar door de gewogen som van de stuks. Een artikel met factor 0,5
+ * krijgt dan de halve prijs en de rest schuift met precies dat verschil
+ * omhoog, zodat de som over alle artikelen het bankbedrag blijft.
+ *
+ * Artikelen met een zelf ingevulde prijs doen niet mee in de verdeling. Hun
+ * kosten lopen buiten deze rekening om, bijvoorbeeld filament dat je zelf
+ * verwerkt.
+ *
  * We rekenen over alle jaren samen. Per jaar zou nauwkeuriger lijken, maar
  * dan krijg je rare uitkomsten in een jaar waarin je niets inkocht en wel
  * verkocht — en juist dat gebeurt hier vaak.
  */
 export function inkoopprijzenUitBank(alleTX, covers) {
-  // stuks[gb][jaar] uit de voorraadadministratie, bedrag[gb][jaar] uit de bank.
-  const stuks = {}, bedrag = {};
+  // gewogen[gb][jaar] = som van (factor x stuks), bedrag[gb][jaar] uit de bank.
+  const gewogen = {}, bedrag = {}, ruweStuks = {};
 
   for (const art of covers || []) {
     if (!isHandelsvoorraad(art)) continue;
+    if (heeftHandmatigePrijs(art)) continue;   // eigen prijs: buiten de verdeling
     const gb = inkoopRekeningVan(art);
-    stuks[gb] = stuks[gb] || {};
+    const f = factorVan(art);
+    gewogen[gb] = gewogen[gb] || {};
+    ruweStuks[gb] = ruweStuks[gb] || {};
     for (const [jr, v] of Object.entries(art.jaren || {})) {
-      stuks[gb][jr] = (stuks[gb][jr] || 0) + (Number(v?.inkoop) || 0);
+      const st = Number(v?.inkoop) || 0;
+      gewogen[gb][jr] = (gewogen[gb][jr] || 0) + f * st;
+      ruweStuks[gb][jr] = (ruweStuks[gb][jr] || 0) + st;
     }
   }
 
   for (const t of alleTX || []) {
     if (!isUitgave(t)) continue;
     const gb = gbCode(t.gb);
-    if (!stuks[gb]) continue;
+    if (!gewogen[gb]) continue;
     const jr = String(t.datum || '').slice(0, 4);
     bedrag[gb] = bedrag[gb] || {};
     bedrag[gb][jr] = (bedrag[gb][jr] || 0) + (Number(t.bedrag) || 0);
   }
 
   const uit = {};
-  for (const gb of Object.keys(stuks)) {
+  for (const gb of Object.keys(gewogen)) {
     const jaren = {};
-    let totStuks = 0, totBedrag = 0;
-    for (const jr of new Set([...Object.keys(stuks[gb] || {}), ...Object.keys(bedrag[gb] || {})])) {
-      const st = stuks[gb][jr] || 0;
+    let totGewogen = 0, totBedrag = 0, totStuks = 0;
+    for (const jr of new Set([...Object.keys(gewogen[gb] || {}), ...Object.keys(bedrag[gb] || {})])) {
+      const gw = gewogen[gb][jr] || 0;
       const bd = (bedrag[gb] || {})[jr] || 0;
-      if (st > 0 && bd > 0) jaren[jr] = bd / st;
-      totStuks += st; totBedrag += bd;
+      // Basisprijs: wat een artikel met factor 1 kost.
+      if (gw > 0 && bd > 0) jaren[jr] = bd / gw;
+      totGewogen += gw; totBedrag += bd;
+      totStuks += (ruweStuks[gb] || {})[jr] || 0;
     }
-    uit[gb] = { jaren, gemiddeld: totStuks > 0 && totBedrag > 0 ? totBedrag / totStuks : null };
+    uit[gb] = {
+      jaren,
+      gemiddeld: totGewogen > 0 && totBedrag > 0 ? totBedrag / totGewogen : null,
+      totaalBedrag: totBedrag,
+      totaalStuks: totStuks
+    };
   }
   return uit;
 }
@@ -212,8 +250,9 @@ export function prijsPerStuk(art, prijzenUitBank, jaar) {
   if (!isHandelsvoorraad(art)) return 0;
   const p = prijzenUitBank?.[inkoopRekeningVan(art)];
   if (!p) return 0;
-  // Prijs van het jaar zelf; kocht je dat jaar niets in, dan het gemiddelde.
-  return (jaar && jaar !== 'all' ? p.jaren?.[jaar] : null) ?? p.gemiddeld ?? 0;
+  // Basisprijs van het jaar zelf; kocht je dat jaar niets in, dan het gemiddelde.
+  const basis = (jaar && jaar !== 'all' ? p.jaren?.[jaar] : null) ?? p.gemiddeld ?? 0;
+  return basis * factorVan(art);
 }
 
 /**

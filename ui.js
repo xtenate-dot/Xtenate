@@ -1,18 +1,18 @@
 // ui.js — navigatie tussen pagina's en het onthouden van de actieve pagina.
 
-import { renderBank } from './bank.js?v=20260821z';
-import { renderBelasting } from './belasting.js?v=20260821z';
-import { renderCrediteuren } from './crediteuren.js?v=20260821z';
-import { renderDebiteuren } from './debiteuren.js?v=20260821z';
-import { renderHome } from './dashboard.js?v=20260821z';
-import { renderPortaal } from './home.js?v=20260821z';
-import { renderGrootboek } from './grootboek.js?v=20260821z';
-import { renderHNVI } from './hnvi.js?v=20260821z';
-import { renderControle } from './controle.js?v=20260821z';
-import { renderCovers } from './voorraad.js?v=20260821z';
-import { renderFacturen } from './facturen-ui.js?v=20260821z';
-import { renderBeheer } from './beheer.js?v=20260821z';
-import { toonGroepVan } from './navgroepen.js?v=20260821z';
+import { renderBank } from './bank.js?v=20260822a';
+import { renderBelasting } from './belasting.js?v=20260822a';
+import { renderCrediteuren } from './crediteuren.js?v=20260822a';
+import { renderDebiteuren } from './debiteuren.js?v=20260822a';
+import { renderHome } from './dashboard.js?v=20260822a';
+import { renderPortaal } from './home.js?v=20260822a';
+import { renderGrootboek } from './grootboek.js?v=20260822a';
+import { renderHNVI } from './hnvi.js?v=20260822a';
+import { renderControle } from './controle.js?v=20260822a';
+import { renderCovers } from './voorraad.js?v=20260822a';
+import { renderFacturen } from './facturen-ui.js?v=20260822a';
+import { renderBeheer } from './beheer.js?v=20260822a';
+import { toonGroepVan } from './navgroepen.js?v=20260822a';
 
 const RENDERS = {
   home: renderPortaal,      // de startpagina: tegels naar de onderdelen

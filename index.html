@@ -545,6 +545,7 @@
       <option value="onbekend">Niet vastgelegd</option>
     </select>
     <button class="btn btn-primary btn-ml" onclick="openImportModalVoorraad()" title="Import Excel 2022-2026">📥 Import</button>
+    <button class="btn btn-ml" onclick="openVerdeling()" title="Verdeel het bankbedrag van de inkooprekening over je artikelen">Inkoopverdeling</button>
     <button class="btn btn-primary btn-ml" onclick="openCoverModal()">+ Artikel toevoegen</button>
   </div>
 
@@ -886,6 +887,41 @@
 </div>
 </div>
 
+<!-- MODAL: VOORRAAD NAAR CLOUD -->
+<div class="modal-overlay" id="modal-voorraad-sync">
+<div class="modal">
+  <h3>Voorraad naar cloud</h3>
+  <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px;line-height:1.55">
+    Kies welke groepen je naar Supabase stuurt. Wat je uitvinkt blijft alleen in deze browser staan.
+  </p>
+  <div id="voorraad-sync-groepen" style="margin-bottom:12px"></div>
+  <div id="voorraad-sync-status" style="font-size:12px;color:var(--text-muted);min-height:18px"></div>
+  <div class="modal-acties">
+    <button class="btn btn-ghost" onclick="sluitVoorraadSyncModal()">Annuleren</button>
+    <button class="btn btn-primary" id="voorraad-sync-knop" onclick="startVoorraadSync()">Versturen</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: INKOOPVERDELING -->
+<div class="modal-overlay" id="modal-verdeling">
+<div class="modal" style="max-width:760px">
+  <h3>Inkoopverdeling</h3>
+  <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px;line-height:1.55">
+    Het bankbedrag op de inkooprekening wordt over je artikelen verdeeld. Standaard krijgt elk artikel
+    hetzelfde. Is iets goedkoper, geef het dan een lagere factor: <strong>0,5</strong> is half zo duur als
+    gemiddeld, <strong>2</strong> is dubbel. De rest schuift automatisch mee, zodat het totaal het
+    bankbedrag blijft.
+  </p>
+  <div id="verdeling-rekeningen"></div>
+  <div class="modal-acties">
+    <button class="btn btn-ghost" onclick="sluitVerdeling()">Annuleren</button>
+    <button class="btn btn-ghost" onclick="herstelVerdeling()">Alles terug naar 1</button>
+    <button class="btn btn-primary" onclick="bewaarVerdeling()">Opslaan</button>
+  </div>
+</div>
+</div>
+
 <!-- MODAL: COVER ARTIKEL -->
 <div class="modal-overlay" id="modal-cover">
 <div class="modal">
@@ -914,6 +950,9 @@
     </div>
     <div class="form-group"><label>Inkoopprijs per stuk (€)</label><input type="text" inputmode="decimal" id="cv-inkoopprijs" placeholder="leeg = uit de bank">
       <div id="cv-inkoopprijs-hint" style="font-size:11px;line-height:1.45;margin-top:5px;color:var(--text-muted)"></div></div>
+    <div class="form-group"><label>Prijsfactor <span style="color:var(--text-muted);font-weight:400">(1 = gemiddeld)</span></label>
+      <input type="text" inputmode="decimal" id="cv-factor" placeholder="1">
+      <div style="font-size:11px;line-height:1.45;margin-top:5px;color:var(--text-muted)">Lager dan 1 maakt dit artikel goedkoper dan de rest; de andere artikelen worden dan iets duurder zodat het bankbedrag klopt.</div></div>
     <div class="form-group"><label>Verkoopprijs (€)</label><input type="text" inputmode="decimal" id="cv-prijs" placeholder="bijv. 31,95"></div>
     <div class="form-group"><label>Ingekocht totaal (stuks)</label><input type="number" id="cv-ink" placeholder="0" min="0"></div>
     <div class="form-group"><label>Verkocht totaal (stuks)</label><input type="number" id="cv-vk" placeholder="0" min="0"></div>
@@ -1003,6 +1042,6 @@
 </div>
 </div>
 
-<script type="module" src="app.js?v=20260821z"></script>
+<script type="module" src="app.js?v=20260822a"></script>
 </body>
 </html>
