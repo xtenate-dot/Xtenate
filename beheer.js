@@ -5,8 +5,8 @@
 // ongewijzigd: elke tegel roept dezelfde globale functie aan als het
 // zijbalk-item, dus er verandert niets aan wat ze doen.
 
-import { draaiControles } from './controle.js?v=20260822b';
-import { esc } from './helpers.js?v=20260822b';
+import { draaiControles } from './controle.js?v=20260823a';
+import { esc } from './helpers.js?v=20260823a';
 
 const el = id => document.getElementById(id);
 
@@ -38,13 +38,13 @@ function controleMerk() {
   }
 }
 
-function tegel({ titel, uitleg, icoon, pagina, actie, merk = null, gevaarlijk = false }) {
+function tegel({ titel, uitleg, icoon, pagina, actie, merk = null, gevaarlijk = false, nadruk = false }) {
   const doel = pagina ? `gaNaar('${pagina}')` : actie;
   const merkje = merk
     ? `<span class="home-tegel-merk home-tegel-merk-${merk.soort}">${esc(merk.tekst)}</span>`
     : '';
   return `
-    <button type="button" class="home-tegel${gevaarlijk ? ' home-tegel-gevaar' : ''}"
+    <button type="button" class="home-tegel${gevaarlijk ? ' home-tegel-gevaar' : ''}${nadruk ? ' home-tegel-nadruk' : ''}"
             onclick="${doel}" aria-label="${esc(titel)} — ${esc(uitleg)}">
       <span class="home-tegel-kop">
         <span class="home-tegel-icoon">${icoon}</span>
@@ -87,7 +87,7 @@ export function renderBeheer() {
       }),
       tegel({
         titel: 'Alles naar cloud', uitleg: 'Boekingen, voorraad en loten in een keer naar Supabase',
-        icoon: I.sync, actie: 'openVoorraadSyncModal()'
+        icoon: I.sync, actie: 'openVoorraadSyncModal()', nadruk: true
       })
     ]) +
     groep('Voorzichtig', [
