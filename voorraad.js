@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260822b';
+import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260823a';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260822b';
-import { maakSorteerbaar } from './tables.js?v=20260822b';
-import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260822b';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260822b';
+} from './storage.js?v=20260823a';
+import { maakSorteerbaar } from './tables.js?v=20260823a';
+import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260823a';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260823a';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -330,24 +330,24 @@ export function renderCovers() {
         const omzet = !jaarModus && vk != null ? stand.verkocht * vk : null;
         const rechts = jaarModus ? (stand.verkocht || 0) : (omzet ? fmt(omzet) : '—');
         return `<tr>
-          <td style="padding-left:16px;width:34px"><input type="checkbox" data-artikel-id="${esc(c.id)}"${selectie.has(String(c.id)) ? ' checked' : ''}
+          <td class="cel-kies" style="padding-left:16px;width:34px"><input type="checkbox" data-artikel-id="${esc(c.id)}"${selectie.has(String(c.id)) ? ' checked' : ''}
             onchange="wisselVoorraadSelectie('${esc(c.id)}', this)" aria-label="Selecteer ${esc(c.artikel)}"></td>
-          <td style="font-weight:${stand.voorraad > 0 ? 500 : 400}">${esc(c.artikel)}</td>
-          ${toonGroep ? `<td class="muted">${esc(groepNaam(c.categorie))}</td>` : ''}
-          <td style="text-align:right" data-v="${stand.voorraad ?? -1}">${stand.voorraad ?? '—'}</td>
-          <td style="text-align:right" data-v="${ip ?? -1}"${!handmatigeIp && ip != null ? ' title="Afgeleid uit de bankboekingen op de inkooprekening"' : ''}>${
+          <td class="cel-naam" style="font-weight:${stand.voorraad > 0 ? 500 : 400}">${esc(c.artikel)}</td>
+          ${toonGroep ? `<td class="muted" data-label="Groep">${esc(groepNaam(c.categorie))}</td>` : ''}
+          <td style="text-align:right" data-label="Voorraad" data-v="${stand.voorraad ?? -1}">${stand.voorraad ?? '—'}</td>
+          <td style="text-align:right" data-label="Inkoopprijs" data-v="${ip ?? -1}"${!handmatigeIp && ip != null ? ' title="Afgeleid uit de bankboekingen op de inkooprekening"' : ''}>${
             ip == null ? '<span class="muted">—</span>'
                        : `${fmt(ip)}${handmatigeIp ? '' : '<span class="muted" style="font-size:10px"> ~</span>'}`}</td>
-          <td style="text-align:right" data-v="${waarde ?? -1}">${waarde == null ? '<span class="muted">—</span>' : fmt(waarde)}</td>
-          <td style="text-align:right" data-v="${vk ?? -1}">${vk == null ? '<span class="muted">—</span>' : fmt(vk)}</td>
-          <td style="text-align:right" data-v="${stand.inkoop ?? -1}">${stand.inkoop || '—'}</td>
-          <td style="text-align:right" data-v="${stand.verkocht ?? -1}">${stand.verkocht || '—'}</td>
-          <td style="text-align:right" class="${!jaarModus && omzet ? 'pos' : ''}" data-v="${jaarModus ? (stand.verkocht || 0) : (omzet ?? 0)}">${rechts}</td>
-          <td data-v="${status(c, stand)}">${STATUS_BADGE[status(c, stand)]}</td>
-          <td>${c.zoekterm
+          <td style="text-align:right" data-label="Waarde" data-v="${waarde ?? -1}">${waarde == null ? '<span class="muted">—</span>' : fmt(waarde)}</td>
+          <td style="text-align:right" data-label="Verkoopprijs" data-v="${vk ?? -1}">${vk == null ? '<span class="muted">—</span>' : fmt(vk)}</td>
+          <td style="text-align:right" data-label="Ingekocht" data-v="${stand.inkoop ?? -1}">${stand.inkoop || '—'}</td>
+          <td style="text-align:right" data-label="Verkocht" data-v="${stand.verkocht ?? -1}">${stand.verkocht || '—'}</td>
+          <td style="text-align:right" data-label="${jaarModus ? 'Verkocht' : 'Omzet'}" class="${!jaarModus && omzet ? 'pos' : ''}" data-v="${jaarModus ? (stand.verkocht || 0) : (omzet ?? 0)}">${rechts}</td>
+          <td class="cel-status" data-v="${status(c, stand)}">${STATUS_BADGE[status(c, stand)]}</td>
+          <td class="cel-zoek">${c.zoekterm
             ? `<a href="https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(c.zoekterm)}" target="_blank" rel="noopener" style="font-size:11px;white-space:nowrap">Zoek op AliExpress</a>`
             : ''}</td>
-          <td style="padding-right:16px;white-space:nowrap">
+          <td class="cel-acties" style="padding-right:16px;white-space:nowrap">
             <span class="sell-link" onclick="openCoverEdit('${esc(c.id)}')">Bewerk</span>
             <button class="icon-btn" onclick="verwijderArtikel('${esc(c.id)}')" title="Artikel verwijderen" aria-label="Verwijder ${esc(c.artikel)}" style="width:26px;height:26px">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>

@@ -614,3 +614,51 @@ body.nav-collapsed .nav-section-btn { pointer-events: none; }
   .pm-tabel .pm-gb { display: none; }
   .pm-tabel .pm-acties { width: 120px; }
 }
+
+/* --- Aandachtspaneel op Home (v50) --------------------------------
+   Toont wat vandaag om actie vraagt. De kleur zegt hoe dringend het is. */
+
+#home-aandacht { display: grid; gap: 8px; }
+
+.aandacht-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 0;
+  background: var(--surface);
+}
+.aandacht-tekst { flex: 1; min-width: 0; }
+.aandacht-titel { font-size: 13.5px; font-weight: 600; }
+.aandacht-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aandacht-red   { border-left-color: var(--red);   background: var(--red-bg); }
+.aandacht-red   .aandacht-titel, .aandacht-red   .aandacht-sub { color: var(--red); }
+.aandacht-amber { border-left-color: var(--amber); background: var(--amber-bg); }
+.aandacht-amber .aandacht-titel, .aandacht-amber .aandacht-sub { color: var(--amber); }
+.aandacht-blue  { border-left-color: var(--blue);  background: var(--blue-bg); }
+.aandacht-blue  .aandacht-titel, .aandacht-blue  .aandacht-sub { color: var(--blue); }
+.aandacht-groen { border-left-color: var(--green); background: var(--green-bg); }
+.aandacht-groen .aandacht-titel, .aandacht-groen .aandacht-sub { color: var(--green); }
+
+@media (max-width: 560px) {
+  .aandacht-item { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .aandacht-sub { white-space: normal; }
+}
+
+/* Beheer: de tegel die je na een import bijna altijd nodig hebt (v50). */
+.home-tegel-nadruk {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+.home-tegel-nadruk .home-tegel-titel { color: var(--accent); }
+.home-tegel-nadruk .home-tegel-icoon { color: var(--accent); }

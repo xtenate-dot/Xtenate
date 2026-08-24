@@ -1,12 +1,12 @@
 // dashboard.js — Home: het financiële dashboard.
 
-import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260822b';
+import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260823a';
 import {
   BEGINSALDO_2026, GBNM, calcIB, ddmm, esc, fmt, fmtKort, isInkomst, isOmzet, isUitgave,
   maandLabel, rekBadge, saldoDelta, typeBadge, weergaveNaam
-} from './helpers.js?v=20260822b';
-import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260822b';
-import { maakSorteerbaar } from './tables.js?v=20260822b';
+} from './helpers.js?v=20260823a';
+import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260823a';
+import { maakSorteerbaar } from './tables.js?v=20260823a';
 
 const HOOFDREKENING = '1010'; // de bankrekening waarop het beginsaldo staat
 
@@ -101,6 +101,67 @@ function leegVlak(titel, tekst) {
   </div>`;
 }
 
+/**
+ * Zoekt op wat vandaag om aandacht vraagt. Puur afgeleid uit de bestaande
+ * gegevens: er wordt niets opgeslagen of gewijzigd.
+ */
+function aandachtspunten() {
+  const punten = [];
+  const min = (c) => Number.isFinite(Number(c.minVoorraad)) ? Number(c.minVoorraad) : 3;
+
+  const uitverkocht = state.COVERS.filter(c => (Number(c.voorraad) || 0) <= 0);
+  const laag = state.COVERS.filter(c => {
+    const v = Number(c.voorraad) || 0;
+    return v > 0 && v <= min(c);
+  });
+  const zonderPrijs = state.COVERS.filter(c =>
+    (Number(c.voorraad) || 0) > 0 && !(Number(c.inkoopprijs) > 0));
+
+  if (uitverkocht.length) punten.push({
+    kleur: 'red', titel: `${uitverkocht.length} uitverkocht`,
+    tekst: uitverkocht.slice(0, 3).map(c => c.artikel).join(', ') + (uitverkocht.length > 3 ? '…' : ''),
+    actie: "nav('voorraad')", knop: 'Bekijk'
+  });
+
+  if (laag.length) punten.push({
+    kleur: 'amber', titel: `${laag.length} bijna op`,
+    tekst: laag.slice(0, 3).map(c => `${c.artikel} (${c.voorraad})`).join(', ') + (laag.length > 3 ? '…' : ''),
+    actie: "nav('voorraad')", knop: 'Bekijk'
+  });
+
+  if (zonderPrijs.length) punten.push({
+    kleur: 'blue', titel: `${zonderPrijs.length} zonder eigen inkoopprijs`,
+    tekst: 'Deze krijgen hun prijs uit de bankboekingen. Met de inkoopverdeling stem je dat per artikel af.',
+    actie: "nav('voorraad')", knop: 'Verdeling'
+  });
+
+  return punten;
+}
+
+function tekenAandacht() {
+  const doel = document.getElementById('home-aandacht');
+  if (!doel) return;
+  const punten = aandachtspunten();
+
+  if (!punten.length) {
+    doel.innerHTML = `<div class="aandacht-item aandacht-groen">
+      <div class="aandacht-tekst">
+        <div class="aandacht-titel">Alles op orde</div>
+        <div class="aandacht-sub">Geen artikelen die bijgevuld moeten worden.</div>
+      </div></div>`;
+    return;
+  }
+
+  doel.innerHTML = punten.map(p => `
+    <div class="aandacht-item aandacht-${p.kleur}">
+      <div class="aandacht-tekst">
+        <div class="aandacht-titel">${esc(p.titel)}</div>
+        <div class="aandacht-sub">${esc(p.tekst)}</div>
+      </div>
+      <button class="btn btn-sm" onclick="${p.actie}">${esc(p.knop)}</button>
+    </div>`).join('');
+}
+
 export function renderHome() {
   const homeTX = getHomeTX();
   const jaar = state.huidigJaar;
@@ -153,6 +214,8 @@ export function renderHome() {
         voorraad.zonderPrijs > 0
           ? `${voorraad.loten} loten · ${voorraad.covers} covers · ${voorraad.zonderPrijs} zonder inkoopprijs`
           : `${voorraad.loten} loten · ${voorraad.covers} covers`, ' kpi--secondary');
+
+  tekenAandacht();
 
   // ---------- Uitschieters ----------
   const topIn = [...homeTX].filter(isInkomst).sort((a, b) => b.bedrag - a.bedrag).slice(0, 2);

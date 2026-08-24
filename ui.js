@@ -1,18 +1,18 @@
 // ui.js — navigatie tussen pagina's en het onthouden van de actieve pagina.
 
-import { renderBank } from './bank.js?v=20260822b';
-import { renderBelasting } from './belasting.js?v=20260822b';
-import { renderCrediteuren } from './crediteuren.js?v=20260822b';
-import { renderDebiteuren } from './debiteuren.js?v=20260822b';
-import { renderHome } from './dashboard.js?v=20260822b';
-import { renderPortaal } from './home.js?v=20260822b';
-import { renderGrootboek } from './grootboek.js?v=20260822b';
-import { renderHNVI } from './hnvi.js?v=20260822b';
-import { renderControle } from './controle.js?v=20260822b';
-import { renderCovers } from './voorraad.js?v=20260822b';
-import { renderFacturen } from './facturen-ui.js?v=20260822b';
-import { renderBeheer } from './beheer.js?v=20260822b';
-import { toonGroepVan } from './navgroepen.js?v=20260822b';
+import { renderBank } from './bank.js?v=20260823a';
+import { renderBelasting } from './belasting.js?v=20260823a';
+import { renderCrediteuren } from './crediteuren.js?v=20260823a';
+import { renderDebiteuren } from './debiteuren.js?v=20260823a';
+import { renderHome } from './dashboard.js?v=20260823a';
+import { renderPortaal } from './home.js?v=20260823a';
+import { renderGrootboek } from './grootboek.js?v=20260823a';
+import { renderHNVI } from './hnvi.js?v=20260823a';
+import { renderControle } from './controle.js?v=20260823a';
+import { renderCovers } from './voorraad.js?v=20260823a';
+import { renderFacturen } from './facturen-ui.js?v=20260823a';
+import { renderBeheer } from './beheer.js?v=20260823a';
+import { toonGroepVan } from './navgroepen.js?v=20260823a';
 
 const RENDERS = {
   home: renderPortaal,      // de startpagina: tegels naar de onderdelen
@@ -56,15 +56,18 @@ export function nav(p, btn) {
   if (location.hash.slice(1) !== p) location.hash = p;
 
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.nav-item[data-page]').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.nav-item[data-page], .tab-item[data-page]').forEach(x => x.classList.remove('active'));
   document.getElementById('p-' + p).classList.add('active');
 
   // Zit de pagina in een dichtgeklapte menugroep, klap die dan open, zodat
   // je na een deeplink of sneltoets ziet waar je bent.
   toonGroepVan(p);
 
-  const knop = btn || document.querySelector(`.nav-item[data-page="${p}"]`);
-  if (knop) knop.classList.add('active');
+  // Zowel het zijmenu als de tabbalk onderaan oplichten, zodat je op een
+  // telefoon ziet waar je bent ook als je via het zijmenu navigeerde.
+  document.querySelectorAll(`.nav-item[data-page="${p}"], .tab-item[data-page="${p}"]`)
+    .forEach(x => x.classList.add('active'));
+  if (btn) btn.classList.add('active');
 
   const titel = document.getElementById('topbar-title');
   if (titel) titel.textContent = TITELS[p] || '';
