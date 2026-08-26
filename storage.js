@@ -14,7 +14,7 @@ import {
   isSupabaseReady,
   addToPendingQueue,
   savePendingQueue
-} from './supabase-client-v2.js?v=20260823a';
+} from './supabase-client-v2.js?v=20260826b';
 
 export const state = {
   TX: [],
@@ -166,8 +166,19 @@ export function normaliseerVoorraad(lijst, vorige = []) {
     if (c.omzet2026 != null && jaren['2026']?.verkocht == null) {
       jaren['2026'] = { eind: jaren['2026']?.eind ?? null, verkocht: c.omzet2026 };
     }
+    // Instellingen die je zelf in de app hebt gemaakt staan niet in het
+    // Excel-bestand. Ze moeten een herimport dus overleven, anders vallen ze
+    // terug op de standaardwaarde: elk artikel weer op inkooprekening 7000, en
+    // elke wegingsfactor weer op 1. Daardoor kreeg de hele voorraad na een
+    // import dezelfde inkoopprijs per stuk.
+    const behoud = {};
+    for (const veld of ['inkoopGb', 'prijsFactor', 'handelsvoorraad']) {
+      if (c[veld] != null) behoud[veld] = c[veld];
+      else if (oud[veld] != null) behoud[veld] = oud[veld];
+    }
     return {
       ...c,
+      ...behoud,
       categorie: c.categorie || oud.categorie || standaardGroep(),
       inkoopprijs: c.inkoopprijs ?? oud.inkoopprijs ?? null,
       minVoorraad: c.minVoorraad ?? oud.minVoorraad ?? null,

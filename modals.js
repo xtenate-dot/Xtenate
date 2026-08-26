@@ -1,7 +1,7 @@
 // modals.js — beheer-acties: Excel-import, cloud sync, API-sleutel, data wissen.
 
-import { REKNM } from './helpers.js?v=20260823a';
-import { renderHome } from './dashboard.js?v=20260823a';
+import { REKNM } from './helpers.js?v=20260826b';
+import { renderHome } from './dashboard.js?v=20260826b';
 
 /** Rekeningnummers die de app kent; gebruikt bij het inlezen van kolom G. */
 const REKENINGEN = new Set(Object.keys(REKNM));
@@ -11,7 +11,7 @@ const REKENINGEN = new Set(Object.keys(REKNM));
 // Daardoor viel elke bevestigde import om met "OMZET_GB is not defined", ná het
 // wegschrijven van de boekingen en vóór het toepassen van de jaartotalen.
 const OMZET_GB = ['8000', '8010', '8020'];
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260823a';
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260826b';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
 // met een kolom "Totaal" voor het hele boekjaar. Dit is de brontabel van de boekhouding zelf,
@@ -61,6 +61,130 @@ function parsePerPeriode(wb, fallback) {
     priveSt: heeft('600') ? -get('600') : fallback.priveSt,
     hnviInv: heeft('7010') ? get('7010') : fallback.hnviInv
   };
+}
+
+/**
+ * Een datumcel uit Excel omzetten naar JJJJ-MM-DD.
+ *
+ * Een boekhouddatum is een kalenderdatum, geen tijdstip. Omrekenen naar UTC
+ * zou hem bij een positieve tijdzone een dag terugzetten, dus dat gebeurt hier
+ * bewust niet.
+ */
+export function excelDatum(val) {
+  if (val === 0 || !val) return null;
+  if (val instanceof Date) {
+    const j = val.getFullYear(), m = val.getMonth() + 1, d = val.getDate();
+    return `${j}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+  if (typeof val === 'number') {
+    const d = new Date(Date.UTC(1899, 11, 30));
+    d.setUTCDate(d.getUTCDate() + Math.floor(val));
+    return d.toISOString().slice(0, 10);
+  }
+  if (typeof val === 'string' && val.match(/\d{4}-\d{2}-\d{2}/)) return val.slice(0, 10);
+  if (typeof val === 'string' && val.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
+    const [m, d, y] = val.split('/');
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+  return null;
+}
+
+/** De naam van het blad met HNVI-loten, of null als het er niet is. */
+export function vindLotenBlad(wb) {
+  const genormaliseerd = n => String(n).toLowerCase().replace(/[^a-z]/g, '');
+  return wb.SheetNames.find(n => genormaliseerd(n) === 'hnviloten')
+      || wb.SheetNames.find(n => genormaliseerd(n).includes('veiling'))
+      || null;
+}
+
+/**
+ * Leest de HNVI-loten uit een werkmap.
+ *
+ * Er zijn twee vormen. Onze eigen export schrijft een blad 'HNVI Loten' met een
+ * datumkolom. Het handgeschreven blad met veilinginkopen heeft alleen product,
+ * inkoop en verkoop, en geen datum. Beide worden hier op kolomnaam gelezen, dus
+ * de volgorde mag verschillen.
+ *
+ * Een lot zonder datum valt buiten het jaarfilter en zou daardoor onzichtbaar
+ * blijven. Die krijgen 1 januari van het jaar van het bestand, en het aantal
+ * wordt teruggegeven zodat de preview het kan melden.
+ */
+export function leesLotenBlad(wb, gevondenJaren = []) {
+  const bladNaam = vindLotenBlad(wb);
+  if (!bladNaam) return null;
+
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[bladNaam], { header: 1, defval: null });
+
+  // Kopregel zoeken: de eerste regel met een herkenbare kolomnaam erin.
+  const schoon = v => String(v ?? '').replace(/[^\p{L}€]/gu, '').toLowerCase();
+  let kopRij = -1;
+  for (let r = 0; r < Math.min(10, rows.length); r++) {
+    const cellen = (rows[r] || []).map(schoon);
+    if (cellen.some(c => ['product', 'omschrijving', 'artikel', 'lot'].includes(c))
+        && cellen.some(c => c.startsWith('inkoop'))) { kopRij = r; break; }
+  }
+  if (kopRij < 0) return null;
+
+  const kop = rows[kopRij] || [];
+  const zoek = (...namen) => {
+    for (let c = 0; c < kop.length; c++) {
+      const h = schoon(kop[c]);
+      if (namen.some(n => h === n || h.startsWith(n))) return c;
+    }
+    return -1;
+  };
+
+  const cDatum   = zoek('datum');
+  const cNaam    = zoek('product', 'omschrijving', 'artikel', 'lot');
+  const cInkoop  = zoek('inkoop');
+  const cVerkoop = zoek('verkoop');
+  const cStatus  = zoek('status');
+  const cNoot    = zoek('notitie', 'opmerking', 'noot');
+
+  const terugvalJaar = gevondenJaren.length
+    ? gevondenJaren[gevondenJaren.length - 1]
+    : String(new Date().getFullYear());
+
+  const getal = v => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  const lees = (row, c) => (c >= 0 ? row[c] : null);
+
+  const loten = [];
+  let zonderDatum = 0;
+
+  rows.slice(kopRij + 1).forEach(row => {
+    const naam = lees(row, cNaam);
+    if (!naam || typeof naam !== 'string') return;
+    const schoneNaam = naam.trim();
+    if (!schoneNaam) return;
+    // Totaalregels onderaan het blad zijn geen lot.
+    if (schoneNaam.toLowerCase().startsWith('totaal')) return;
+
+    const inkoop = getal(lees(row, cInkoop));
+    const verkoop = getal(lees(row, cVerkoop));
+    // Een regel zonder enig bedrag is een lege of decoratieve regel.
+    if (inkoop == null && verkoop == null) return;
+
+    let datum = excelDatum(lees(row, cDatum));
+    if (!datum) { datum = `${terugvalJaar}-01-01`; zonderDatum++; }
+
+    // Staat er een status in het blad, dan telt die. Staat die er niet, dan
+    // leidt een ingevulde verkoopprijs af dat het lot verkocht is.
+    const ruweStatus = String(lees(row, cStatus) ?? '').toLowerCase();
+    const status = ruweStatus
+      ? (ruweStatus.includes('verkocht') ? 'verkocht' : 'voorraad')
+      : (verkoop != null && verkoop > 0 ? 'verkocht' : 'voorraad');
+
+    loten.push({
+      datum,
+      omschr: schoneNaam,
+      inkoop: inkoop != null ? Math.round(inkoop * 100) / 100 : 0,
+      verkoop: verkoop != null ? Math.round(verkoop * 100) / 100 : null,
+      status,
+      noot: lees(row, cNoot) ? String(lees(row, cNoot)) : ''
+    });
+  });
+
+  return { bladNaam, loten, zonderDatum };
 }
 
 export function importExcel(input) {
@@ -216,101 +340,123 @@ export function importExcel(input) {
       }
 
       // Voorraad & Mutaties (Funny Covers)
+      //
+      // De kolommen worden niet meer op vaste nummers gelezen. Dit blad heeft
+      // drie blokken naast elkaar (voorraad, mutaties, jaaroverzicht) en de
+      // kopregel staat niet op rij 1. Eerder stonden hier vaste indexen die bij
+      // dit blad naar de verkeerde kolom wezen: de verkoopprijs werd uit de
+      // lege kolom E gehaald in plaats van uit N, en de minimumvoorraad uit een
+      // tekstkolom. Nu zoeken we de kopregel op en leiden we de posities af.
       let coverCount = 0;
       if (wb.SheetNames.includes('Voorraad & Mutaties')) {
         const ws = wb.Sheets['Voorraad & Mutaties'];
         const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+
+        // Kopregel zoeken: de eerste regel die in kolom A 'Artikel' heeft staan.
+        let kopRij = 0;
+        for (let r = 0; r < Math.min(8, rows.length); r++) {
+          if (String(rows[r]?.[0] || '').trim().toLowerCase() === 'artikel') { kopRij = r; break; }
+        }
+        const kop = rows[kopRij] || [];
+        const zoekKop = (...namen) => {
+          for (let c = 0; c < kop.length; c++) {
+            const h = String(kop[c] ?? '').replace(/[^\p{L}€]/gu, '').toLowerCase();
+            if (namen.some(n => h === n)) return c;
+          }
+          return -1;
+        };
+
+        // 'Artikel' en 'Prijs (€)' komen meerdere keren voor. De verkoopprijs
+        // staat in het jaaroverzicht rechts, dus we nemen de laatste.
+        const zoekKopLaatste = (...namen) => {
+          let gevonden = -1;
+          for (let c = 0; c < kop.length; c++) {
+            const h = String(kop[c] ?? '').replace(/[^\p{L}€]/gu, '').toLowerCase();
+            if (namen.some(n => h === n)) gevonden = c;
+          }
+          return gevonden;
+        };
+
+        const colVoorraad = zoekKop('voorraad');
+        const colMin      = zoekKop('min', 'minimum');
+        const colInkoop   = zoekKop('inkoop');
+        const colVerkoop  = zoekKop('verkoop');
+        const colPrijs    = zoekKopLaatste('prijs€', 'prijs');
+        const colOmzet    = zoekKop('totaalomzet€', 'totaalomzet');
+
+        // Jaarkolommen: alles wat als 20xx in de kopregel staat. Dat zijn de
+        // eindstanden per jaar in het jaaroverzicht.
+        const jaarKolommen = {};
+        for (let c = 0; c < kop.length; c++) {
+          const h = String(kop[c] ?? '').trim().replace(/\.0+$/, '');
+          if (/^20\d\d$/.test(h)) jaarKolommen[h] = c;
+        }
+        // Het jaar van dit bestand: het hoogste jaartal in de kop. De aantallen
+        // in het mutatieblok horen bij dat jaar.
+        const bestandsJaar = Object.keys(jaarKolommen).sort().pop()
+          || (gevondenJaren.length ? gevondenJaren[gevondenJaren.length - 1] : null);
+
+        const getal = v => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+        const getal0 = v => getal(v) ?? 0;
+        const lees = (row, c) => (c >= 0 ? row[c] : null);
+
         let cid = 200;
-        rows.slice(2).forEach(row => {
+        rows.slice(kopRij + 1).forEach(row => {
           const artikel = row[0];
-          const voorraad = row[2];
           if (!artikel || typeof artikel !== 'string') return;
-          // Kop- en totaalregels uit het werkblad zijn geen artikelen.
-          const kop = String(artikel).trim().toLowerCase();
-          if (kop.startsWith('totaal') || ['artikel', 'artikelen', 'omschrijving', 'product'].includes(kop)) return;
-          
-          // FIX: voorraad kan een formule zijn (string starting with =). Voer de formule niet uit;
-          // in plaats daarvan berekenen we later vanuit de bankboekingen. Voor nu: 0.
-          const voorraadWaarde = typeof voorraad === 'number' ? voorraad : 0;
-          
-          const inkoop = row[7] || 0;
-          const verkoop = row[8] || 0;
-          const omzet2026 = row[15] || 0;
-          const getal = v => (typeof v === 'number' ? v : null);
-          
-          // WIJZIGING: kolom E (inkoopprijs) is leeg in deze Excel; de app leidt die af
-          // uit de inkoopverdeling in de bankboekingen. Dus getal(row[3]) is altijd null.
-          // Dit is by design: de app kan de inkoopprijs aanpassen per artikel zodat
-          // het totale bedrag klopt.
-          const inkoopprijs = getal(row[3]); // null = uit verdeling bepalen
-          
-          // Zoek kolommen voor jaren.2026.eind en jaren.2026.verkocht
-          let jaren = {};
-          if (omzet2026 > 0 || verkoop > 0) {
-            jaren['2026'] = {
-              eind: getal(voorraadWaarde) || 0,
-              verkocht: getal(row[17]) || (omzet2026 > 0 ? omzet2026 : null)
+          const naamKop = String(artikel).trim().toLowerCase();
+          if (naamKop.startsWith('totaal') || ['artikel', 'artikelen', 'omschrijving', 'product'].includes(naamKop)) return;
+          if (/^[\s—–-]*$/.test(String(artikel).trim())) return;
+
+          const voorraad = getal0(lees(row, colVoorraad));
+          const inkoop   = getal0(lees(row, colInkoop));
+          const verkoop  = getal0(lees(row, colVerkoop));
+          const omzet    = getal0(lees(row, colOmzet));
+
+          // Eindstanden per jaar uit het jaaroverzicht.
+          const jaren = {};
+          for (const [jaar, c] of Object.entries(jaarKolommen)) {
+            jaren[jaar] = { eind: getal0(row[c]) };
+          }
+          // De ingekochte en verkochte stuks horen bij het jaar van dit bestand.
+          // Zonder 'inkoop' hier kan de verdeling over de bankrekening niet
+          // rekenen en komt er geen inkoopprijs per stuk uit; dat ontbrak.
+          if (bestandsJaar) {
+            jaren[bestandsJaar] = {
+              ...(jaren[bestandsJaar] || {}),
+              inkoop,
+              verkocht: verkoop
             };
           }
-          
-          newCovers.push({id:cid++, artikel:String(artikel),
-            inkoopprijs: inkoopprijs,
-            prijs: getal(row[4]), minVoorraad: getal(row[6]),
-            voorraad: Math.round(voorraadWaarde),
-            inkoop: typeof inkoop === 'number' ? Math.round(inkoop) : 0,
-            verkoop: typeof verkoop === 'number' ? Math.round(verkoop) : 0,
-            omzet2026: typeof omzet2026 === 'number' ? Math.round(omzet2026) : 0,
+
+          newCovers.push({
+            id: cid++,
+            artikel: String(artikel).trim(),
+            inkoopprijs: null,               // komt uit de bankverdeling, niet uit dit blad
+            prijs: getal(lees(row, colPrijs)),
+            minVoorraad: getal(lees(row, colMin)),
+            voorraad: Math.round(voorraad),
+            inkoop: Math.round(inkoop),
+            verkoop: Math.round(verkoop),
+            omzet2026: Math.round(omzet),
             jaren
           });
           coverCount++;
         });
       }
 
-      // HNVI-loten uit onze eigen export terughalen, zodat het Excel-bestand een
-      // volledige reservekopie is en niet alleen de bankmutaties bevat.
+      // HNVI-loten. Deze staan in dit bestand op het blad met de
+      // veilinginkopen; onze eigen export schrijft ze naar 'HNVI Loten'. Beide
+      // worden herkend, en de kolommen worden op naam gezocht in plaats van op
+      // vaste positie, want de twee bladen hebben een andere volgorde.
       let lotCount = 0;
       let nieuweLoten = [];
-      // Zoeken naar "HNVI Loten" (met spatie) of "hnviloten" (geen spatie, als fallback)
-      const lotBlad = wb.SheetNames.find(n => 
-        n.toLowerCase().replace(/[^a-z]/g,'') === 'hnviloten' ||
-        n === 'HNVI Loten'
-      );
+      let lotenZonderDatum = 0;
+      const lotBlad = leesLotenBlad(wb, gevondenJaren);
       if (lotBlad) {
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[lotBlad], {header:1, defval:null});
-        const isNieuwFormat = lotBlad === 'HNVI Loten'; // Nieuw format met spatie
-        
-        rows.slice(1).forEach(row => {
-          const datum = excelDate(row[0]);
-          const omschr = row[1];
-          if (!datum && !omschr) return;
-          
-          let inkoop, verkoop, status, noot;
-          if (isNieuwFormat) {
-            // Nieuw format: kolom A=datum, B=omschr, C=notitie, D=inkoopprijs, E=verkoopprijs, F=winst, G=status
-            noot = row[2] ? String(row[2]) : '';
-            inkoop = typeof row[3] === 'number' ? row[3] : 0;
-            verkoop = typeof row[4] === 'number' ? row[4] : null;
-            status = row[6] ? String(row[6]).toLowerCase().includes('verkocht') ? 'verkocht' : 'voorraad' : 'voorraad';
-          } else {
-            // Oude format: kolom A=datum, B=omschr, C=?, D=?, E=inkoopprijs?, F=verkoop?, G=status, H=noot
-            noot = row[7] ? String(row[7]) : '';
-            inkoop = typeof row[2] === 'number' ? row[2] : 0;
-            verkoop = typeof row[3] === 'number' ? row[3] : null;
-            status = String(row[5] || (verkoop ? 'verkocht' : 'voorraad'));
-          }
-          
-          nieuweLoten.push({
-            id: 'l' + (lotCount + 1),
-            _key: 'l' + (lotCount + 1),
-            datum: datum || '',
-            omschr: omschr ? String(omschr) : '',
-            inkoop,
-            verkoop,
-            status,
-            noot
-          });
-          lotCount++;
-        });
+        nieuweLoten = lotBlad.loten;
+        lotCount = nieuweLoten.length;
+        lotenZonderDatum = lotBlad.zonderDatum;
       }
 
       // Vastgelegde voorraadstanden per jaar
@@ -365,7 +511,7 @@ export function importExcel(input) {
       // inclusief voorraad en HNVI-loten.
       wachtendeImport = {
         wb, newTx, newCovers, newSaldos, nieuweLoten, gevondenJaren, tid,
-        bankCount, ccCount, lotCount, coverCount,
+        bankCount, ccCount, lotCount, coverCount, lotenZonderDatum,
         ccProblemen, ccConventie, bestandsnaam: file.name
       };
       toonImportPreview();
@@ -477,9 +623,15 @@ export function bevestigImport() {
       const is2026 = p.gevondenJaren.includes('2026');
       const jaarLabel = p.gevondenJaren.join(', ') || 'onbekend jaar';
 
-      // HNVI-loten: gelezen in de leesfase, maar pas hier toegepast.
+      // HNVI-loten: gelezen in de leesfase, maar pas hier toegepast. De loten
+      // uit het bestand hebben geen eigen nummer, dus dat wordt hier uitgedeeld.
       if (p.nieuweLoten && p.nieuweLoten.length) {
-        state.HNVI_LOTS = p.nieuweLoten;
+        let nr = 1;
+        state.HNVI_LOTS = p.nieuweLoten.map(lot => {
+          const id = 'x' + nr++;
+          return { ...lot, id, _key: id };
+        });
+        state.nxtHnvi = nr;
         saveHnviData();
       }
 
@@ -558,7 +710,8 @@ export function bevestigImport() {
         `✅ <strong>${p.bankCount}</strong> banktransacties ingelezen<br>` +
         `✅ <strong>${p.ccCount}</strong> creditkaart boekingen ingelezen<br>` +
         (saldoCount > 0 ? `✅ <strong>${saldoCount}</strong> maandsaldos ingelezen<br>` : '') +
-        (p.lotCount > 0 ? `✅ <strong>${p.lotCount}</strong> HNVI-loten ingelezen<br>` : '') +
+        (p.lotCount > 0 ? `✅ <strong>${p.lotCount}</strong> HNVI-loten ingelezen<br>` : '⚠️ Geen HNVI-loten gevonden — er is geen blad "HNVI Loten" of "Veiling inkopenVerkopen"<br>') +
+        (p.lotenZonderDatum > 0 ? `&nbsp;&nbsp;&nbsp;<span style="color:var(--text-muted)">${p.lotenZonderDatum} daarvan hadden geen datum en staan nu op 1 januari</span><br>` : '') +
         (p.newCovers.length > 0 ? `✅ <strong>${p.coverCount}</strong> covers artikelen ingelezen<br>` : '') +
         (perPeriodeTotals ? `✅ Jaartotalen (omzet/kosten/privé) ingelezen uit "Per Periode" — dit is nu leidend voor de Home-cijfers van dit jaar<br>` : `⚠️ Geen "Per Periode" tabblad gevonden — Home-cijfers worden voor dit jaar nog berekend uit losse boekingen<br>`) +
         `<br>Je data is opgeslagen. HNVI-loten blijven bewaard.`;
