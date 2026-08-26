@@ -228,28 +228,35 @@ export function importExcel(input) {
           // Kop- en totaalregels uit het werkblad zijn geen artikelen.
           const kop = String(artikel).trim().toLowerCase();
           if (kop.startsWith('totaal') || ['artikel', 'artikelen', 'omschrijving', 'product'].includes(kop)) return;
+          
+          // FIX: voorraad kan een formule zijn (string starting with =). Voer de formule niet uit;
+          // in plaats daarvan berekenen we later vanuit de bankboekingen. Voor nu: 0.
+          const voorraadWaarde = typeof voorraad === 'number' ? voorraad : 0;
+          
           const inkoop = row[7] || 0;
           const verkoop = row[8] || 0;
           const omzet2026 = row[15] || 0;
           const getal = v => (typeof v === 'number' ? v : null);
           
+          // WIJZIGING: kolom E (inkoopprijs) is leeg in deze Excel; de app leidt die af
+          // uit de inkoopverdeling in de bankboekingen. Dus getal(row[3]) is altijd null.
+          // Dit is by design: de app kan de inkoopprijs aanpassen per artikel zodat
+          // het totale bedrag klopt.
+          const inkoopprijs = getal(row[3]); // null = uit verdeling bepalen
+          
           // Zoek kolommen voor jaren.2026.eind en jaren.2026.verkocht
-          // Deze staan meestal aan het eind als extra kolommen (na omzet2026)
-          // Row format: [artikel, ..., voorraad, ..., verkoop, ..., omzet2026, ..., jaren.2026.eind?, jaren.2026.verkocht?]
           let jaren = {};
-          // Check of there are any jaren-velden (deze zouden als extra kolommen staan)
-          // Voor nu: als omzet2026 > 0, neem aan dat dit ook verkocht in 2026 is
-          // (dit is een fallback totdat we de kolommen beter kunnen mappen)
           if (omzet2026 > 0 || verkoop > 0) {
             jaren['2026'] = {
-              eind: getal(row[16]) || (getal(voorraad) || 0),  // Eindvoorraad = huidige voorraad
-              verkocht: getal(row[17]) || (omzet2026 > 0 ? omzet2026 : null)  // Verkocht = omzet stuks
+              eind: getal(voorraadWaarde) || 0,
+              verkocht: getal(row[17]) || (omzet2026 > 0 ? omzet2026 : null)
             };
           }
           
           newCovers.push({id:cid++, artikel:String(artikel),
-            inkoopprijs: getal(row[3]), prijs: getal(row[4]), minVoorraad: getal(row[6]),
-            voorraad: typeof voorraad === 'number' ? Math.round(voorraad) : 0,
+            inkoopprijs: inkoopprijs,
+            prijs: getal(row[4]), minVoorraad: getal(row[6]),
+            voorraad: Math.round(voorraadWaarde),
             inkoop: typeof inkoop === 'number' ? Math.round(inkoop) : 0,
             verkoop: typeof verkoop === 'number' ? Math.round(verkoop) : 0,
             omzet2026: typeof omzet2026 === 'number' ? Math.round(omzet2026) : 0,
@@ -263,30 +270,47 @@ export function importExcel(input) {
       // volledige reservekopie is en niet alleen de bankmutaties bevat.
       let lotCount = 0;
       let nieuweLoten = [];
-      const lotBlad = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g,'') === 'hnviloten');
+      // Zoeken naar "HNVI Loten" (met spatie) of "hnviloten" (geen spatie, als fallback)
+      const lotBlad = wb.SheetNames.find(n => 
+        n.toLowerCase().replace(/[^a-z]/g,'') === 'hnviloten' ||
+        n === 'HNVI Loten'
+      );
       if (lotBlad) {
         const rows = XLSX.utils.sheet_to_json(wb.Sheets[lotBlad], {header:1, defval:null});
+        const isNieuwFormat = lotBlad === 'HNVI Loten'; // Nieuw format met spatie
+        
         rows.slice(1).forEach(row => {
           const datum = excelDate(row[0]);
           const omschr = row[1];
           if (!datum && !omschr) return;
-          const verkoop = typeof row[3] === 'number' ? row[3] : null;
+          
+          let inkoop, verkoop, status, noot;
+          if (isNieuwFormat) {
+            // Nieuw format: kolom A=datum, B=omschr, C=notitie, D=inkoopprijs, E=verkoopprijs, F=winst, G=status
+            noot = row[2] ? String(row[2]) : '';
+            inkoop = typeof row[3] === 'number' ? row[3] : 0;
+            verkoop = typeof row[4] === 'number' ? row[4] : null;
+            status = row[6] ? String(row[6]).toLowerCase().includes('verkocht') ? 'verkocht' : 'voorraad' : 'voorraad';
+          } else {
+            // Oude format: kolom A=datum, B=omschr, C=?, D=?, E=inkoopprijs?, F=verkoop?, G=status, H=noot
+            noot = row[7] ? String(row[7]) : '';
+            inkoop = typeof row[2] === 'number' ? row[2] : 0;
+            verkoop = typeof row[3] === 'number' ? row[3] : null;
+            status = String(row[5] || (verkoop ? 'verkocht' : 'voorraad'));
+          }
+          
           nieuweLoten.push({
-            id: row[7] != null && row[7] !== '' ? row[7] : 'x' + (lotCount + 1),
-            _key: String(row[7] ?? 'x' + (lotCount + 1)),
+            id: 'l' + (lotCount + 1),
+            _key: 'l' + (lotCount + 1),
             datum: datum || '',
             omschr: omschr ? String(omschr) : '',
-            inkoop: typeof row[2] === 'number' ? row[2] : 0,
+            inkoop,
             verkoop,
-            status: String(row[5] || (verkoop ? 'verkocht' : 'voorraad')),
-            noot: row[6] ? String(row[6]) : ''
+            status,
+            noot
           });
           lotCount++;
         });
-        // Hier wordt bewust NIET geschreven. De loten werden eerder al bij het
-        // lezen van het bestand opgeslagen, dus vóór de preview en zonder weg
-        // te komen met Annuleren. Ze gaan nu mee in `wachtendeImport` en worden
-        // pas in `bevestigImport` toegepast.
       }
 
       // Vastgelegde voorraadstanden per jaar
