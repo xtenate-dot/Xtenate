@@ -20,10 +20,10 @@
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link rel="stylesheet" href="style.css?v=20260826c">
-<link rel="stylesheet" href="layout.css?v=20260826c">
-<link rel="stylesheet" href="components.css?v=20260826c">
-<link rel="stylesheet" href="responsive.css?v=20260826c">
+<link rel="stylesheet" href="style.css?v=20260826d">
+<link rel="stylesheet" href="layout.css?v=20260826d">
+<link rel="stylesheet" href="components.css?v=20260826d">
+<link rel="stylesheet" href="responsive.css?v=20260826d">
 </head>
 <body>
 
@@ -686,8 +686,15 @@
     </div>
     <div class="modal-body" style="padding:1.5rem">
       <p style="margin-bottom:1rem;color:var(--text-muted);font-size:13px">
-        Laad één of meer Excel-bestanden (Administratie_2022.xlsx t/m 2026.xlsx). 
-        De app leest de "Voorraad & Mutaties" sheet en voegt alle artikelen toe.
+        Kies één of meer administratiebestanden. Alleen het blad
+        &ldquo;Voorraad &amp; Mutaties&rdquo; wordt gelezen; de boekingen en de
+        loten in hetzelfde bestand blijven buiten beschouwing.
+      </p>
+      <p style="margin-bottom:1rem;color:var(--text-muted);font-size:12.5px">
+        Artikelen die je al hebt, houden hun groep, inkooprekening en eigen
+        inkoopprijs. Artikelen die niet in het bestand staan blijven gewoon
+        staan. Meerdere jaren tegelijk kan: de eindstanden worden per jaar
+        bewaard.
       </p>
       <input type="file" id="import-file-input" multiple accept=".xlsx" style="display:none" onchange="handleImportVoorraad(event)">
       <button class="btn btn-primary" onclick="document.getElementById('import-file-input').click()" style="width:100%;margin-bottom:1rem">
@@ -1097,6 +1104,6 @@
 </div>
 </div>
 
-<script type="module" src="app.js?v=20260826c"></script>
+<script type="module" src="app.js?v=20260826d"></script>
 </body>
 </html>
