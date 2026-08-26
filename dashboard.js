@@ -193,15 +193,24 @@ export function renderHome() {
     ? '<span class="badge badge-green" title="Overgenomen uit de Per Periode-totalen van je Excel-import">Excel</span>'
     : '';
 
+  // De netto winst is het cijfer waar deze pagina om draait: die krijgt de
+  // hoofdpositie, twee kolommen breed en op een accentvlak. De rest staat
+  // eronder als gewone kaart met een kleurstreepje voor het teken.
   document.getElementById('home-kpi').innerHTML =
-    kpi(`Omzet ${jaarTekst} ${bronMerk}`, fmt(omzet), 'pos',
-        `Xtenate ${fmt(omzXt)} · Bol ${fmt(omzBol)} · Helmetstore ${fmt(omzHC)}`) +
-    kpi('Totale kosten', fmt(kosten), 'neg',
-        hnviInv > 0 ? `waarvan ${fmt(hnviInv)} HNVI-inkoop` : '') +
     kpi('Netto winst', fmt(winst), winst >= 0 ? 'pos' : 'neg',
-        omzet > 0 ? `marge ${Math.round(winst / omzet * 100)}%` : '') +
+        omzet > 0
+          ? `marge ${Math.round(winst / omzet * 100)}% · omzet ${fmt(omzet)} min kosten ${fmt(kosten)}`
+          : 'nog geen omzet in deze periode',
+        ` kpi--hoofd kpi--${winst >= 0 ? 'pos' : 'neg'}`) +
+    kpi(`Omzet ${jaarTekst} ${bronMerk}`, fmt(omzet), 'pos',
+        `Xtenate ${fmt(omzXt)} · Bol ${fmt(omzBol)} · Helmetstore ${fmt(omzHC)}`,
+        ' kpi--pos') +
+    kpi('Totale kosten', fmt(kosten), 'neg',
+        hnviInv > 0 ? `waarvan ${fmt(hnviInv)} HNVI-inkoop` : '',
+        ' kpi--neg') +
     kpi('Banksaldo', bank.saldo === null ? '—' : fmt(bank.saldo),
-        bank.saldo !== null && bank.saldo < 0 ? 'neg' : '', bank.label);
+        bank.saldo !== null && bank.saldo < 0 ? 'neg' : '', bank.label,
+        bank.saldo !== null && bank.saldo < 0 ? ' kpi--neg' : '');
 
   document.getElementById('home-kpi2').innerHTML =
     kpi('Privé-opnames', fmt(priveOp), 'muted', '', ' kpi--secondary') +
@@ -332,11 +341,11 @@ export function renderHome() {
   const body = document.getElementById('home-recent');
   body.innerHTML = recent.length
     ? recent.map(t => `<tr class="row-click" data-id="${esc(t.id)}">
-        <td class="muted" data-v="${t.datum}">${ddmm(t.datum)}</td>
-        <td class="td-trunc">${esc(weergaveNaam(t))}</td>
-        <td><span class="gbnr">${esc(t.gb)}</span> ${esc(GBNM[t.gb] || '')}</td>
-        <td>${rekBadge(t.rek)}</td>
-        <td style="text-align:right" data-v="${t.bedrag}">${typeBadge(t.type, t.bedrag)}</td>
+        <td class="muted cel-datum" data-v="${t.datum}">${ddmm(t.datum)}</td>
+        <td class="td-trunc cel-naam">${esc(weergaveNaam(t))}</td>
+        <td data-label="Grootboek"><span class="gbnr">${esc(t.gb)}</span> ${esc(GBNM[t.gb] || '')}</td>
+        <td data-label="Rekening">${rekBadge(t.rek)}</td>
+        <td class="cel-bedrag" data-label="Bedrag" style="text-align:right" data-v="${t.bedrag}">${typeBadge(t.type, t.bedrag)}</td>
       </tr>`).join('')
     : `<tr data-geen-sort="1"><td colspan="5">${leegVlak('Nog geen boekingen', 'Importeer je Excel-bestand via het menu links, of voeg handmatig een transactie toe op de Bank-pagina.')}</td></tr>`;
   maakSorteerbaar(document.getElementById('tbl-home-recent'));

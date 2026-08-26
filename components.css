@@ -1,17 +1,65 @@
 /* components.css — herbruikbare UI-onderdelen. */
 
-/* ---------- KPI-KAARTEN ---------- */
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-3); }
+/* ---------- KPI-KAARTEN ----------
+   Drie niveaus, zodat je in één blik ziet wat het belangrijkste cijfer is:
+   .kpi--hoofd   groot, met accentrand — het cijfer waar de pagina om draait
+   .kpi          standaard
+   .kpi--secondary compact, voor ondersteunende cijfers
+   De grid gebruikt auto-fit met minmax(0,...): kolommen mogen krimpen, zodat
+   een lang bedrag het raster niet breder duwt dan het scherm. */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-3); margin-bottom: var(--sp-3);
+}
 .kpi {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); padding: var(--sp-4);
   box-shadow: var(--shadow-sm); min-width: 0;
+  transition: border-color var(--duur-snel), box-shadow var(--duur-snel);
 }
-.kpi-lbl { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
-.kpi-val { font-size: 24px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.15; }
-.kpi-sub { font-size: 11px; color: var(--text-hint); margin-top: 5px; }
-.kpi--secondary { padding: var(--sp-3) var(--sp-4); }
+.kpi-lbl {
+  font-size: 11px; color: var(--text-muted); margin-bottom: 6px;
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+}
+.kpi-val {
+  font-size: 24px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.kpi-sub { font-size: 11px; color: var(--text-hint); margin-top: 5px; line-height: 1.45; }
+
+/* Hoofd-KPI: het cijfer waar de pagina om draait. Staat op een accentvlak,
+   over de volle breedte, met een duidelijk groter getal. Eén per raster —
+   twee nadrukken naast elkaar zijn samen geen nadruk meer. */
+.kpi--hoofd {
+  grid-column: 1 / -1;
+  background: var(--accent-bg);
+  border-color: var(--accent-rand);
+  padding: var(--sp-5);
+}
+.kpi--hoofd .kpi-lbl { color: var(--accent); font-weight: 600; font-size: 11.5px; }
+.kpi--hoofd .kpi-val { font-size: 34px; letter-spacing: -1.2px; }
+.kpi--hoofd .kpi-sub { color: var(--text-muted); font-size: 12px; }
+
+/* Staat er een hoofd-KPI in het raster, dan gaan we naar zes kolommen: de
+   hoofdkaart pakt alle zes, de drie steunkaarten elk twee. Zo blijft de rij
+   eronder precies gevuld in plaats van dat er één kaart alleen achterblijft.
+   Zonder :has() valt het terug op het gewone vierkolomsraster. */
+.kpi-grid:has(.kpi--hoofd) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.kpi-grid:has(.kpi--hoofd) .kpi:not(.kpi--hoofd) { grid-column: span 2; }
+
+.kpi--secondary { padding: var(--sp-3) var(--sp-4); background: var(--surface-2); }
 .kpi--secondary .kpi-val { font-size: 17px; letter-spacing: -0.4px; }
+
+/* Een dun kleurstreepje bovenaan vertelt het teken van het cijfer zonder
+   dat de hele kaart gaat kleuren. */
+.kpi--pos, .kpi--neg, .kpi--let-op { position: relative; overflow: hidden; }
+.kpi--pos::after, .kpi--neg::after, .kpi--let-op::after {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 3px;
+}
+.kpi--pos::after { background: var(--green); }
+.kpi--neg::after { background: var(--red); }
+.kpi--let-op::after { background: var(--amber); }
 
 /* Oude .metric blijft werken voor pagina's die nog niet zijn omgebouwd */
 /* .metric is de compacte variant van .kpi. Zelfde vlak, rand, schaduw en
@@ -36,41 +84,111 @@
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); padding: var(--sp-4);
   margin-bottom: var(--sp-3); box-shadow: var(--shadow-sm);
+  min-width: 0;
 }
-.card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text-muted); margin-bottom: var(--sp-4); }
-.card-flush { padding: 0; }
+.card-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px;
+  color: var(--text-muted); margin-bottom: var(--sp-4);
+}
+/* Kopregel met titel links en een knop of filter rechts. */
+.card-kop {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-3); margin-bottom: var(--sp-4); flex-wrap: wrap;
+}
+.card-kop .card-title { margin-bottom: 0; }
+.card-flush { padding: 0; overflow: hidden; }
 .card-flush .card-title { padding: var(--sp-4) var(--sp-4) 0; margin-bottom: var(--sp-3); }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-bottom: var(--sp-3); }
-.grid3 { display: grid; grid-template-columns: 2fr 1fr; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.card-flush .card-kop { padding: var(--sp-4) var(--sp-4) 0; margin-bottom: var(--sp-3); }
+
+/* minmax(0,...) in plaats van 1fr: een brede tabel of lang bedrag mag de
+   kolom niet breder duwen dan het scherm. */
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.grid3 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-3); }
 .chart-box { position: relative; height: 220px; }
 .chart-box.sm { height: 180px; }
 
-/* ---------- BADGES ---------- */
-.badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
-.badge-green { background: var(--green-bg); color: var(--green); }
-.badge-red { background: var(--red-bg); color: var(--red); }
-.badge-blue { background: var(--blue-bg); color: var(--blue); }
-.badge-amber { background: var(--amber-bg); color: var(--amber); }
-.badge-purple { background: var(--purple-bg); color: var(--purple); }
-.badge-gray { background: var(--gray-bg); color: var(--text-muted); }
+/* ---------- BADGES ----------
+   Elke badge krijgt een dunne rand in dezelfde kleurfamilie. Op een gekleurde
+   of donkere achtergrond bleef een badge zonder rand anders vormeloos. */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: var(--radius-pil); white-space: nowrap;
+  border: 1px solid transparent; line-height: 1.6;
+}
+.badge-green { background: var(--green-bg); color: var(--green); border-color: var(--green-rand); }
+.badge-red { background: var(--red-bg); color: var(--red); border-color: var(--red-rand); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); border-color: var(--blue-rand); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-rand); }
+.badge-purple { background: var(--purple-bg); color: var(--purple); border-color: var(--purple-rand); }
+.badge-gray { background: var(--gray-bg); color: var(--text-muted); border-color: var(--border); }
+
+/* Statusstip voor compacte plekken waar een hele badge te veel is. */
+.stip { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.stip-green { background: var(--green); }
+.stip-red { background: var(--red); }
+.stip-amber { background: var(--amber); }
+.stip-gray { background: var(--text-hint); }
 
 /* ---------- TABELLEN ---------- */
-.table-wrap { overflow-x: auto; }
+.table-wrap {
+  overflow-x: auto;
+  /* Vloeiend schuiven op een touchscreen, en de rand blijft netjes. */
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius);
+}
 .table-scroll { max-height: 560px; overflow-y: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 th {
-  text-align: left; color: var(--text-muted); font-weight: 500; font-size: 11px;
-  padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap;
+  text-align: left; color: var(--text-muted); font-weight: 600; font-size: 10.5px;
+  text-transform: uppercase; letter-spacing: .5px;
+  padding: 10px; border-bottom: 1px solid var(--border); white-space: nowrap;
   position: sticky; top: 0; z-index: 2;
-  background: var(--surface-2);
+  background: var(--surface-3);
 }
 .table-scroll th { box-shadow: inset 0 -1px 0 var(--border); }
-td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 tbody tr:last-child td { border-bottom: none; }
+
+/* Zebra: om de rij een fractie donkerder. Scheelt bij brede tabellen echt in
+   het volgen van een regel van links naar rechts. */
+tbody tr:nth-child(even) td { background: var(--surface-2); }
 tbody tr:hover td { background: var(--surface-hover); }
+
 .td-trunc { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-click { cursor: pointer; }
-.row-click.is-selected td { background: var(--accent-bg); }
+.row-click.is-selected td,
+.row-click.is-selected:nth-child(even) td { background: var(--accent-bg); }
+
+/* Bedragkolommen rechts uitlijnen en nooit laten afbreken. */
+td.num, th.num, .cel-bedrag, .cel-waarde {
+  text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+
+/* Totaal- en subtotaalrijen. Staan ná de zebraregel zodat ze die overschrijven:
+   anders zou zo'n rij op een even positie gewoon meegestreept worden en zijn
+   functie als afsluiting van een blok verliezen. */
+tbody tr.tbl-totaalrij td,
+tbody tr.tbl-totaalrij:nth-child(even) td,
+tbody tr.tbl-totaalrij:hover td {
+  background: var(--surface-3);
+  border-top: 2px solid var(--border-strong);
+  border-bottom: none;
+  font-weight: 600;
+}
+
+/* Acties per rij: pas zichtbaar bij hover of toetsenbordfocus, zodat de tabel
+   rustig blijft maar de knoppen wel bereikbaar zijn. */
+.rij-acties {
+  display: flex; gap: 2px; justify-content: flex-end; align-items: center;
+  opacity: 0; transition: opacity var(--duur-snel);
+}
+tbody tr:hover .rij-acties,
+tbody tr:focus-within .rij-acties { opacity: 1; }
+@media (hover: none) {
+  /* Op een touchscreen bestaat hover niet — dan altijd tonen. */
+  .rij-acties { opacity: 1; }
+}
 
 /* Sorteerbare koppen */
 th.sortable { cursor: pointer; user-select: none; }
@@ -87,31 +205,58 @@ th.sortable.sort-desc::after { content: '↓'; opacity: 1; color: var(--accent);
 .empty-text + .btn { margin-top: var(--sp-4); }
 
 /* ---------- FORMULIEREN EN KNOPPEN ---------- */
-.toolbar { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4); align-items: center; flex-wrap: wrap; }
+.toolbar {
+  display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4);
+  align-items: center; flex-wrap: wrap;
+}
+/* Een scheidingsstreepje om filters van acties te scheiden in dezelfde balk. */
+.toolbar-scheiding {
+  width: 1px; align-self: stretch; margin: 2px var(--sp-1);
+  background: var(--border); flex-shrink: 0;
+}
 select, input[type=text], input[type=number], input[type=date], input[type=search], input[type=password] {
   font-size: 12.5px; padding: 7px 10px; border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
-  outline: none; font-family: inherit;
+  outline: none; font-family: inherit; min-height: 32px;
+  transition: border-color var(--duur-snel), box-shadow var(--duur-snel);
 }
 select:hover, input:hover { border-color: var(--text-hint); }
 select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+input::placeholder { color: var(--text-hint); }
 label { color: var(--text-muted); }
+
+/* Selects krijgen een eigen pijltje: het standaardpijltje van de browser
+   klopt in donkere modus vaak niet met de tekstkleur. */
+select {
+  appearance: none; -webkit-appearance: none;
+  padding-right: 28px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 15px) calc(50% + 1px), calc(100% - 10px) calc(50% + 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
 
 .btn {
   font-size: 12.5px; padding: 7px 14px; border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
   cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 6px;
-  transition: background .12s, border-color .12s;
+  justify-content: center; white-space: nowrap;
+  /* Vaste minimumhoogte: knoppen naast een select of input lijnen nu uit. */
+  min-height: 32px;
+  transition: background var(--duur-snel), border-color var(--duur-snel), transform var(--duur-snel);
 }
 .btn:hover { background: var(--surface-hover); border-color: var(--text-hint); }
-.btn-primary { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
-.btn-primary:hover { background: var(--accent); border-color: var(--accent); filter: brightness(1.08); }
-.btn-danger { color: var(--red); border-color: var(--red); background: rgba(255, 59, 48, 0.1); }
-.btn-danger:hover { background: rgba(255, 59, 48, 0.2); border-color: var(--red); }
+.btn:active { transform: translateY(1px); }
+.btn[disabled], .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-primary { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); font-weight: 500; }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-danger { color: var(--red); border-color: var(--red-rand); background: var(--red-bg); }
+.btn-danger:hover { background: var(--red-bg); border-color: var(--red); filter: brightness(.96); }
 .btn-ghost { border-color: transparent; background: none; }
 .btn-ghost:hover { background: var(--surface-hover); border-color: transparent; }
 .btn-ml { margin-left: auto; }
-.btn-sm { font-size: 11px; padding: 4px 9px; }
+.btn-sm { font-size: 11px; padding: 4px 9px; min-height: 26px; }
 .btn-icon { padding: 7px; }
 
 .icon-btn {
@@ -175,23 +320,94 @@ label { color: var(--text-muted); }
 .dl-val { text-align: right; word-break: break-word; }
 
 /* ---------- MODALS ---------- */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.40); z-index: 100; align-items: center; justify-content: center; padding: var(--sp-4); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); z-index: 100;
+  align-items: center; justify-content: center; padding: var(--sp-4);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
 .modal-overlay.open { display: flex; }
-.modal { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: var(--sp-5); width: 460px; max-width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-md); }
+.modal {
+  background: var(--surface); border-radius: var(--radius-lg);
+  border: 1px solid var(--border); padding: var(--sp-5);
+  width: 460px; max-width: 100%; max-height: 90vh; overflow-y: auto;
+  box-shadow: var(--shadow-op);
+}
+/* De titel blijft staan als het formulier lang is en je scrollt.
+   Alleen een h3 die het eerste directe kind van .modal is: sommige vensters
+   zetten hun titel in een eigen .modal-header, of hebben verderop nog een
+   tweede kop. Die mogen niet meeplakken. */
+.modal > h3:first-child {
+  position: sticky; top: calc(var(--sp-5) * -1); z-index: 3;
+  background: var(--surface);
+  padding: var(--sp-5) 0 var(--sp-3);
+  margin-top: calc(var(--sp-5) * -1);
+}
 .modal h3 { font-size: 15px; font-weight: 600; margin-bottom: var(--sp-4); letter-spacing: -0.3px; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
-.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+.form-group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .form-group.full { grid-column: 1 / -1; }
 .form-group label { font-size: 11px; font-weight: 500; color: var(--text-muted); }
 .form-group select, .form-group input { width: 100%; }
-.modal-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: flex-end; margin-top: var(--sp-4); }
+/* Uitleg onder een veld, in plaats van losse inline-stijlen per formulier. */
+.form-hint { font-size: 11px; line-height: 1.45; color: var(--text-muted); margin-top: 4px; }
 
-/* ---------- MELDINGEN ---------- */
-.alert { border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; margin-bottom: var(--sp-4); display: flex; gap: 8px; align-items: flex-start; line-height: 1.5; }
-.alert-warn { background: var(--amber-bg); color: var(--amber); border: 1px solid color-mix(in srgb, var(--amber) 25%, transparent); }
-.alert-info { background: var(--blue-bg); color: var(--blue); border: 1px solid color-mix(in srgb, var(--blue) 25%, transparent); }
-.alert-ok { background: var(--green-bg); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 25%, transparent); }
-.alert-error { background: var(--red-bg); color: var(--red); border: 1px solid color-mix(in srgb, var(--red) 25%, transparent); }
+.modal-actions {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: flex-end;
+  margin-top: var(--sp-5);
+}
+/* De knoppenbalk blijft onderin zichtbaar, ook halverwege een lang formulier.
+   Alleen als hij écht onderaan staat: het venster "Data wissen" heeft een
+   tweede balk onder een streep, en die eerste mag zich niet vastzetten. */
+.modal-actions:last-child {
+  position: sticky; bottom: calc(var(--sp-5) * -1);
+  background: var(--surface);
+  padding: var(--sp-3) 0 var(--sp-5);
+  margin-bottom: calc(var(--sp-5) * -1);
+  border-top: 1px solid var(--border);
+}
+/* Bij weinig knoppen mag de belangrijkste rechts blijven staan. */
+.modal-acties { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: flex-end; margin-top: var(--sp-4); }
+
+/* ---------- STAPPEN IN EEN FORMULIER ----------
+   Lange formulieren mogen in stappen. Alleen de opmaak staat hier; welke stap
+   open staat bepaalt het scherm zelf met de klasse .is-actief. */
+.stap-balk {
+  display: flex; align-items: center; gap: var(--sp-2);
+  margin-bottom: var(--sp-4); flex-wrap: wrap;
+}
+.stap-bol {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: var(--text-hint); white-space: nowrap;
+}
+.stap-bol-nr {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+  background: var(--gray-bg); color: var(--text-hint);
+}
+.stap-bol.is-actief { color: var(--text); font-weight: 500; }
+.stap-bol.is-actief .stap-bol-nr { background: var(--accent); color: var(--accent-contrast); }
+.stap-bol.is-klaar { color: var(--green); }
+.stap-bol.is-klaar .stap-bol-nr { background: var(--green-bg); color: var(--green); }
+.stap-streep { flex: 1; height: 1px; background: var(--border); min-width: 12px; }
+
+.stap-paneel { display: none; }
+.stap-paneel.is-actief { display: block; }
+
+/* ---------- MELDINGEN ----------
+   Een streep links geeft de melding gewicht zonder dat het hele vlak
+   hard gaat kleuren. */
+.alert {
+  border-radius: var(--radius-sm); padding: 11px 14px; font-size: 12.5px;
+  margin-bottom: var(--sp-4); display: flex; gap: 9px; align-items: flex-start;
+  line-height: 1.55; border: 1px solid transparent; border-left-width: 3px;
+}
+.alert svg { flex-shrink: 0; margin-top: 1px; }
+.alert-warn { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-rand); border-left-color: var(--amber); }
+.alert-info { background: var(--blue-bg); color: var(--blue); border-color: var(--blue-rand); border-left-color: var(--blue); }
+.alert-ok { background: var(--green-bg); color: var(--green); border-color: var(--green-rand); border-left-color: var(--green); }
+.alert-error { background: var(--red-bg); color: var(--red); border-color: var(--red-rand); border-left-color: var(--red); }
 
 /* ---------- OVERIG ---------- */
 .vtabs { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4); border-bottom: 1px solid var(--border); }
@@ -477,40 +693,82 @@ body.nav-collapsed .account-blok .btn { justify-content: center; }
 .home-tegel-gevaar .home-tegel-icoon { color: var(--red); }
 .home-tegel-gevaar:hover { border-color: var(--red); background: var(--red-bg); }
 
-/* ---------- Crediteuren / debiteuren ---------- */
-/* Vast raster, geen space-between: anders zwabberen de bedragen per regel. */
+/* ---------- Crediteuren / debiteuren ----------
+   Vast raster, geen space-between: anders zwabberen de bedragen per regel.
+   v51: de rij is nu een echte lijstregel met hover, en de Details-knop is
+   een rustige secundaire knop in plaats van een blauw blok per regel — bij
+   twintig partijen onder elkaar schreeuwde dat het hele scherm vol. */
 .partij-rij {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 56px 128px 84px;
   align-items: center; gap: var(--sp-3);
-  padding: 10px 16px; border-top: 1px solid var(--border);
+  padding: 11px 16px; border-top: 1px solid var(--border);
+  transition: background var(--duur-snel);
 }
+.partij-rij:hover { background: var(--surface-hover); }
+.partij-rij:first-child { border-top: none; }
+
 .partij-naam {
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 13px; color: var(--text);
+  font-size: 13px; color: var(--text); font-weight: 500;
 }
 .partij-aantal {
   justify-self: center;
-  font-size: 11px; color: var(--text-hint);
-  background: var(--surface-hover); border-radius: var(--radius-sm); padding: 2px 7px;
+  font-size: 11px; color: var(--text-muted);
+  background: var(--gray-bg); border: 1px solid var(--border);
+  border-radius: var(--radius-pil); padding: 2px 8px;
+  font-variant-numeric: tabular-nums;
 }
 .partij-bedrag {
-  text-align: right; font-size: 13px; font-weight: 600;
+  text-align: right; font-size: 13.5px; font-weight: 600;
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-.leeg { padding: 22px 16px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+/* Aandeelbalkje: laat zien hoe groot een partij is ten opzichte van de
+   grootste. De breedte zet het scherm zelf via --aandeel (0 tot 1). */
+.partij-balk {
+  grid-column: 1 / -1;
+  height: 3px; border-radius: 2px; background: var(--gray-bg);
+  overflow: hidden; margin-top: -4px;
+}
+.partij-balk::after {
+  content: ''; display: block; height: 100%;
+  width: calc(var(--aandeel, 0) * 100%);
+  background: var(--accent); opacity: .5;
+}
+
+.leeg {
+  padding: 28px 16px; text-align: center;
+  color: var(--text-muted); font-size: 13px;
+}
 
 .btn-details {
   justify-self: end;
-  padding: 5px 12px; font: inherit; font-size: 12px; font-weight: 500;
-  color: #fff; background: var(--blue, #2563eb);
-  border: none; border-radius: var(--radius-sm); cursor: pointer;
+  padding: 5px 12px; font: inherit; font-size: 11.5px; font-weight: 500;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  cursor: pointer; min-height: 26px;
+  transition: background var(--duur-snel), border-color var(--duur-snel), color var(--duur-snel);
 }
-.btn-details:hover { filter: brightness(.92); }
+.btn-details:hover {
+  background: var(--accent-bg); border-color: var(--accent-rand); color: var(--accent);
+}
 
+/* Op een telefoon wordt de regel een kaart: naam boven, bedrag groot,
+   aantal en knop op één regel eronder. Zo hoef je niet opzij te schuiven. */
 @media (max-width: 640px) {
-  .partij-rij { grid-template-columns: minmax(0,1fr) 44px 104px 72px; gap: 8px; padding: 10px 12px; }
-  .partij-bedrag { font-size: 12px; }
+  .partij-rij {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "naam bedrag"
+      "aantal knop";
+    gap: 6px var(--sp-3); padding: 12px 14px;
+  }
+  .partij-naam { grid-area: naam; font-size: 14px; }
+  .partij-bedrag { grid-area: bedrag; font-size: 15px; }
+  .partij-aantal { grid-area: aantal; justify-self: start; }
+  .btn-details { grid-area: knop; }
+  .partij-balk { display: none; }
 }
 
 /* ---------- Inklapbare menugroepen ---------- */

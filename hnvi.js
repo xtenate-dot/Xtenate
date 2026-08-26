@@ -49,17 +49,19 @@ export function renderHNVI() {
     const w = i.verkoop!=null ? i.verkoop-i.inkoop : null;
     const pct = w!=null&&i.inkoop ? Math.round(w/i.inkoop*100) : null;
     return `<tr>
-      <td style="padding-left:16px"><input type="checkbox" class="hnvi-check" data-key="${esc(i._key||i.id)}" onchange="updateHNVIDeleteBtn()"></td>
-      <td class="muted" data-v="${esc(i.datum)}">${ddmm(i.datum)}</td>
-      <td class="td-trunc">${esc(i.omschr)}${i.noot?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${esc(i.noot)}</div>`:''}</td>
-      <td style="text-align:right" data-v="${Number(i.inkoop)||0}">${fmt(i.inkoop)}</td>
-      <td style="text-align:right" data-v="${Number(i.verkoop)||0}">${i.verkoop!=null&&i.verkoop>0?fmt(i.verkoop):'—'}</td>
-      <td style="text-align:right" data-v="${w||0}">${w!=null&&i.verkoop>0?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
-      <td data-v="${esc(i.status)}">${i.status==='verkocht'?'<span class="badge badge-green">verkocht</span>':'<span class="badge badge-blue">op voorraad</span>'}</td>
-      <td style="white-space:nowrap">
+      <td class="cel-kies" style="padding-left:16px"><input type="checkbox" class="hnvi-check" data-key="${esc(i._key||i.id)}" onchange="updateHNVIDeleteBtn()"></td>
+      <td class="muted cel-datum" data-v="${esc(i.datum)}">${ddmm(i.datum)}</td>
+      <td class="td-trunc cel-naam">${esc(i.omschr)}${i.noot?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${esc(i.noot)}</div>`:''}</td>
+      <td data-label="Inkoop" style="text-align:right" data-v="${Number(i.inkoop)||0}">${fmt(i.inkoop)}</td>
+      <td data-label="Verkoop" style="text-align:right" data-v="${Number(i.verkoop)||0}">${i.verkoop!=null&&i.verkoop>0?fmt(i.verkoop):'—'}</td>
+      <td data-label="Winst" style="text-align:right" data-v="${w||0}">${w!=null&&i.verkoop>0?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
+      <td class="cel-status" data-v="${esc(i.status)}">${i.status==='verkocht'?'<span class="badge badge-green">verkocht</span>':'<span class="badge badge-blue">op voorraad</span>'}</td>
+      <td class="cel-acties" style="white-space:nowrap">
+        <span class="rij-acties">
         <span class="sell-link" onclick="openHNVISell('${esc(i.id)}')">${i.status==='voorraad'?'Verkoop':'Wijzig'}</span>
         ${i.status==='verkocht'?`<span class="sell-link" style="color:var(--text-muted)" onclick="wisHNVIVerkoop('${esc(i.id)}')">Wis</span>`:''}
         <span class="sell-link" style="color:var(--red)" onclick="verwijderHNVIItem('${esc(i._key||i.id)}')">Verwijder</span>
+        </span>
       </td>
     </tr>`;
   }).join('') : `<tr data-geen-sort="1"><td colspan="8">${leegVlak(
