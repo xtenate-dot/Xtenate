@@ -1,7 +1,7 @@
 // modals.js — beheer-acties: Excel-import, cloud sync, API-sleutel, data wissen.
 
-import { REKNM } from './helpers.js?v=20260826b';
-import { renderHome } from './dashboard.js?v=20260826b';
+import { REKNM } from './helpers.js?v=20260826c';
+import { renderHome } from './dashboard.js?v=20260826c';
 
 /** Rekeningnummers die de app kent; gebruikt bij het inlezen van kolom G. */
 const REKENINGEN = new Set(Object.keys(REKNM));
@@ -11,7 +11,8 @@ const REKENINGEN = new Set(Object.keys(REKNM));
 // Daardoor viel elke bevestigde import om met "OMZET_GB is not defined", ná het
 // wegschrijven van de boekingen en vóór het toepassen van de jaartotalen.
 const OMZET_GB = ['8000', '8010', '8020'];
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260826b';
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260826c';
+import { isSupabaseReady, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260826c';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
 // met een kolom "Totaal" voor het hele boekjaar. Dit is de brontabel van de boekhouding zelf,
@@ -615,7 +616,7 @@ export function annuleerImport() {
 }
 
 /** Past de gelezen import toe. Dit is de enige plek die daarbij schrijft. */
-export function bevestigImport() {
+export async function bevestigImport() {
   const p = wachtendeImport;
   if (!p) return;
   wachtendeImport = null;
@@ -639,7 +640,16 @@ export function bevestigImport() {
         // Sla op als huidige (2026) data
         state.TX = p.newTx;
         state.nxtTx = p.tid;
-        if (p.newCovers.length > 0) { state.COVERS = normaliseerVoorraad(p.newCovers, state.COVERS); state.nxtCover = 300; }
+        if (p.newCovers.length > 0) {
+          state.COVERS = normaliseerVoorraad(p.newCovers, state.COVERS);
+          // Het volgende vrije nummer volgt uit wat er nu ligt. Blind op 300
+          // zetten botste met artikelen die hun oude nummer hielden.
+          const hoogste = state.COVERS.reduce((m, c) => {
+            const n = Number(c.id);
+            return Number.isFinite(n) && n > m ? n : m;
+          }, 299);
+          state.nxtCover = hoogste + 1;
+        }
         Object.keys(MAAND_SALDOS).filter(m=>m.startsWith('2026')).forEach(m=>delete MAAND_SALDOS[m]);
         Object.assign(MAAND_SALDOS, p.newSaldos);
         saveTxData();
@@ -714,11 +724,33 @@ export function bevestigImport() {
         (p.lotenZonderDatum > 0 ? `&nbsp;&nbsp;&nbsp;<span style="color:var(--text-muted)">${p.lotenZonderDatum} daarvan hadden geen datum en staan nu op 1 januari</span><br>` : '') +
         (p.newCovers.length > 0 ? `✅ <strong>${p.coverCount}</strong> covers artikelen ingelezen<br>` : '') +
         (perPeriodeTotals ? `✅ Jaartotalen (omzet/kosten/privé) ingelezen uit "Per Periode" — dit is nu leidend voor de Home-cijfers van dit jaar<br>` : `⚠️ Geen "Per Periode" tabblad gevonden — Home-cijfers worden voor dit jaar nog berekend uit losse boekingen<br>`) +
-        `<br>Je data is opgeslagen. HNVI-loten blijven bewaard.`;
+        `<br>Je data is opgeslagen.`;
       document.getElementById('import-actions').style.display = 'flex';
 
-
       renderHome();
+
+      // De import schreef tot nu toe alleen naar deze browser. Bij het opstarten
+      // haalt de app de voorraad en de loten uit de cloud zodra die er is, en
+      // die won dan van wat er net was ingelezen: na een herlaadbeurt stond de
+      // oude lijst er weer. Daarom gaat het resultaat er nu meteen naartoe.
+      if (isSupabaseReady()) {
+        const doel = document.getElementById('import-body');
+        const meldRegel = document.createElement('div');
+        meldRegel.style.marginTop = '8px';
+        meldRegel.textContent = 'Bezig met versturen naar de cloud...';
+        doel.appendChild(meldRegel);
+        try {
+          const uitkomst = await syncAllesNaarSupabase(
+            { TX: state.TX, HIST_TX: state.HIST_TX, COVERS: state.COVERS, HNVI_LOTS: state.HNVI_LOTS },
+            { boekingen: true, voorraad: p.newCovers.length > 0, hnvi: p.lotCount > 0 }
+          );
+          meldRegel.textContent = uitkomst?.fout
+            ? `De cloud is niet bijgewerkt: ${uitkomst.fout} De gegevens staan wel in deze browser.`
+            : 'Ook naar de cloud verstuurd.';
+        } catch (fout) {
+          meldRegel.textContent = `De cloud is niet bijgewerkt: ${fout.message} De gegevens staan wel in deze browser.`;
+        }
+      }
   } catch (err) {
     document.getElementById('import-title').textContent = 'Fout bij importeren';
     document.getElementById('import-body').innerHTML = 'Er ging iets mis: ' + err.message;
