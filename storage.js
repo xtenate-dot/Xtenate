@@ -14,7 +14,7 @@ import {
   isSupabaseReady,
   addToPendingQueue,
   savePendingQueue
-} from './supabase-client-v2.js?v=20260826b';
+} from './supabase-client-v2.js?v=20260826c';
 
 export const state = {
   TX: [],
@@ -155,11 +155,71 @@ export function groepId(naam) {
  * die er vóór de vervanging uitzag, zodat groep, inkoopprijs en meldgrens
  * behouden blijven — gekoppeld op id, en anders op artikelnaam.
  */
+/** De sleutel waarop twee voorraadregels hetzelfde artikel zijn. */
+function artikelSleutel(naam) {
+  return String(naam || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/**
+ * Voegt twee regels van hetzelfde artikel samen tot één.
+ *
+ * De eerste regel gaat voor; de tweede vult alleen aan waar de eerste niets
+ * heeft. Jaarcijfers worden per jaar samengevoegd, zodat een regel met alleen
+ * de eindstand en een regel met alleen de in- en verkoopaantallen samen
+ * compleet worden.
+ */
+function voegArtikelenSamen(a, b) {
+  const jaren = { ...(b.jaren || {}) };
+  for (const [jr, v] of Object.entries(a.jaren || {})) {
+    const gevuld = Object.fromEntries(Object.entries(v || {}).filter(([, x]) => x != null));
+    jaren[jr] = { ...(jaren[jr] || {}), ...gevuld };
+  }
+  const kies = (x, y) => (x != null && x !== '' ? x : y);
+  return {
+    ...b,
+    ...a,
+    id: a.id ?? b.id,
+    categorie: kies(a.categorie, b.categorie),
+    prijs: kies(a.prijs, b.prijs),
+    inkoopprijs: kies(a.inkoopprijs, b.inkoopprijs),
+    minVoorraad: kies(a.minVoorraad, b.minVoorraad),
+    inkoopGb: kies(a.inkoopGb, b.inkoopGb),
+    prijsFactor: kies(a.prijsFactor, b.prijsFactor),
+    handelsvoorraad: a.handelsvoorraad ?? b.handelsvoorraad,
+    voorraad: Number.isFinite(Number(a.voorraad)) ? a.voorraad : b.voorraad,
+    jaren
+  };
+}
+
+/**
+ * Haalt dubbele artikelen uit de lijst.
+ *
+ * Elke importroute deelde tot nu toe eigen nummers uit: de grote import telde
+ * vanaf 200, de voorraadimport maakte er een op tijdstip gebaseerd nummer bij.
+ * Hetzelfde artikel kwam daardoor onder twee nummers in de lijst, en omdat de
+ * cloud op nummer bijwerkt bleven beide staan. Twee regels met dezelfde naam
+ * zijn hier hetzelfde artikel; ze worden samengevoegd en houden één nummer.
+ */
+export function ontdubbelVoorraad(lijst) {
+  const perNaam = new Map();
+  for (const art of lijst || []) {
+    const k = artikelSleutel(art?.artikel);
+    if (!k) continue;
+    const bestaand = perNaam.get(k);
+    perNaam.set(k, bestaand ? voegArtikelenSamen(bestaand, art) : art);
+  }
+  return [...perNaam.values()];
+}
+
 export function normaliseerVoorraad(lijst, vorige = []) {
+  // De naam is de betrouwbare sleutel, niet het nummer. Het nummer stond hier
+  // eerder voorop, maar elke import deelde die opnieuw uit in de volgorde van
+  // het werkblad. Nummer 200 was dan het ene bestand een ander artikel dan het
+  // vorige, waardoor instellingen bij het verkeerde artikel terechtkwamen.
+  const opNaam = new Map(vorige.map(c => [artikelSleutel(c.artikel), c]));
   const opId = new Map(vorige.map(c => [String(c.id), c]));
-  const opNaam = new Map(vorige.map(c => [String(c.artikel || '').trim().toLowerCase(), c]));
-  return (lijst || []).map(c => {
-    const oud = opId.get(String(c.id)) || opNaam.get(String(c.artikel || '').trim().toLowerCase()) || {};
+  const genormaliseerd = (lijst || []).map(c => {
+    const oud = opNaam.get(artikelSleutel(c.artikel)) || opId.get(String(c.id)) || {};
     // Jaarcijfers van beide kanten samenvoegen: wat al vastgelegd was blijft
     // staan, wat uit het bestand komt wint voor dat ene jaar.
     const jaren = { ...(oud.jaren || {}), ...(c.jaren || {}) };
@@ -179,6 +239,9 @@ export function normaliseerVoorraad(lijst, vorige = []) {
     return {
       ...c,
       ...behoud,
+      // Bestaat het artikel al, dan houdt het zijn nummer. Anders maakt de
+      // cloud er een tweede regel van in plaats van de bestaande bij te werken.
+      id: oud.id ?? c.id,
       categorie: c.categorie || oud.categorie || standaardGroep(),
       inkoopprijs: c.inkoopprijs ?? oud.inkoopprijs ?? null,
       minVoorraad: c.minVoorraad ?? oud.minVoorraad ?? null,
@@ -186,6 +249,7 @@ export function normaliseerVoorraad(lijst, vorige = []) {
       jaren
     };
   });
+  return ontdubbelVoorraad(genormaliseerd);
 }
 
 state.COVERS = normaliseerVoorraad(state.COVERS);
@@ -288,17 +352,24 @@ export async function loadDataHybrid() {
       }
       
       if (coversData && coversData.length > 0) {
-        state.COVERS = coversData;
-        console.log(`✅ Covers loaded from Supabase: ${coversData.length} artikelen`);
+        // De cloud kan hetzelfde artikel onder twee nummers bevatten, doordat
+        // eerdere imports steeds nieuwe nummers uitdeelden. Hier wordt dat
+        // rechtgetrokken bij het inlezen, zodat je de lijst niet dubbel ziet.
+        const ontdubbeld = ontdubbelVoorraad(coversData);
+        state.COVERS = ontdubbeld;
+        if (ontdubbeld.length !== coversData.length) {
+          console.warn(`ℹ️  ${coversData.length - ontdubbeld.length} dubbele artikelen samengevoegd`);
+        }
+        console.log(`✅ Covers loaded from Supabase: ${ontdubbeld.length} artikelen`);
       } else {
-        state.COVERS = load('xtenate_covers', []);
+        state.COVERS = ontdubbelVoorraad(load('xtenate_covers', []));
       }
     } catch (err) {
       console.warn(`⚠️  Supabase load failed: ${err.message}, falling back to localStorage`);
       state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
       state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
       state.HNVI_LOTS = load('xtenate_hnvi', []);
-      state.COVERS = load('xtenate_covers', []);
+      state.COVERS = ontdubbelVoorraad(load('xtenate_covers', []));
       state.loadedFromSupabase = false;
     }
   } else {
@@ -307,7 +378,7 @@ export async function loadDataHybrid() {
     state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
     state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
     state.HNVI_LOTS = load('xtenate_hnvi', []);
-    state.COVERS = load('xtenate_covers', []);
+    state.COVERS = ontdubbelVoorraad(load('xtenate_covers', []));
     state.loadedFromSupabase = false;
   }
   

@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260826b';
+import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260826c';
 import {
-  STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260826b';
-import { maakSorteerbaar } from './tables.js?v=20260826b';
-import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260826b';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260826b';
+  STANDAARD_MIN_VOORRAAD, groepId, groepNaam, ontdubbelVoorraad, saveCoversData, saveGroepen, standaardGroep, state
+} from './storage.js?v=20260826c';
+import { maakSorteerbaar } from './tables.js?v=20260826c';
+import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260826c';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260826c';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -1312,4 +1312,52 @@ export async function handleImportVoorraad(event) {
     status.innerHTML = `❌ Fout: ${e.message}`;
     console.error('Import fout:', e);
   }
+}
+
+/**
+ * Voegt artikelen met dezelfde naam samen tot één regel.
+ *
+ * Elke importroute deelde eigen nummers uit, waardoor hetzelfde artikel twee
+ * keer in de lijst kon belanden — vaak in twee verschillende groepen. Nieuwe
+ * imports maken die dubbelingen niet meer, maar wat er al staat moet nog
+ * worden opgeruimd. Dat gebeurt hier, ook in de cloud.
+ */
+export async function ruimDubbeleArtikelenOp() {
+  const voor = state.COVERS.length;
+  const samengevoegd = ontdubbelVoorraad(state.COVERS);
+  const weg = voor - samengevoegd.length;
+
+  if (weg === 0) {
+    window.alert('Er staan geen artikelen met dezelfde naam in de lijst.');
+    return;
+  }
+
+  const gaDoor = window.confirm(
+    `${weg} ${weg === 1 ? 'artikel komt' : 'artikelen komen'} meer dan één keer voor. ` +
+    `Samenvoegen brengt de lijst terug van ${voor} naar ${samengevoegd.length} artikelen. ` +
+    `Per artikel blijft de ingevulde groep, prijs en inkooprekening bewaard. Doorgaan?`
+  );
+  if (!gaDoor) return;
+
+  // De regels die verdwijnen moeten ook uit de cloud, anders staan ze er na
+  // een herlaadbeurt gewoon weer.
+  const blijft = new Set(samengevoegd.map(c => String(c.id)));
+  const teVerwijderen = state.COVERS.filter(c => !blijft.has(String(c.id)));
+
+  state.COVERS = samengevoegd;
+  saveCoversData();
+  renderCovers();
+
+  let verwijderd = 0, mislukt = 0;
+  for (const art of teVerwijderen) {
+    try {
+      if (await deleteFromSupabase(art.id, 'cover')) verwijderd++; else mislukt++;
+    } catch { mislukt++; }
+  }
+
+  window.alert(
+    `Klaar: ${samengevoegd.length} artikelen over.` +
+    (verwijderd ? ` ${verwijderd} dubbele regels uit de cloud verwijderd.` : '') +
+    (mislukt ? ` ${mislukt} regels konden daar niet worden verwijderd; die verdwijnen bij de volgende synchronisatie.` : '')
+  );
 }
