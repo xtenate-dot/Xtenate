@@ -20,10 +20,10 @@
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link rel="stylesheet" href="style.css?v=20260826a">
-<link rel="stylesheet" href="layout.css?v=20260826a">
-<link rel="stylesheet" href="components.css?v=20260826a">
-<link rel="stylesheet" href="responsive.css?v=20260826a">
+<link rel="stylesheet" href="style.css?v=20260826b">
+<link rel="stylesheet" href="layout.css?v=20260826b">
+<link rel="stylesheet" href="components.css?v=20260826b">
+<link rel="stylesheet" href="responsive.css?v=20260826b">
 </head>
 <body>
 
@@ -640,7 +640,8 @@
       <option value="verkocht">Verkocht</option>
     </select>
     <button class="btn btn-danger" id="hnvi-delete-btn" onclick="verwijderGeselecteerdeHNVI()" style="display:none">Verwijder selectie</button>
-    <button class="btn btn-primary btn-ml" onclick="openHNVIModal()">+ Lot toevoegen</button>
+    <button class="btn btn-ml" onclick="openImportModalHnvi()" title="Loten inlezen uit een Excel-bestand">📥 Import loten</button>
+    <button class="btn btn-primary" onclick="openHNVIModal()">+ Lot toevoegen</button>
   </div>
   <div class="card card-flush">
     <div class="table-wrap"><table id="tbl-hnvi" class="js-sorteerbaar tbl-compact">
@@ -837,6 +838,30 @@
 </div>
 
 <!-- MODAL: HNVI FACTUUR PREVIEW -->
+<div class="modal-overlay" id="modal-import-hnvi">
+  <div class="modal">
+    <h3>Loten inlezen uit Excel</h3>
+    <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:var(--sp-4)">
+      Kies een administratiebestand. Alleen het lotenblad wordt gelezen &mdash;
+      de boekingen en de voorraad in het bestand blijven buiten beschouwing.
+      Herkend worden een blad &ldquo;HNVI Loten&rdquo; en het blad
+      &ldquo;Veiling inkopenVerkopen&rdquo;.
+    </p>
+    <input type="file" id="hnvi-import-file" accept=".xlsx,.xls" style="display:none" onchange="handleImportHnvi(event)">
+    <button class="btn btn-primary" onclick="document.getElementById('hnvi-import-file').click()" style="width:100%">
+      Kies een Excel-bestand
+    </button>
+    <div id="hnvi-import-status" style="margin-top:var(--sp-4);font-size:12.5px"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="sluitImportModalHnvi()">Sluiten</button>
+      <span id="hnvi-import-acties" style="display:none;gap:var(--sp-2)">
+        <button class="btn" onclick="bevestigImportHnvi('vervangen')" title="Alle loten die er nu in staan verdwijnen">Vervang alles</button>
+        <button class="btn btn-primary" onclick="bevestigImportHnvi('toevoegen')">Toevoegen aan bestaande</button>
+      </span>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-hnvi-factuur">
 <div class="modal" style="width:520px">
   <h3>HNVI factuur importeren</h3>
@@ -1071,6 +1096,6 @@
 </div>
 </div>
 
-<script type="module" src="app.js?v=20260823a"></script>
+<script type="module" src="app.js?v=20260826b"></script>
 </body>
 </html>
