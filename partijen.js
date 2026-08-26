@@ -76,12 +76,20 @@ export function tekenPartijen(o) {
   const teken = o.soort === 'inkomst' ? 'pos' : 'neg';
   const plus = o.soort === 'inkomst' ? '+&nbsp;' : '';
 
+  // Het balkje onder elke regel toont het aandeel ten opzichte van de
+  // grootste partij. Puur visueel: het rekent niets nieuws uit, het maakt
+  // alleen zichtbaar waar het geld heen gaat zonder dat je bedragen hoeft
+  // te vergelijken. Delen door nul kan niet, want een lege lijst is hierboven
+  // al afgevangen; een grootste van 0 vangen we alsnog af met de || 1.
+  const grootste = Math.abs(gesorteerd[0][1].totaal) || 1;
+
   lijst.innerHTML = gesorteerd.map(([naam, g], i) => `
     <div class="partij-rij">
       <span class="partij-naam" title="${veilig(naam)}">${veilig(naam)}</span>
       <span class="partij-aantal">${g.aantal}&times;</span>
       <span class="partij-bedrag ${teken}">${plus}${fmt(g.totaal)}</span>
       <button type="button" class="btn-details" data-rij="${i}">Details</button>
+      <span class="partij-balk" style="--aandeel:${(Math.abs(g.totaal) / grootste).toFixed(3)}" aria-hidden="true"></span>
     </div>`).join('');
 
   // Alleen binnen deze lijst zoeken, niet in het hele document.

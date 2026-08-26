@@ -537,4 +537,24 @@ export function renderControle() {
   el('controle-notitie').innerHTML = notitie
     ? `<div class="alert alert-info">${esc(notitie.geenProbleemTekst)}</div>`
     : '';
+
+  werkNavBadgeBij(fouten.length, waarschuwingen.length);
+}
+
+/**
+ * Zet het aantal openstaande punten in het zijmenu, zodat je ook vanaf een
+ * andere pagina ziet dat er iets nagekeken moet worden. Rood als er echte
+ * fouten zijn, grijs als het alleen aandachtspunten zijn, leeg als alles
+ * in orde is — een lege badge verbergt zichzelf via CSS.
+ */
+function werkNavBadgeBij(aantalFouten, aantalWaarschuwingen) {
+  const badge = document.getElementById('nav-badge-controle');
+  if (!badge) return;
+
+  const open = aantalFouten + aantalWaarschuwingen;
+  badge.textContent = open ? String(open) : '';
+  badge.classList.toggle('nav-badge-stil', aantalFouten === 0);
+  badge.title = open
+    ? `${open} ${open === 1 ? 'punt' : 'punten'} om na te kijken`
+    : 'Alles in orde';
 }

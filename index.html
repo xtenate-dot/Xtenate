@@ -20,10 +20,10 @@
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link rel="stylesheet" href="style.css?v=20260823a">
-<link rel="stylesheet" href="layout.css?v=20260823a">
-<link rel="stylesheet" href="components.css?v=20260823a">
-<link rel="stylesheet" href="responsive.css?v=20260823a">
+<link rel="stylesheet" href="style.css?v=20260826a">
+<link rel="stylesheet" href="layout.css?v=20260826a">
+<link rel="stylesheet" href="components.css?v=20260826a">
+<link rel="stylesheet" href="responsive.css?v=20260826a">
 </head>
 <body>
 
@@ -98,6 +98,9 @@
       <div class="brand-sub">Administratie</div>
     </div>
   </div>
+
+  <!-- Alleen de menu-items scrollen; het merk hierboven blijft staan. -->
+  <div class="nav-scroll">
 
   <div class="nav-section">Start</div>
   <div class="nav-item active" data-page="home" onclick="nav('home',this)" title="Home">
@@ -174,6 +177,7 @@
   <div class="nav-item" data-page="controle" onclick="nav('controle',this)" title="Controle">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
     <span class="nav-label">Controle</span>
+    <span class="nav-badge" id="nav-badge-controle" title="Punten die aandacht vragen"></span>
   </div>
   <input type="file" id="import-file" accept=".xlsx" style="display:none" onchange="importExcel(this)">
 
@@ -181,6 +185,8 @@
   </div>
 
   <div class="nav-spacer"></div>
+
+  </div><!-- /nav-scroll -->
 
   <div class="account-blok" id="account-blok" style="display:none">
     <div class="account-info">
@@ -972,10 +978,10 @@
       </select>
     </div>
     <div class="form-group"><label>Inkoopprijs per stuk (€)</label><input type="text" inputmode="decimal" id="cv-inkoopprijs" placeholder="leeg = uit de bank">
-      <div id="cv-inkoopprijs-hint" style="font-size:11px;line-height:1.45;margin-top:5px;color:var(--text-muted)"></div></div>
+      <div id="cv-inkoopprijs-hint" class="form-hint"></div></div>
     <div class="form-group"><label>Prijsfactor <span style="color:var(--text-muted);font-weight:400">(1 = gemiddeld)</span></label>
       <input type="text" inputmode="decimal" id="cv-factor" placeholder="1">
-      <div style="font-size:11px;line-height:1.45;margin-top:5px;color:var(--text-muted)">Lager dan 1 maakt dit artikel goedkoper dan de rest; de andere artikelen worden dan iets duurder zodat het bankbedrag klopt.</div></div>
+      <div class="form-hint">Lager dan 1 maakt dit artikel goedkoper dan de rest; de andere artikelen worden dan iets duurder zodat het bankbedrag klopt.</div></div>
     <div class="form-group"><label>Verkoopprijs (€)</label><input type="text" inputmode="decimal" id="cv-prijs" placeholder="bijv. 31,95"></div>
     <div class="form-group"><label>Ingekocht totaal (stuks)</label><input type="number" id="cv-ink" placeholder="0" min="0"></div>
     <div class="form-group"><label>Verkocht totaal (stuks)</label><input type="number" id="cv-vk" placeholder="0" min="0"></div>

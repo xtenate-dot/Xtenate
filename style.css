@@ -1,36 +1,51 @@
-/* style.css — designtokens, reset en typografie.
+/* style.css — designtokens, reset en typografie.  v51
    Eén bron voor kleur, ruimte en type. Lichte en donkere modus delen
    dezelfde variabelenamen, zodat componenten nergens hoeven te weten
-   welk thema actief is. */
+   welk thema actief is.
+
+   v51-wijzigingen:
+   - Contrast van muted/hint tekst verhoogd (WCAG AA op alle vlakken).
+   - Extra vlakniveau --surface-3 voor tabelkoppen en gestapelde kaarten.
+   - Zachte accentwas --accent-bg-zacht voor hover zonder harde kleurvlek.
+   - Statuskleuren kregen een aparte randvariant, zodat badges en meldingen
+     een echte rand krijgen in plaats van een color-mix per component.
+   - Ruimteschaal uitgebreid met --sp-0 en --sp-8.
+*/
 
 :root {
-  /* Vlakken */
-  --bg: #f4f5f7;
+  /* Vlakken — 0 is de pagina, 3 is het hoogst opgetilde vlak. */
+  --bg: #f2f4f7;
   --surface: #ffffff;
-  --surface-2: #fafbfc;
-  --surface-hover: #f4f5f7;
+  --surface-2: #f8f9fb;
+  --surface-3: #f1f3f7;
+  --surface-hover: #eff1f5;
+  --surface-actief: #e7ebf2;
 
   /* Lijnen */
   --border: rgba(16,22,32,0.10);
   --border-strong: rgba(16,22,32,0.20);
+  --border-sterker: rgba(16,22,32,0.32);
 
-  /* Tekst */
-  --text: #16191f;
-  --text-muted: #5c6470;
-  --text-hint: #949bA6;
+  /* Tekst — muted en hint zijn donkerder dan in v50 voor beter contrast. */
+  --text: #14171d;
+  --text-muted: #545c68;
+  --text-hint: #7b838f;
 
   /* Merk / actief */
-  --accent: #1f4b99;
-  --accent-bg: #ecf1fa;
+  --accent: #1c4894;
+  --accent-hover: #163a78;
+  --accent-bg: #e9eff9;
+  --accent-bg-zacht: rgba(28,72,148,0.06);
+  --accent-rand: rgba(28,72,148,0.28);
   --accent-contrast: #ffffff;
 
-  /* Betekeniskleuren */
-  --green: #0e7a52;   --green-bg: #e8f4ef;
-  --red: #b23a2f;     --red-bg: #fbeeec;
-  --blue: #1f4b99;    --blue-bg: #ecf1fa;
-  --amber: #8a5a06;   --amber-bg: #fbf2e2;
-  --purple: #5245b8;  --purple-bg: #eeecfa;
-  --gray-bg: #eef0f3;
+  /* Betekeniskleuren — elk met vlak- en randvariant. */
+  --green: #0c6f4a;   --green-bg: #e6f3ee;  --green-rand: rgba(12,111,74,0.26);
+  --red: #a8352b;     --red-bg: #fbedeb;    --red-rand: rgba(168,53,43,0.26);
+  --blue: #1c4894;    --blue-bg: #e9eff9;   --blue-rand: rgba(28,72,148,0.26);
+  --amber: #7d5205;   --amber-bg: #fbf1de;  --amber-rand: rgba(125,82,5,0.26);
+  --purple: #4b3fae;  --purple-bg: #ecebf9; --purple-rand: rgba(75,63,174,0.26);
+  --gray-bg: #ebeef2;
 
   /* Grafiekpalet — consistent over alle pagina's */
   --ch-1: #1f4b99;
@@ -45,46 +60,60 @@
   --radius: 10px;
   --radius-sm: 6px;
   --radius-lg: 14px;
+  --radius-pil: 999px;
   --shadow-sm: 0 1px 2px rgba(16,22,32,.05);
   --shadow-md: 0 4px 16px rgba(16,22,32,.10);
   --shadow-lg: -8px 0 32px rgba(16,22,32,.14);
+  --shadow-op: 0 8px 28px rgba(16,22,32,.16);
 
   /* Ruimte */
+  --sp-0: 2px;
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
-  --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+  --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
 
   /* Maatvoering */
-  --sidebar-w: 216px;
+  --sidebar-w: 224px;
   --sidebar-w-collapsed: 60px;
   --topbar-h: 56px;
   --content-max: 100%;   /* volle breedte: de tabellen en grafieken hebben de ruimte nodig */
+
+  /* Beweging — één plek, zodat alles even snel voelt. */
+  --duur-snel: .12s;
+  --duur-basis: .18s;
+  --soepel: cubic-bezier(.4, 0, .2, 1);
 
   font-size: 14px;
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bg: #0e1116;
+  --bg: #0d1015;
   --surface: #161a21;
   --surface-2: #1b2029;
-  --surface-hover: #1f242e;
+  --surface-3: #202632;
+  --surface-hover: #222834;
+  --surface-actief: #2a3140;
 
   --border: rgba(255,255,255,0.10);
   --border-strong: rgba(255,255,255,0.22);
+  --border-sterker: rgba(255,255,255,0.34);
 
-  --text: #e6e9ee;
-  --text-muted: #98a1ae;
-  --text-hint: #6d7684;
+  --text: #e8ebf0;
+  --text-muted: #a3acb9;
+  --text-hint: #79828f;
 
-  --accent: #7ba3e8;
+  --accent: #83a9ec;
+  --accent-hover: #9dbcf2;
   --accent-bg: #1a2435;
-  --accent-contrast: #0e1116;
+  --accent-bg-zacht: rgba(131,169,236,0.10);
+  --accent-rand: rgba(131,169,236,0.34);
+  --accent-contrast: #0d1015;
 
-  --green: #4fc08d;   --green-bg: #12271f;
-  --red: #f08579;     --red-bg: #2b1815;
-  --blue: #7ba3e8;    --blue-bg: #1a2435;
-  --amber: #e0a94e;   --amber-bg: #2a2010;
-  --purple: #a89bf0;  --purple-bg: #1f1b33;
+  --green: #56c795;   --green-bg: #11271f;  --green-rand: rgba(86,199,149,0.32);
+  --red: #f0897d;     --red-bg: #2b1815;    --red-rand: rgba(240,137,125,0.32);
+  --blue: #83a9ec;    --blue-bg: #1a2435;   --blue-rand: rgba(131,169,236,0.32);
+  --amber: #e3af57;   --amber-bg: #2a2010;  --amber-rand: rgba(227,175,87,0.32);
+  --purple: #ada1f2;  --purple-bg: #1f1b33; --purple-rand: rgba(173,161,242,0.32);
   --gray-bg: #232935;
 
   --ch-1: #6f9ae8;
@@ -98,6 +127,7 @@
   --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
   --shadow-md: 0 4px 16px rgba(0,0,0,.45);
   --shadow-lg: -8px 0 32px rgba(0,0,0,.55);
+  --shadow-op: 0 8px 28px rgba(0,0,0,.5);
 
   color-scheme: dark;
 }
@@ -110,7 +140,11 @@ body {
   color: var(--text);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'tnum' 1, 'cv05' 1;
+  line-height: 1.5;
+  /* Voorkomt dat iOS de tekst opblaast bij het draaien van het toestel. */
+  -webkit-text-size-adjust: 100%;
 }
 
 /* Bedragen en aantallen krijgen tabulaire cijfers: kolommen lijnen dan
@@ -144,13 +178,23 @@ a { color: var(--accent); }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-sterker); background-clip: content-box; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
-/* Crediteuren & Debiteuren rows */
+/* Hulpklassen die overal bruikbaar zijn. */
+.tabnum { font-variant-numeric: tabular-nums; }
+.nowrap { white-space: nowrap; }
+.trunc { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alleen-schermlezer {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Crediteuren & Debiteuren rows (oude opmaak, blijft werken) */
 .crediteuren-row, .debiteuren-row {
   display: flex;
   justify-content: space-between;

@@ -1,56 +1,40 @@
-/* responsive.css — tablet en mobiel. */
+/* responsive.css — tablet en mobiel.  v51
+
+   Uitgangspunt: dezelfde gegevens, andere vorm. Op een smal scherm wordt een
+   brede tabel een stapel kaarten, zodat je niet opzij hoeft te schuiven om
+   het bedrag te zien. De tabel blijft in de HTML gewoon een tabel — alleen
+   de weergave verandert.
+
+   v51-wijzigingen:
+   - Kaartweergave geldt nu ook voor bank, grootboek, HNVI en belasting,
+     niet alleen voor voorraad.
+   - Aanraakdoelen zijn minimaal 40px hoog.
+   - De hoofd-KPI neemt op smalle schermen de volle breedte.
+   - Vensters schuiven op een telefoon van onderen omhoog en zijn schermvullend.
+*/
+
+/* ============================================================
+   BREED SCHERM — kolommen terugbrengen
+   ============================================================ */
+
+@media (max-width: 1280px) {
+  /* Iets minder ruimte: het hoofdcijfer mag een maat kleiner. */
+  .kpi--hoofd .kpi-val { font-size: 30px; }
+}
 
 @media (max-width: 1080px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-  .grid3 { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Hoofd-KPI boven, daaronder twee steunkaarten per rij. */
+  .kpi-grid:has(.kpi--hoofd) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi-grid:has(.kpi--hoofd) .kpi:not(.kpi--hoofd) { grid-column: span 1; }
+  .kpi--hoofd { grid-column: 1 / -1; }
+  .grid3 { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 860px) {
-  .grid2 { grid-template-columns: 1fr; }
-  .uitsch-grid { grid-template-columns: 1fr; }
+  .grid2 { grid-template-columns: minmax(0, 1fr); }
+  .uitsch-grid { grid-template-columns: minmax(0, 1fr); }
 }
-
-@media (max-width: 720px) {
-  /* Zijmenu wordt een uitschuifpaneel */
-  .sidebar { transform: translateX(-100%); transition: transform .2s ease; width: var(--sidebar-w); }
-  body.nav-open .sidebar { transform: translateX(0); }
-  body.nav-collapsed .sidebar { width: var(--sidebar-w); }
-  .main, body.nav-collapsed .main { margin-left: 0; }
-  .menu-toggle { display: inline-flex; }
-  .nav-collapse-btn { display: none; }
-  body.nav-collapsed .nav-label,
-  body.nav-collapsed .brand-text { display: block; }
-  body.nav-collapsed .nav-item { justify-content: flex-start; padding: 7px 8px; }
-  body.nav-collapsed .nav-section { font-size: 10px; }
-  body.nav-collapsed .nav-section::after { display: none; }
-
-  .topbar { padding: 0 var(--sp-3); gap: var(--sp-2); }
-  .topbar-title { display: none; }
-  .page-wrap { padding: var(--sp-4) var(--sp-3); }
-
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
-  .kpi { padding: var(--sp-3); }
-  .kpi-val { font-size: 19px; }
-
-  .form-grid { grid-template-columns: 1fr; }
-  .form-group.full { grid-column: 1; }
-  .modal { padding: var(--sp-4); }
-  .drawer { width: 100%; }
-  .search-wrap { max-width: none; }
-  .kbd { display: none; }
-  .chart-box { height: 190px; }
-}
-
-@media (max-width: 460px) {
-  .kpi-grid { grid-template-columns: 1fr; }
-  .toolbar { gap: 6px; }
-  .toolbar select, .toolbar input { flex: 1 1 44%; min-width: 0; }
-  .btn-ml { margin-left: 0; flex: 1 1 100%; justify-content: center; }
-}
-
-/* Belastingpagina op een telefoon.
-   De schijven staan dan onder elkaar (grid2 klapt al om bij 860px), maar ze
-   mogen wat lager worden zodat de legenda niet van het scherm valt. */
 
 @media (max-width: 900px) {
   /* Op tablet: grafieken gaan onder de berekening in plaats van ernaast */
@@ -59,8 +43,108 @@
   }
 }
 
+/* ============================================================
+   TELEFOON — menu, balken en ruimte
+   ============================================================ */
+
+@media (max-width: 720px) {
+  /* Zijmenu wordt een uitschuifpaneel */
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--duur-basis) var(--soepel);
+    width: var(--sidebar-w);
+    box-shadow: none;
+  }
+  body.nav-open .sidebar { transform: translateX(0); box-shadow: var(--shadow-op); }
+  body.nav-collapsed .sidebar { width: var(--sidebar-w); }
+  .main, body.nav-collapsed .main { margin-left: 0; }
+  .menu-toggle { display: inline-flex; }
+  .nav-collapse-btn { display: none; }
+  body.nav-collapsed .nav-label,
+  body.nav-collapsed .brand-text { display: block; }
+  body.nav-collapsed .nav-item { justify-content: flex-start; padding: 9px 8px; }
+  body.nav-collapsed .nav-section { font-size: 10px; }
+  body.nav-collapsed .nav-section::after { display: none; }
+  /* De badge is op een telefoon weer een getal, geen stip. */
+  body.nav-collapsed .nav-badge {
+    position: static; width: auto; min-width: 18px; height: 18px;
+    padding: 0 5px; font-size: 10.5px; line-height: 18px;
+    background: var(--red-bg); color: var(--red);
+  }
+  body.nav-collapsed .nav-badge-stil { background: var(--gray-bg); color: var(--text-muted); }
+
+  /* Menu-items ruimer: makkelijker raken met een duim. */
+  .nav-item { padding: 9px 8px; font-size: 13.5px; }
+
+  .topbar { padding: 0 var(--sp-3); gap: var(--sp-2); }
+  .topbar-title { display: none; }
+  .page-wrap { padding: var(--sp-4) var(--sp-3); }
+
+  .page-title { font-size: 19px; }
+  .page-head { gap: var(--sp-2); margin-bottom: var(--sp-3); }
+  .page-head-acties { width: 100%; margin-left: 0; }
+  .page-head-acties .btn { flex: 1 1 auto; }
+
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
+  .kpi { padding: var(--sp-3); }
+  .kpi-val { font-size: 19px; }
+  .kpi--hoofd { grid-column: 1 / -1; padding: var(--sp-4); }
+  .kpi--hoofd .kpi-val { font-size: 27px; letter-spacing: -.9px; }
+
+  .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .form-group.full { grid-column: 1; }
+  .drawer { width: 100%; }
+  .search-wrap { max-width: none; }
+  .kbd { display: none; }
+  .chart-box { height: 190px; }
+
+  /* Knoppen en velden ruimer aan te tikken. */
+  .btn { min-height: 38px; padding: 9px 14px; }
+  .btn-sm { min-height: 30px; }
+  select, input[type=text], input[type=number], input[type=date],
+  input[type=search], input[type=password] { min-height: 38px; font-size: 16px; }
+  /* 16px voorkomt dat iOS inzoomt zodra je een veld aantikt. */
+}
+
+/* --- Vensters schuiven van onderen omhoog --- */
+@media (max-width: 720px) {
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal {
+    width: 100%; max-width: none;
+    max-height: 92vh; max-height: 92dvh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: none;
+    padding: var(--sp-4);
+    animation: venster-omhoog var(--duur-basis) var(--soepel);
+  }
+  .modal > h3:first-child {
+    top: calc(var(--sp-4) * -1);
+    padding: var(--sp-4) 0 var(--sp-3);
+    margin-top: calc(var(--sp-4) * -1);
+  }
+  .modal-actions:last-child {
+    bottom: calc(var(--sp-4) * -1);
+    margin-bottom: calc(var(--sp-4) * -1);
+    padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px));
+  }
+  .modal-actions .btn { flex: 1 1 auto; }
+
+  @keyframes venster-omhoog {
+    from { transform: translateY(12px); opacity: .6; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+@media (max-width: 460px) {
+  .kpi-grid, .kpi-grid:has(.kpi--hoofd) { grid-template-columns: minmax(0, 1fr); }
+  .toolbar { gap: 6px; }
+  .toolbar select, .toolbar input { flex: 1 1 44%; min-width: 0; }
+  .toolbar-scheiding { display: none; }
+  .btn-ml { margin-left: 0; flex: 1 1 100%; justify-content: center; }
+}
+
 @media (max-width: 560px) {
-  .metrics { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
   .metric { padding: var(--sp-3); }
   .metric .val { font-size: 17px; }
 
@@ -80,17 +164,13 @@
 }
 
 @media (max-width: 380px) {
-  .metrics { grid-template-columns: 1fr; }
+  .metrics { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ============================================================
-   v50 — Telefoonweergave
-   Alleen presentatie. De tabel blijft dezelfde tabel met dezelfde
-   gegevens; op een smal scherm tonen we elke rij als kaart zodat je
-   niet meer opzij hoeft te schuiven.
+   TABBALK ONDERAAN
    ============================================================ */
 
-/* --- Tabbalk onderaan --- */
 .tabbar { display: none; }
 
 @media (max-width: 720px) {
@@ -103,6 +183,12 @@
     background: var(--surface);
     border-top: 1px solid var(--border);
     padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  @supports (backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px)) {
+    .tabbar {
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    }
   }
   .tab-item {
     display: flex;
@@ -119,9 +205,17 @@
     font-size: 10.5px;
     font-weight: 500;
     font-family: inherit;
-    transition: color .15s ease;
+    position: relative;
+    transition: color var(--duur-snel);
   }
   .tab-item.active { color: var(--accent); }
+  /* Streepje bovenaan de actieve tab: duidelijker dan kleur alleen. */
+  .tab-item.active::before {
+    content: ''; position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 26px; height: 2px; border-radius: 0 0 2px 2px;
+    background: var(--accent);
+  }
   .tab-item:active { background: var(--surface-hover); }
 
   /* Ruimte onderaan zodat de tabbalk niets afdekt. */
@@ -129,16 +223,35 @@
   .bulkbar { bottom: 62px; }
 }
 
-/* --- Voorraadtabel als kaarten --- */
+/* ============================================================
+   TABELLEN ALS KAARTEN
+   Eén gedeelde regel voor alle brede tabellen. Elke cel met data-label
+   krijgt het label links en de waarde rechts.
+   ============================================================ */
+
 @media (max-width: 720px) {
-  #tbl-voorraad thead { display: none; }
+  #tbl-voorraad thead,
+  #tbl-bank thead,
+  #tbl-gb-detail thead,
+  #tbl-hnvi thead,
+  #tbl-home-recent thead,
+  #tbl-grootboek thead { display: none; }
 
-  #tbl-voorraad,
-  #tbl-voorraad tbody,
+  #tbl-voorraad, #tbl-voorraad tbody, #tbl-voorraad tr, #tbl-voorraad td,
+  #tbl-bank, #tbl-bank tbody, #tbl-bank tr, #tbl-bank td,
+  #tbl-gb-detail, #tbl-gb-detail tbody, #tbl-gb-detail tr, #tbl-gb-detail td,
+  #tbl-hnvi, #tbl-hnvi tbody, #tbl-hnvi tr, #tbl-hnvi td,
+  #tbl-home-recent, #tbl-home-recent tbody, #tbl-home-recent tr, #tbl-home-recent td,
+  #tbl-grootboek, #tbl-grootboek tbody, #tbl-grootboek tr, #tbl-grootboek td {
+    display: block; width: auto;
+  }
+
   #tbl-voorraad tr,
-  #tbl-voorraad td { display: block; width: auto; }
-
-  #tbl-voorraad tr {
+  #tbl-bank tr,
+  #tbl-gb-detail tr,
+  #tbl-hnvi tr,
+  #tbl-home-recent tr,
+  #tbl-grootboek tr {
     position: relative;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -147,13 +260,85 @@
     padding: 12px 14px 10px;
   }
 
-  #tbl-voorraad td {
+  /* De zebra uit de bureaubladweergave mag hier niet doorwerken: elke kaart
+     hoort dezelfde achtergrond te hebben. */
+  #tbl-voorraad tbody tr:nth-child(even) td,
+  #tbl-bank tbody tr:nth-child(even) td,
+  #tbl-gb-detail tbody tr:nth-child(even) td,
+  #tbl-hnvi tbody tr:nth-child(even) td,
+  #tbl-home-recent tbody tr:nth-child(even) td,
+  #tbl-grootboek tbody tr:nth-child(even) td { background: none; }
+
+  #tbl-voorraad td,
+  #tbl-bank td,
+  #tbl-gb-detail td,
+  #tbl-hnvi td,
+  #tbl-home-recent td,
+  #tbl-grootboek td {
     border: 0;
     padding: 3px 0;
     text-align: left !important;
     font-size: 13px;
   }
 
+  /* Cellen met een label: label links, waarde rechts. */
+  #tbl-voorraad td[data-label],
+  #tbl-bank td[data-label],
+  #tbl-gb-detail td[data-label],
+  #tbl-hnvi td[data-label],
+  #tbl-home-recent td[data-label],
+  #tbl-grootboek td[data-label] {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 5px 0;
+    border-top: 1px solid var(--border);
+  }
+  #tbl-voorraad td[data-label]::before,
+  #tbl-bank td[data-label]::before,
+  #tbl-gb-detail td[data-label]::before,
+  #tbl-hnvi td[data-label]::before,
+  #tbl-home-recent td[data-label]::before,
+  #tbl-grootboek td[data-label]::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 400;
+    flex: 0 0 auto;
+  }
+
+  /* Een lege cel met label heeft geen regel nodig. */
+  #tbl-bank td[data-label]:empty,
+  #tbl-gb-detail td[data-label]:empty,
+  #tbl-home-recent td[data-label]:empty { display: none; }
+
+  /* De acties onderaan de kaart, gescheiden door een lijn. */
+  .cel-acties, td.cel-acties {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 0 !important;
+    margin-top: 6px;
+    border-top: 1px solid var(--border);
+  }
+  .cel-acties .rij-acties { opacity: 1; }
+
+  /* De lege-staat blijft één vlak in plaats van een kaart. */
+  #tbl-voorraad tr[data-geen-sort],
+  #tbl-bank tr[data-geen-sort],
+  #tbl-gb-detail tr[data-geen-sort],
+  #tbl-hnvi tr[data-geen-sort],
+  #tbl-home-recent tr[data-geen-sort],
+  #tbl-grootboek tr[data-geen-sort] {
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+}
+
+/* --- Voorraad: eigen accenten binnen de kaartweergave --- */
+@media (max-width: 720px) {
   /* Naam groot bovenaan, met ruimte voor het vinkje rechts. */
   #tbl-voorraad td.cel-naam {
     font-size: 15px;
@@ -168,40 +353,27 @@
     padding: 0;
   }
 
-  /* Cellen met een label krijgen label links, waarde rechts. */
-  #tbl-voorraad td[data-label] {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 12px;
-    padding: 4px 0;
-    border-top: 1px solid var(--border);
-  }
-  #tbl-voorraad td[data-label]::before {
-    content: attr(data-label);
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 400;
-    flex: 0 0 auto;
-  }
-
   #tbl-voorraad td.cel-status { padding: 8px 0 4px; }
   #tbl-voorraad td.cel-zoek:empty { display: none; }
   #tbl-voorraad td.cel-zoek { padding: 4px 0 0; }
+}
 
-  #tbl-voorraad td.cel-acties {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0 0 !important;
-    margin-top: 6px;
-    border-top: 1px solid var(--border);
+/* --- Bank en grootboek: datum klein bovenaan, bedrag groot --- */
+@media (max-width: 720px) {
+  #tbl-bank td.cel-datum,
+  #tbl-gb-detail td.cel-datum,
+  #tbl-home-recent td.cel-datum {
+    font-size: 11.5px; color: var(--text-muted);
+    padding: 0 0 2px;
   }
-
-  /* De lege-staat blijft één vlak in plaats van een kaart. */
-  #tbl-voorraad tr[data-geen-sort] {
-    background: none;
-    border: 0;
-    padding: 0;
+  #tbl-bank td.cel-naam,
+  #tbl-gb-detail td.cel-naam,
+  #tbl-home-recent td.cel-naam {
+    font-size: 15px; font-weight: 500; padding: 0 0 8px;
+  }
+  #tbl-bank td.cel-bedrag,
+  #tbl-gb-detail td.cel-bedrag,
+  #tbl-home-recent td.cel-bedrag {
+    font-size: 16px; font-weight: 600;
   }
 }
