@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260827a';
+import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260828a';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260827a';
-import { maakSorteerbaar } from './tables.js?v=20260827a';
-import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260827a';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260827a';
+} from './storage.js?v=20260828a';
+import { maakSorteerbaar } from './tables.js?v=20260828a';
+import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260828a';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260828a';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -15,7 +15,7 @@ const HUIDIG_JAAR = '2026';
 let actieveTab = 'alle';
 
 /** 'nu' toont de actuele voorraad; een jaartal toont de stand per 31 december. */
-let gekozenJaar = 'nu';
+let gekozenJaar = '2025';
 
 /** Artikelen die zijn aangevinkt voor een bulkactie. */
 const selectie = new Set();
@@ -40,7 +40,7 @@ function drempel(c) {
  * `jaren`; is er voor dat jaar niets vastgelegd, dan blijft het leeg in plaats
  * van dat de app de huidige stand als historie presenteert.
  */
-function standVan(c) {
+export function standVan(c) {
   const jaren = c.jaren || {};
   if (gekozenJaar === 'nu') {
     // omzet2026 is het oude veld en blijft leidend als het gevuld is. Staat het
@@ -168,7 +168,7 @@ function vulJaarKeuze() {
 }
 
 export function kiesVoorraadJaar() {
-  gekozenJaar = el('f-voorraad-jaar').value;
+  gekozenJaar = state.huidigJaar = el('f-voorraad-jaar').value;
   selectie.clear();
   renderCovers();
 }
@@ -290,6 +290,10 @@ const STATUS_BADGE = {
 };
 
 export function renderCovers() {
+  // Zorg dat de lokale gekozenJaar in sync is met de globale state
+  if (!gekozenJaar || state.huidigJaar !== 'all') {
+    gekozenJaar = state.huidigJaar || 'nu';
+  }
   ververBankPrijzen();
   renderTabs();
   vulJaarKeuze();

@@ -16,7 +16,7 @@ import {
   savePendingQueue,
   saveAppData,
   loadAppData
-} from './supabase-client-v2.js?v=20260827a';
+} from './supabase-client-v2.js?v=20260828a';
 
 /**
  * Stuurt een los lijstje (groepen, facturen, tellers) naar de cloud zonder
@@ -267,7 +267,7 @@ export function saveFactuurInstellingen(nieuwe) {
 }
 
 // ─── STATE INITIALISATIE (identiek aan origineel) ──────────────────────────
-state.huidigJaar = '2026';
+state.huidigJaar = '2025';
 state.hnviSellId = null;
 state.editTxId = null;
 state.editCoverId = null;
