@@ -16,7 +16,7 @@ import {
   savePendingQueue,
   saveAppData,
   loadAppData
-} from './supabase-client-v2.js?v=20260826a';
+} from './supabase-client-v2.js?v=20260826b';
 
 /**
  * Stuurt een los lijstje (groepen, facturen, tellers) naar de cloud zonder
