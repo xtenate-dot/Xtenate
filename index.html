@@ -20,10 +20,10 @@
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link rel="stylesheet" href="style.css?v=20260826d">
-<link rel="stylesheet" href="layout.css?v=20260826d">
-<link rel="stylesheet" href="components.css?v=20260826d">
-<link rel="stylesheet" href="responsive.css?v=20260826d">
+<link rel="stylesheet" href="style.css?v=20260824a">
+<link rel="stylesheet" href="layout.css?v=20260824a">
+<link rel="stylesheet" href="components.css?v=20260824a">
+<link rel="stylesheet" href="responsive.css?v=20260824a">
 </head>
 <body>
 
@@ -98,9 +98,6 @@
       <div class="brand-sub">Administratie</div>
     </div>
   </div>
-
-  <!-- Alleen de menu-items scrollen; het merk hierboven blijft staan. -->
-  <div class="nav-scroll">
 
   <div class="nav-section">Start</div>
   <div class="nav-item active" data-page="home" onclick="nav('home',this)" title="Home">
@@ -177,7 +174,6 @@
   <div class="nav-item" data-page="controle" onclick="nav('controle',this)" title="Controle">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
     <span class="nav-label">Controle</span>
-    <span class="nav-badge" id="nav-badge-controle" title="Punten die aandacht vragen"></span>
   </div>
   <input type="file" id="import-file" accept=".xlsx" style="display:none" onchange="importExcel(this)">
 
@@ -185,8 +181,6 @@
   </div>
 
   <div class="nav-spacer"></div>
-
-  </div><!-- /nav-scroll -->
 
   <div class="account-blok" id="account-blok" style="display:none">
     <div class="account-info">
@@ -224,6 +218,11 @@
   </div>
 
   <div class="topbar-spacer"></div>
+
+  <span class="sync-status" id="sync-status" role="status" aria-live="polite"></span>
+  <button class="icon-btn" onclick="syncNu()" title="Nu synchroniseren met de cloud" aria-label="Nu synchroniseren">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg>
+  </button>
 
   <select id="jaar-selector" onchange="wisselJaar()" aria-label="Boekjaar" style="font-size:12px">
     <option value="all">Alle jaren</option>
@@ -574,7 +573,6 @@
     </select>
     <button class="btn btn-primary btn-ml" onclick="openImportModalVoorraad()" title="Import Excel 2022-2026">📥 Import</button>
     <button class="btn btn-ml" onclick="openVerdeling()" title="Verdeel het bankbedrag van de inkooprekening over je artikelen">Inkoopverdeling</button>
-    <button class="btn" onclick="ruimDubbeleArtikelenOp()" title="Voegt artikelen met dezelfde naam samen tot één regel">Dubbele samenvoegen</button>
     <button class="btn btn-primary btn-ml" onclick="openCoverModal()">+ Artikel toevoegen</button>
   </div>
 
@@ -641,8 +639,7 @@
       <option value="verkocht">Verkocht</option>
     </select>
     <button class="btn btn-danger" id="hnvi-delete-btn" onclick="verwijderGeselecteerdeHNVI()" style="display:none">Verwijder selectie</button>
-    <button class="btn btn-ml" onclick="openImportModalHnvi()" title="Loten inlezen uit een Excel-bestand">📥 Import loten</button>
-    <button class="btn btn-primary" onclick="openHNVIModal()">+ Lot toevoegen</button>
+    <button class="btn btn-primary btn-ml" onclick="openHNVIModal()">+ Lot toevoegen</button>
   </div>
   <div class="card card-flush">
     <div class="table-wrap"><table id="tbl-hnvi" class="js-sorteerbaar tbl-compact">
@@ -686,15 +683,8 @@
     </div>
     <div class="modal-body" style="padding:1.5rem">
       <p style="margin-bottom:1rem;color:var(--text-muted);font-size:13px">
-        Kies één of meer administratiebestanden. Alleen het blad
-        &ldquo;Voorraad &amp; Mutaties&rdquo; wordt gelezen; de boekingen en de
-        loten in hetzelfde bestand blijven buiten beschouwing.
-      </p>
-      <p style="margin-bottom:1rem;color:var(--text-muted);font-size:12.5px">
-        Artikelen die je al hebt, houden hun groep, inkooprekening en eigen
-        inkoopprijs. Artikelen die niet in het bestand staan blijven gewoon
-        staan. Meerdere jaren tegelijk kan: de eindstanden worden per jaar
-        bewaard.
+        Laad één of meer Excel-bestanden (Administratie_2022.xlsx t/m 2026.xlsx). 
+        De app leest de "Voorraad & Mutaties" sheet en voegt alle artikelen toe.
       </p>
       <input type="file" id="import-file-input" multiple accept=".xlsx" style="display:none" onchange="handleImportVoorraad(event)">
       <button class="btn btn-primary" onclick="document.getElementById('import-file-input').click()" style="width:100%;margin-bottom:1rem">
@@ -846,30 +836,6 @@
 </div>
 
 <!-- MODAL: HNVI FACTUUR PREVIEW -->
-<div class="modal-overlay" id="modal-import-hnvi">
-  <div class="modal">
-    <h3>Loten inlezen uit Excel</h3>
-    <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:var(--sp-4)">
-      Kies een administratiebestand. Alleen het lotenblad wordt gelezen &mdash;
-      de boekingen en de voorraad in het bestand blijven buiten beschouwing.
-      Herkend worden een blad &ldquo;HNVI Loten&rdquo; en het blad
-      &ldquo;Veiling inkopenVerkopen&rdquo;.
-    </p>
-    <input type="file" id="hnvi-import-file" accept=".xlsx,.xls" style="display:none" onchange="handleImportHnvi(event)">
-    <button class="btn btn-primary" onclick="document.getElementById('hnvi-import-file').click()" style="width:100%">
-      Kies een Excel-bestand
-    </button>
-    <div id="hnvi-import-status" style="margin-top:var(--sp-4);font-size:12.5px"></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="sluitImportModalHnvi()">Sluiten</button>
-      <span id="hnvi-import-acties" style="display:none;gap:var(--sp-2)">
-        <button class="btn" onclick="bevestigImportHnvi('vervangen')" title="Alle loten die er nu in staan verdwijnen">Vervang alles</button>
-        <button class="btn btn-primary" onclick="bevestigImportHnvi('toevoegen')">Toevoegen aan bestaande</button>
-      </span>
-    </div>
-  </div>
-</div>
-
 <div class="modal-overlay" id="modal-hnvi-factuur">
 <div class="modal" style="width:520px">
   <h3>HNVI factuur importeren</h3>
@@ -1011,10 +977,10 @@
       </select>
     </div>
     <div class="form-group"><label>Inkoopprijs per stuk (€)</label><input type="text" inputmode="decimal" id="cv-inkoopprijs" placeholder="leeg = uit de bank">
-      <div id="cv-inkoopprijs-hint" class="form-hint"></div></div>
+      <div id="cv-inkoopprijs-hint" style="font-size:11px;line-height:1.45;margin-top:5px;color:var(--text-muted)"></div></div>
     <div class="form-group"><label>Prijsfactor <span style="color:var(--text-muted);font-weight:400">(1 = gemiddeld)</span></label>
       <input type="text" inputmode="decimal" id="cv-factor" placeholder="1">
-      <div class="form-hint">Lager dan 1 maakt dit artikel goedkoper dan de rest; de andere artikelen worden dan iets duurder zodat het bankbedrag klopt.</div></div>
+      <div style="font-size:11px;line-height:1.45;margin-top:5px;color:var(--text-muted)">Lager dan 1 maakt dit artikel goedkoper dan de rest; de andere artikelen worden dan iets duurder zodat het bankbedrag klopt.</div></div>
     <div class="form-group"><label>Verkoopprijs (€)</label><input type="text" inputmode="decimal" id="cv-prijs" placeholder="bijv. 31,95"></div>
     <div class="form-group"><label>Ingekocht totaal (stuks)</label><input type="number" id="cv-ink" placeholder="0" min="0"></div>
     <div class="form-group"><label>Verkocht totaal (stuks)</label><input type="number" id="cv-vk" placeholder="0" min="0"></div>
@@ -1104,6 +1070,6 @@
 </div>
 </div>
 
-<script type="module" src="app.js?v=20260826d"></script>
+<script type="module" src="app.js?v=20260824a"></script>
 </body>
 </html>

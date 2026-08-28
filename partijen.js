@@ -11,13 +11,13 @@
 //    op display:none en gaan alleen open via .open. Een eigen regel voor
 //    .modal-overlay zou dat overschrijven en elk venster tegelijk tonen.
 
-import { state, saveTxData, saveHistTxData } from './storage.js?v=20260826d';
-import { fmt } from './helpers.js?v=20260826d';
+import { state, saveTxData, saveHistTxData } from './storage.js?v=20260824a';
+import { fmt } from './helpers.js?v=20260824a';
 import {
   saveToSupabase,
   deleteFromSupabase,
   addToPendingQueue
-} from './supabase-client-v2.js?v=20260826d';
+} from './supabase-client-v2.js?v=20260824a';
 
 export const veilig = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -76,20 +76,12 @@ export function tekenPartijen(o) {
   const teken = o.soort === 'inkomst' ? 'pos' : 'neg';
   const plus = o.soort === 'inkomst' ? '+&nbsp;' : '';
 
-  // Het balkje onder elke regel toont het aandeel ten opzichte van de
-  // grootste partij. Puur visueel: het rekent niets nieuws uit, het maakt
-  // alleen zichtbaar waar het geld heen gaat zonder dat je bedragen hoeft
-  // te vergelijken. Delen door nul kan niet, want een lege lijst is hierboven
-  // al afgevangen; een grootste van 0 vangen we alsnog af met de || 1.
-  const grootste = Math.abs(gesorteerd[0][1].totaal) || 1;
-
   lijst.innerHTML = gesorteerd.map(([naam, g], i) => `
     <div class="partij-rij">
       <span class="partij-naam" title="${veilig(naam)}">${veilig(naam)}</span>
       <span class="partij-aantal">${g.aantal}&times;</span>
       <span class="partij-bedrag ${teken}">${plus}${fmt(g.totaal)}</span>
       <button type="button" class="btn-details" data-rij="${i}">Details</button>
-      <span class="partij-balk" style="--aandeel:${(Math.abs(g.totaal) / grootste).toFixed(3)}" aria-hidden="true"></span>
     </div>`).join('');
 
   // Alleen binnen deze lijst zoeken, niet in het hele document.

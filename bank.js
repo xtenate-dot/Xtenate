@@ -3,9 +3,9 @@
 import {
   GBNM, REKNM, bedragUit, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, maandLabel, rekBadge,
   typeBadge, vulMaandSelect, weergaveNaam
-} from './helpers.js?v=20260826d';
-import { MAAND_SALDOS, saveHistTxData, saveTxData, state } from './storage.js?v=20260826d';
-import { maakSorteerbaar } from './tables.js?v=20260826d';
+} from './helpers.js?v=20260824a';
+import { MAAND_SALDOS, saveHistTxData, saveTxData, state } from './storage.js?v=20260824a';
+import { maakSorteerbaar } from './tables.js?v=20260824a';
 
 // Fase 3A: Supabase pending queue
 import {
@@ -13,7 +13,7 @@ import {
   syncPendingQueue,
   pendingQueue,
   isSupabaseReady
-} from './supabase-client-v2.js?v=20260826d';
+} from './supabase-client-v2.js?v=20260824a';
 
 const el = id => document.getElementById(id);
 
@@ -112,12 +112,12 @@ export function renderBank() {
 
   el('bank-body').innerHTML = lijst.length
     ? lijst.map(t => `<tr class="row-click" data-id="${esc(t.id)}">
-        <td class="muted cel-datum" style="padding-left:16px" data-v="${t.datum}">${ddmm(t.datum)}</td>
-        <td class="td-trunc cel-naam">${esc(weergaveNaam(t))}${t.omschr && t.omschr !== t.naam
+        <td class="muted" style="padding-left:16px" data-v="${t.datum}">${ddmm(t.datum)}</td>
+        <td class="td-trunc">${esc(weergaveNaam(t))}${t.omschr && t.omschr !== t.naam
           ? ` <span style="color:var(--text-hint);font-size:10px">· ${esc(t.omschr)}</span>` : ''}</td>
-        <td data-label="Grootboek" data-v="${esc(t.gb)}"><span class="gbnr">${esc(t.gb)}</span> ${esc(GBNM[t.gb] || '')}</td>
-        <td data-label="Rekening" data-v="${esc(t.rek)}">${rekBadge(t.rek)}</td>
-        <td class="cel-bedrag" data-label="Bedrag" style="text-align:right;padding-right:16px" data-v="${t.bedrag}">${typeBadge(t.type, t.bedrag)}</td>
+        <td data-v="${esc(t.gb)}"><span class="gbnr">${esc(t.gb)}</span> ${esc(GBNM[t.gb] || '')}</td>
+        <td data-v="${esc(t.rek)}">${rekBadge(t.rek)}</td>
+        <td style="text-align:right;padding-right:16px" data-v="${t.bedrag}">${typeBadge(t.type, t.bedrag)}</td>
       </tr>`).join('')
     : `<tr data-geen-sort="1"><td colspan="5">${leegVlak(
         bron.length ? 'Geen transacties binnen deze filters' : 'Nog geen transacties in dit jaar',

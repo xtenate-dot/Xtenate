@@ -1,10 +1,10 @@
 // hnvi.js — HNVI/Xtenate voorraadbeheer, inclusief AI-factuurimport.
 
-import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260826d';
-import { maakSorteerbaar } from './tables.js?v=20260826d';
-import { openApiKeyModal, leesLotenBlad } from './modals.js?v=20260826d';
-import { saveHnviData, state } from './storage.js?v=20260826d';
-import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260826d';
+import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260824a';
+import { maakSorteerbaar } from './tables.js?v=20260824a';
+import { openApiKeyModal } from './modals.js?v=20260824a';
+import { saveHnviData, state } from './storage.js?v=20260824a';
+import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260824a';
 
 export function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
@@ -49,19 +49,17 @@ export function renderHNVI() {
     const w = i.verkoop!=null ? i.verkoop-i.inkoop : null;
     const pct = w!=null&&i.inkoop ? Math.round(w/i.inkoop*100) : null;
     return `<tr>
-      <td class="cel-kies" style="padding-left:16px"><input type="checkbox" class="hnvi-check" data-key="${esc(i._key||i.id)}" onchange="updateHNVIDeleteBtn()"></td>
-      <td class="muted cel-datum" data-v="${esc(i.datum)}">${ddmm(i.datum)}</td>
-      <td class="td-trunc cel-naam">${esc(i.omschr)}${i.noot?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${esc(i.noot)}</div>`:''}</td>
-      <td data-label="Inkoop" style="text-align:right" data-v="${Number(i.inkoop)||0}">${fmt(i.inkoop)}</td>
-      <td data-label="Verkoop" style="text-align:right" data-v="${Number(i.verkoop)||0}">${i.verkoop!=null&&i.verkoop>0?fmt(i.verkoop):'—'}</td>
-      <td data-label="Winst" style="text-align:right" data-v="${w||0}">${w!=null&&i.verkoop>0?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
-      <td class="cel-status" data-v="${esc(i.status)}">${i.status==='verkocht'?'<span class="badge badge-green">verkocht</span>':'<span class="badge badge-blue">op voorraad</span>'}</td>
-      <td class="cel-acties" style="white-space:nowrap">
-        <span class="rij-acties">
+      <td style="padding-left:16px"><input type="checkbox" class="hnvi-check" data-key="${esc(i._key||i.id)}" onchange="updateHNVIDeleteBtn()"></td>
+      <td class="muted" data-v="${esc(i.datum)}">${ddmm(i.datum)}</td>
+      <td class="td-trunc">${esc(i.omschr)}${i.noot?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${esc(i.noot)}</div>`:''}</td>
+      <td style="text-align:right" data-v="${Number(i.inkoop)||0}">${fmt(i.inkoop)}</td>
+      <td style="text-align:right" data-v="${Number(i.verkoop)||0}">${i.verkoop!=null&&i.verkoop>0?fmt(i.verkoop):'—'}</td>
+      <td style="text-align:right" data-v="${w||0}">${w!=null&&i.verkoop>0?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
+      <td data-v="${esc(i.status)}">${i.status==='verkocht'?'<span class="badge badge-green">verkocht</span>':'<span class="badge badge-blue">op voorraad</span>'}</td>
+      <td style="white-space:nowrap">
         <span class="sell-link" onclick="openHNVISell('${esc(i.id)}')">${i.status==='voorraad'?'Verkoop':'Wijzig'}</span>
         ${i.status==='verkocht'?`<span class="sell-link" style="color:var(--text-muted)" onclick="wisHNVIVerkoop('${esc(i.id)}')">Wis</span>`:''}
         <span class="sell-link" style="color:var(--red)" onclick="verwijderHNVIItem('${esc(i._key||i.id)}')">Verwijder</span>
-        </span>
       </td>
     </tr>`;
   }).join('') : `<tr data-geen-sort="1"><td colspan="8">${leegVlak(
@@ -393,147 +391,4 @@ export function bevestigHNVIImport() {
   document.getElementById('modal-hnvi-factuur').classList.remove('open');
   renderHNVI();
   state.hnviImportItems = [];
-}
-
-// ---------------------------------------------------------------------------
-// Loten inlezen uit Excel
-//
-// Dit staat los van de grote import onder Beheer. Die leest een hele
-// administratie en vervangt daarbij de boekingen van een jaar; wie alleen
-// loten wil bijwerken, moest dus veel meer overhoop halen dan nodig. Hier
-// wordt uitsluitend het lotenblad gelezen, en je kiest zelf of de bestaande
-// loten blijven staan.
-// ---------------------------------------------------------------------------
-
-let wachtendeLoten = null;
-
-export function openImportModalHnvi() {
-  wachtendeLoten = null;
-  const status = document.getElementById('hnvi-import-status');
-  if (status) status.innerHTML = '';
-  const acties = document.getElementById('hnvi-import-acties');
-  if (acties) acties.style.display = 'none';
-  document.getElementById('modal-import-hnvi').classList.add('open');
-}
-
-export function sluitImportModalHnvi() {
-  wachtendeLoten = null;
-  document.getElementById('modal-import-hnvi').classList.remove('open');
-}
-
-export async function handleImportHnvi(event) {
-  const file = event.target.files?.[0];
-  event.target.value = '';
-  if (!file) return;
-
-  const status = document.getElementById('hnvi-import-status');
-  const acties = document.getElementById('hnvi-import-acties');
-  status.innerHTML = 'Bestand lezen...';
-  acties.style.display = 'none';
-
-  try {
-    const data = await file.arrayBuffer();
-    const wb = window.XLSX.read(data, { type: 'array', cellDates: true });
-
-    // Het jaar van het bestand, voor loten zonder eigen datum.
-    const jaren = [...new Set(
-      wb.SheetNames.filter(n => /^Bank \d{4}-\d{2}$/.test(n)).map(n => n.slice(5, 9))
-    )].sort();
-
-    const uitkomst = leesLotenBlad(wb, jaren);
-
-    if (!uitkomst || !uitkomst.loten.length) {
-      status.innerHTML = `<div class="alert alert-warn">Geen loten gevonden in <strong>${esc(file.name)}</strong>.
-        Er is gezocht naar een blad met de naam "HNVI Loten" of "Veiling inkopenVerkopen",
-        met daarin kolommen voor product en inkoop.</div>`;
-      return;
-    }
-
-    wachtendeLoten = uitkomst.loten;
-
-    const verkocht = uitkomst.loten.filter(l => l.status === 'verkocht').length;
-    const opVoorraad = uitkomst.loten.length - verkocht;
-    const totInkoop = uitkomst.loten.reduce((s, l) => s + (Number(l.inkoop) || 0), 0);
-
-    const voorbeeld = uitkomst.loten.slice(0, 5).map(l => `
-      <tr>
-        <td class="muted">${ddmm(l.datum)}</td>
-        <td>${esc(l.omschr)}</td>
-        <td style="text-align:right">${fmt(l.inkoop)}</td>
-        <td style="text-align:right">${l.verkoop != null ? fmt(l.verkoop) : '—'}</td>
-      </tr>`).join('');
-
-    status.innerHTML = `
-      <div class="alert alert-info">
-        <strong>${uitkomst.loten.length}</strong> loten gevonden op blad
-        "<strong>${esc(uitkomst.bladNaam)}</strong>"·
-        ${verkocht} verkocht, ${opVoorraad} op voorraad · samen ${fmt(totInkoop)} inkoop
-      </div>
-      ${uitkomst.zonderDatum > 0 ? `<div class="alert alert-warn">
-        ${uitkomst.zonderDatum} ${uitkomst.zonderDatum === 1 ? 'lot heeft' : 'loten hebben'} geen datum in het bestand.
-        ${uitkomst.zonderDatum === 1 ? 'Dat lot krijgt' : 'Die krijgen'} 1 januari ${(jaren[jaren.length - 1] || '')} als datum,
-        anders ${uitkomst.zonderDatum === 1 ? 'valt het' : 'vallen ze'} buiten het jaarfilter en zie je ${uitkomst.zonderDatum === 1 ? 'het' : 'ze'} niet staan.
-      </div>` : ''}
-      <table class="tbl" style="margin-top:10px">
-        <thead><tr><th>Datum</th><th>Omschrijving</th><th style="text-align:right">Inkoop</th><th style="text-align:right">Verkoop</th></tr></thead>
-        <tbody>${voorbeeld}</tbody>
-      </table>
-      ${uitkomst.loten.length > 5 ? `<div class="muted" style="font-size:11.5px;margin-top:6px">en nog ${uitkomst.loten.length - 5} andere</div>` : ''}
-    `;
-    acties.style.display = 'inline-flex';
-  } catch (err) {
-    status.innerHTML = `<div class="alert alert-error">Het bestand kon niet worden gelezen: ${esc(err.message)}</div>`;
-  }
-}
-
-/**
- * Past de gelezen loten toe.
- *
- * Bij 'toevoegen' blijven de bestaande loten staan en komen alleen de regels
- * erbij die er nog niet zijn. Gelijk beschouwd worden loten met dezelfde
- * omschrijving, datum en inkoopprijs; dat voorkomt dubbelingen als je hetzelfde
- * bestand twee keer inleest, terwijl twee echt verschillende loten met dezelfde
- * naam (vier keer dezelfde telefoon voor een andere prijs) apart blijven staan.
- */
-export function bevestigImportHnvi(modus) {
-  if (!wachtendeLoten) return;
-
-  const sleutel = l => `${l.omschr.trim().toLowerCase()}|${l.datum}|${Number(l.inkoop).toFixed(2)}`;
-  const bestaand = state.HNVI_LOTS || [];
-  let resultaat, toegevoegd, overgeslagen = 0;
-
-  if (modus === 'vervangen') {
-    resultaat = wachtendeLoten.slice();
-    toegevoegd = resultaat.length;
-  } else {
-    const gezien = new Set(bestaand.map(sleutel));
-    const nieuw = [];
-    for (const lot of wachtendeLoten) {
-      const s = sleutel(lot);
-      if (gezien.has(s)) { overgeslagen++; continue; }
-      gezien.add(s);
-      nieuw.push(lot);
-    }
-    resultaat = [...bestaand, ...nieuw];
-    toegevoegd = nieuw.length;
-  }
-
-  // Nummers opnieuw uitdelen, zodat elk lot er precies één heeft.
-  let nr = 1;
-  state.HNVI_LOTS = resultaat.map(lot => {
-    const id = lot.id && modus !== 'vervangen' ? lot.id : 'x' + nr;
-    nr++;
-    return { ...lot, id, _key: String(id) };
-  });
-  state.nxtHnvi = nr;
-  saveHnviData();
-
-  wachtendeLoten = null;
-  document.getElementById('hnvi-import-acties').style.display = 'none';
-  document.getElementById('hnvi-import-status').innerHTML =
-    `<div class="alert alert-info"><strong>${toegevoegd}</strong> loten ${modus === 'vervangen' ? 'ingelezen' : 'toegevoegd'}.` +
-    (overgeslagen > 0 ? ` ${overgeslagen} stonden er al in en zijn overgeslagen.` : '') +
-    ` De lijst is bijgewerkt.</div>`;
-
-  renderHNVI();
 }

@@ -1,9 +1,9 @@
 // grootboek.js — Grootboek: compacte saldotabel per rekening, met doorklik
 // naar de losse boekingen van één rekening.
 
-import { GBNM, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, rekBadge, teltBij, typeBadge, vulMaandSelect, weergaveNaam } from './helpers.js?v=20260826d';
-import { state } from './storage.js?v=20260826d';
-import { maakSorteerbaar } from './tables.js?v=20260826d';
+import { GBNM, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, rekBadge, teltBij, typeBadge, vulMaandSelect, weergaveNaam } from './helpers.js?v=20260824a';
+import { state } from './storage.js?v=20260824a';
+import { maakSorteerbaar } from './tables.js?v=20260824a';
 
 const el = id => document.getElementById(id);
 const waarde = id => (el(id) ? el(id).value.trim() : '');
@@ -123,10 +123,10 @@ function renderOverzicht(boekingen) {
     // Totaal per rubriek
     const totAantal = perRubriek[rub].reduce((s, r) => s + r.aantal, 0);
     const totSaldo = perRubriek[rub].reduce((s, r) => s + r.saldo, 0);
-    tabelRijen.push(`<tr class="tbl-totaalrij" data-geen-sort="1">
+    tabelRijen.push(`<tr style="border-top:2px solid var(--border);background:var(--surface-alt,var(--surface))">
       <td colspan="3" style="padding-left:16px;font-weight:600">${RUBRIEK_NAAM[rub]}</td>
       <td style="text-align:right;font-weight:600;color:var(--text-muted)">${totAantal}</td>
-      <td style="text-align:right;font-weight:600;padding-right:16px" class="${totSaldo >= 0 ? 'pos' : 'neg'}">${totSaldo >= 0 ? '+' : '–'}${fmt(Math.abs(totSaldo))}</td>
+      <td style="text-align:right;font-weight:600;padding-right:16px;color:${totSaldo >= 0 ? 'var(--pos)' : 'var(--neg)'}">${totSaldo >= 0 ? '+' : '–'}${fmt(Math.abs(totSaldo))}</td>
     </tr>`);
   }
 
@@ -171,11 +171,11 @@ function renderDetail(boekingen) {
 
   el('gb-detail-body').innerHTML = rijen.length
     ? rijen.map(t => `<tr class="row-click" data-id="${esc(t.id)}">
-        <td class="muted cel-datum" style="padding-left:16px" data-v="${t.datum}">${ddmm(t.datum)}</td>
-        <td class="td-trunc cel-naam">${esc(weergaveNaam(t))}</td>
-        <td class="td-trunc muted" data-label="Omschrijving">${esc(t.omschr) || '—'}</td>
-        <td data-label="Rekening" data-v="${esc(t.rek)}">${rekBadge(t.rek)}</td>
-        <td class="cel-bedrag" data-label="Bedrag" style="text-align:right;padding-right:16px" data-v="${t.bedrag}">${typeBadge(t.type, t.bedrag)}</td>
+        <td class="muted" style="padding-left:16px" data-v="${t.datum}">${ddmm(t.datum)}</td>
+        <td class="td-trunc">${esc(weergaveNaam(t))}</td>
+        <td class="td-trunc muted">${esc(t.omschr) || '—'}</td>
+        <td data-v="${esc(t.rek)}">${rekBadge(t.rek)}</td>
+        <td style="text-align:right;padding-right:16px" data-v="${t.bedrag}">${typeBadge(t.type, t.bedrag)}</td>
       </tr>`).join('')
     : `<tr data-geen-sort="1"><td colspan="5"><div class="empty">
         <div class="empty-title">Geen boekingen in deze periode</div>

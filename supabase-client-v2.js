@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260826d';
+import { getClient, heeftClient } from './supabase.js?v=20260824a';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -321,6 +321,80 @@ export async function saveToSupabase(boeking, isHistoric) {
   } catch (err) {
     console.error('Error in saveToSupabase:', err);
     return false;
+  }
+}
+
+// ===== OVERIGE APPGEGEVENS (groepen, facturen, tellers) =====
+
+/**
+ * Groepen, facturen en tellers zijn kleine lijstjes zonder eigen tabel. Ze
+ * gaan als één JSON-waarde per sleutel naar de tabel app_data. Zo hoeft er
+ * geen apart schema per soort te bestaan en kunnen er later gegevens bij
+ * zonder opnieuw een tabel aan te maken.
+ */
+export async function saveAppData(sleutel, waarde) {
+  if (!heeftClient()) return false;
+  try {
+    const sb = await getClient();
+    const session = await sb.auth.getSession();
+    const userId = session?.data?.session?.user?.id;
+    if (!userId) return false;
+
+    const { error } = await sb.from('app_data').upsert({
+      user_id: userId,
+      sleutel,
+      waarde,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,sleutel' });
+
+    if (error) {
+      if (isOnbekendeTabelFout(error)) {
+        if (!appDataGemeld) {
+          console.warn('⚠️  Tabel app_data bestaat nog niet. Groepen en facturen blijven lokaal.');
+          appDataGemeld = true;
+        }
+        return false;
+      }
+      console.error(`❌ app_data (${sleutel}):`, error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn(`app_data (${sleutel}) mislukt:`, err.message);
+    return false;
+  }
+}
+
+let appDataGemeld = false;
+
+function isOnbekendeTabelFout(error) {
+  const t = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
+  return error?.code === '42P01' || t.includes('does not exist') || t.includes('schema cache');
+}
+
+/** Haalt alle losse appgegevens op als { sleutel: waarde }. */
+export async function loadAppData() {
+  if (!heeftClient()) return null;
+  try {
+    const sb = await getClient();
+    const { data, error } = await sb.from('app_data').select('sleutel, waarde');
+    if (error) {
+      if (isOnbekendeTabelFout(error)) {
+        if (!appDataGemeld) {
+          console.warn('⚠️  Tabel app_data bestaat nog niet.');
+          appDataGemeld = true;
+        }
+        return null;
+      }
+      console.error('❌ app_data laden:', error.message);
+      return null;
+    }
+    const uit = {};
+    for (const rij of data || []) uit[rij.sleutel] = rij.waarde;
+    return uit;
+  } catch (err) {
+    console.warn('app_data laden mislukt:', err.message);
+    return null;
   }
 }
 
