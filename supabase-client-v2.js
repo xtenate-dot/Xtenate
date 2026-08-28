@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260825a';
+import { getClient, heeftClient } from './supabase.js?v=20260826a';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -165,12 +165,15 @@ export async function loadHnviFromSupabase() {
     
     return data.map(lot => ({
       id: parseInt(lot.legacy_id) || lot.legacy_id,
+      _key: String(lot.legacy_id),
       datum: lot.datum,
       omschr: lot.omschrijving,
       inkoop: lot.inkoop,
       verkoop: lot.verkoop,
       status: lot.status,
-      noot: lot.notitie
+      noot: lot.notitie,
+      factuur: lot.factuur || '',
+      verkoopDatum: lot.verkoopdatum || ''
     }));
   } catch (err) {
     console.warn('Error in loadHnviFromSupabase:', err);
@@ -580,6 +583,9 @@ export async function syncAllesNaarSupabase(data, keuze, onVoortgang) {
  * Sla HNVI lot op naar Supabase
  * hnvi_loten tabel: id=UUID, legacy_id=app-id, datum/omschrijving/inkoop/verkoop/status/notitie
  */
+const OPTIONELE_HNVI_KOLOMMEN = ['factuur', 'verkoopdatum'];
+let hnviKolommenOntbreken = false;
+
 export async function saveHnviToSupabase(lot) {
   if (!heeftClient()) {
     console.log('⚠️  Supabase not ready, skipping HNVI save');
@@ -606,8 +612,15 @@ export async function saveHnviToSupabase(lot) {
       verkoop: lot.verkoop ? parseFloat(lot.verkoop) : null,
       status: lot.status || 'voorraad',
       notitie: lot.noot || '',  // NOT NULL - use empty string not null
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      // Nieuw sinds de veiling-opzet: factuurnummer en verkoopdatum.
+      factuur: lot.factuur || '',
+      verkoopdatum: lot.verkoopDatum || null
     };
+
+    if (hnviKolommenOntbreken) {
+      OPTIONELE_HNVI_KOLOMMEN.forEach(k => delete record[k]);
+    }
     
     // Upsert (delete old, insert new)
     await sb
@@ -616,7 +629,16 @@ export async function saveHnviToSupabase(lot) {
       .eq('legacy_id', String(lot.id))
       .eq('user_id', userId);
     
-    const { error } = await sb.from('hnvi_loten').insert([record]);
+    let { error } = await sb.from('hnvi_loten').insert([record]);
+
+    // Bestaan de nieuwe kolommen nog niet, dan slaan we het lot alsnog op
+    // zonder die velden in plaats van de hele synchronisatie te laten klappen.
+    if (error && !hnviKolommenOntbreken && isOnbekendeKolomFout(error)) {
+      console.warn('⚠️  Kolommen factuur/verkoopdatum ontbreken in hnvi_loten; ALTER TABLE nog niet uitgevoerd?');
+      hnviKolommenOntbreken = true;
+      OPTIONELE_HNVI_KOLOMMEN.forEach(k => delete record[k]);
+      ({ error } = await sb.from('hnvi_loten').insert([record]));
+    }
     
     if (error) {
       console.error(`❌ HNVI save failed (${lot.id}):`, error);

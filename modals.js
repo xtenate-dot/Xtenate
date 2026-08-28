@@ -1,7 +1,7 @@
 // modals.js — beheer-acties: Excel-import, cloud sync, API-sleutel, data wissen.
 
-import { REKNM } from './helpers.js?v=20260825a';
-import { renderHome } from './dashboard.js?v=20260825a';
+import { REKNM } from './helpers.js?v=20260826a';
+import { renderHome } from './dashboard.js?v=20260826a';
 
 /** Rekeningnummers die de app kent; gebruikt bij het inlezen van kolom G. */
 const REKENINGEN = new Set(Object.keys(REKNM));
@@ -11,7 +11,8 @@ const REKENINGEN = new Set(Object.keys(REKNM));
 // Daardoor viel elke bevestigde import om met "OMZET_GB is not defined", ná het
 // wegschrijven van de boekingen en vóór het toepassen van de jaartotalen.
 const OMZET_GB = ['8000', '8010', '8020'];
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260825a';
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260826a';
+import { addToPendingQueue, deleteFromSupabase } from './supabase-client-v2.js?v=20260826a';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
 // met een kolom "Totaal" voor het hele boekjaar. Dit is de brontabel van de boekhouding zelf,
@@ -261,28 +262,121 @@ export function importExcel(input) {
 
       // HNVI-loten uit onze eigen export terughalen, zodat het Excel-bestand een
       // volledige reservekopie is en niet alleen de bankmutaties bevat.
-      let lotCount = 0;
+      //
+      // Er bestaan twee opzetten. De oude ("HNVI Loten") had vaste kolommen.
+      // De nieuwe ("Veiling inkopen/verkopen") heeft een andere volgorde, een
+      // factuurnummer en een aparte verkoopdatum. We lezen daarom de kopregel
+      // en zoeken de kolommen op naam op, zodat beide werken en het niet
+      // opnieuw breekt als er een kolom bijkomt.
       let nieuweLoten = [];
-      const lotBlad = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g,'') === 'hnviloten');
+      const lotBlad = wb.SheetNames.find(n => {
+        const k = n.toLowerCase().replace(/[^a-z]/g, '');
+        return k === 'hnviloten' || k.includes('veiling');
+      });
       if (lotBlad) {
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[lotBlad], {header:1, defval:null});
-        rows.slice(1).forEach(row => {
-          const datum = excelDate(row[0]);
-          const omschr = row[1];
-          if (!datum && !omschr) return;
-          const verkoop = typeof row[3] === 'number' ? row[3] : null;
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[lotBlad], { header: 1, defval: null });
+
+        // De kopregel staat niet altijd op de eerste rij: in het nieuwe bestand
+        // staat er een lege regel boven. Zoek de rij die de kolomnamen bevat.
+        const normaliseer = v => String(v ?? '').toLowerCase().replace(/[^a-z]/g, '');
+        let kopRij = -1;
+        for (let r = 0; r < Math.min(8, rows.length); r++) {
+          const cellen = (rows[r] || []).map(normaliseer);
+          if (cellen.some(c => c === 'product' || c === 'omschrijving') &&
+              cellen.some(c => c.includes('inkoop'))) { kopRij = r; break; }
+        }
+
+        // Kolomnamen op hun plaats zoeken. Elk patroon is een lijst van
+        // mogelijke namen; de eerste die past wint.
+        const kop = kopRij >= 0 ? (rows[kopRij] || []).map(normaliseer) : [];
+        const zoekKolom = (...namen) => {
+          for (const naam of namen) {
+            const i = kop.findIndex(c => c === naam);
+            if (i >= 0) return i;
+          }
+          for (const naam of namen) {
+            const i = kop.findIndex(c => c.includes(naam));
+            if (i >= 0) return i;
+          }
+          return -1;
+        };
+
+        const kolom = kopRij >= 0 ? {
+          product:   zoekKolom('product', 'omschrijving'),
+          factuur:   zoekKolom('factnummer', 'factuurnummer', 'factuur'),
+          inkDatum:  zoekKolom('inkdatum', 'inkoopdatum', 'datum'),
+          inkoop:    zoekKolom('inkoop'),
+          verkDatum: zoekKolom('verkdatum', 'verkoopdatum'),
+          verkoop:   zoekKolom('verkoop'),
+          status:    zoekKolom('status'),
+          notitie:   zoekKolom('notitie', 'noot', 'opmerking'),
+          id:        zoekKolom('id')
+        } : null;
+
+        // Zonder herkenbare kopregel vallen we terug op de oude vaste volgorde,
+        // zodat een bestaand exportbestand blijft werken.
+        const oudeVolgorde = { product: 1, factuur: -1, inkDatum: 0, inkoop: 2,
+                               verkDatum: -1, verkoop: 3, status: 5, notitie: 6, id: 7 };
+        const k = (kolom && kolom.product >= 0 && kolom.inkoop >= 0) ? kolom : oudeVolgorde;
+        const startRij = kopRij >= 0 ? kopRij + 1 : 1;
+
+        const haal = (row, index) => (index >= 0 ? row[index] : null);
+        const getal = v => (typeof v === 'number' ? v : (parseFloat(String(v ?? '').replace(',', '.')) || null));
+
+        // Dezelfde artikelen komen vaker voor (vier keer "Iphone SE"). Een
+        // teller achter de sleutel houdt ze uit elkaar zonder dat een tweede
+        // import nieuwe id's verzint en alles dubbel zet.
+        const gezien = {};
+
+        for (let r = startRij; r < rows.length; r++) {
+          const row = rows[r] || [];
+          const product = haal(row, k.product);
+          const inkoopRuw = haal(row, k.inkoop);
+          const naam = product == null ? '' : String(product).trim();
+
+          if (!naam) continue;
+          // Tussentotalen zijn geen loten.
+          if (/^totaal/i.test(naam)) continue;
+          if (inkoopRuw == null && haal(row, k.inkDatum) == null) continue;
+
+          const factuur = haal(row, k.factuur);
+          const inkoopDatum = excelDate(haal(row, k.inkDatum)) || '';
+          const verkoopDatum = excelDate(haal(row, k.verkDatum)) || '';
+          const inkoop = getal(inkoopRuw) || 0;
+          const verkoop = getal(haal(row, k.verkoop));
+          const statusRuw = haal(row, k.status);
+
+          // Een status uit het bestand telt alleen als het ook echt een status
+          // is. In het nieuwe blad staat op die plek een bedrag, en dat mag
+          // nooit als status worden overgenomen.
+          const statusUitBestand = typeof statusRuw === 'string' &&
+            /^(voorraad|verkocht|retour)$/i.test(statusRuw.trim())
+            ? statusRuw.trim().toLowerCase() : null;
+
+          const eigenId = haal(row, k.id);
+          let sleutel;
+          if (eigenId != null && eigenId !== '') {
+            sleutel = String(eigenId);
+          } else {
+            const basis = `${naam}|${factuur ?? ''}|${inkoopDatum}|${inkoop}`
+              .toLowerCase().replace(/[^a-z0-9|.-]/g, '');
+            gezien[basis] = (gezien[basis] || 0) + 1;
+            sleutel = `veiling-${basis}-${gezien[basis]}`;
+          }
+
           nieuweLoten.push({
-            id: row[7] != null && row[7] !== '' ? row[7] : 'x' + (lotCount + 1),
-            _key: String(row[7] ?? 'x' + (lotCount + 1)),
-            datum: datum || '',
-            omschr: omschr ? String(omschr) : '',
-            inkoop: typeof row[2] === 'number' ? row[2] : 0,
-            verkoop,
-            status: String(row[5] || (verkoop ? 'verkocht' : 'voorraad')),
-            noot: row[6] ? String(row[6]) : ''
+            id: sleutel,
+            _key: String(sleutel),
+            datum: inkoopDatum,
+            omschr: naam,
+            inkoop,
+            verkoop: verkoop != null ? verkoop : null,
+            verkoopDatum,
+            factuur: factuur ? String(factuur).trim() : '',
+            status: statusUitBestand || (verkoop != null ? 'verkocht' : 'voorraad'),
+            noot: (() => { const n = haal(row, k.notitie); return n ? String(n) : ''; })()
           });
-          lotCount++;
-        });
+        }
         // Hier wordt bewust NIET geschreven. De loten werden eerder al bij het
         // lezen van het bestand opgeslagen, dus vóór de preview en zonder weg
         // te komen met Annuleren. Ze gaan nu mee in `wachtendeImport` en worden
@@ -455,8 +549,26 @@ export function bevestigImport() {
 
       // HNVI-loten: gelezen in de leesfase, maar pas hier toegepast.
       if (p.nieuweLoten && p.nieuweLoten.length) {
+        // Het blad vervangt de hele lijst. De loten die er niet meer in staan
+        // moeten ook uit de cloud, anders blijven ze daar staan en komen ze bij
+        // de volgende synchronisatie gewoon weer terug.
+        const oudeSleutels = state.HNVI_LOTS.map(l => String(l._key || l.id));
+        const nieuweSleutels = new Set(p.nieuweLoten.map(l => String(l._key || l.id)));
+        const verdwenen = oudeSleutels.filter(k => !nieuweSleutels.has(k));
+
         state.HNVI_LOTS = p.nieuweLoten;
         saveHnviData();
+
+        for (const sleutel of verdwenen) {
+          deleteFromSupabase(sleutel, 'hnvi').catch(() => {
+            addToPendingQueue({ id: sleutel }, 'delete', false);
+          });
+        }
+        if (verdwenen.length) {
+          console.log(`\u{1F5D1}\uFE0F  ${verdwenen.length} oud(e) lot(en) opgeruimd uit de cloud.`);
+        }
+        // De nieuwe loten alsnog in de wachtrij, zodat ze zeker aankomen.
+        p.nieuweLoten.forEach(l => addToPendingQueue(l, 'hnvi', false));
       }
 
       if (is2026) {

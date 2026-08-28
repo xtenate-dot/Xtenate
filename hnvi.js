@@ -1,10 +1,10 @@
 // hnvi.js — HNVI/Xtenate voorraadbeheer, inclusief AI-factuurimport.
 
-import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260825a';
-import { maakSorteerbaar } from './tables.js?v=20260825a';
-import { openApiKeyModal } from './modals.js?v=20260825a';
-import { saveHnviData, state } from './storage.js?v=20260825a';
-import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260825a';
+import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260826a';
+import { maakSorteerbaar } from './tables.js?v=20260826a';
+import { openApiKeyModal } from './modals.js?v=20260826a';
+import { saveHnviData, state } from './storage.js?v=20260826a';
+import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260826a';
 
 export function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
@@ -51,9 +51,21 @@ export function renderHNVI() {
     return `<tr>
       <td style="padding-left:16px"><input type="checkbox" class="hnvi-check" data-key="${esc(i._key||i.id)}" onchange="updateHNVIDeleteBtn()"></td>
       <td class="muted" data-v="${esc(i.datum)}">${ddmm(i.datum)}</td>
-      <td class="td-trunc">${esc(i.omschr)}${i.noot?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${esc(i.noot)}</div>`:''}</td>
+      <td class="td-trunc">${esc(i.omschr)}${(() => {
+        // Factuurnummer en notitie staan klein onder de naam. Het factuurnummer
+        // komt uit het veilingblad en helpt een lot terugvinden op de factuur.
+        const regels = [];
+        if (i.factuur) regels.push(`factuur ${esc(i.factuur)}`);
+        if (i.noot) regels.push(esc(i.noot));
+        return regels.length
+          ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${regels.join(' \u00b7 ')}</div>`
+          : '';
+      })()}</td>
       <td style="text-align:right" data-v="${Number(i.inkoop)||0}">${fmt(i.inkoop)}</td>
-      <td style="text-align:right" data-v="${Number(i.verkoop)||0}">${i.verkoop!=null&&i.verkoop>0?fmt(i.verkoop):'—'}</td>
+      <td style="text-align:right" data-v="${Number(i.verkoop)||0}">${
+        i.verkoop!=null&&i.verkoop>0
+          ? `${fmt(i.verkoop)}${i.verkoopDatum?`<div style="font-size:10px;color:var(--text-muted)">${ddmm(i.verkoopDatum)}</div>`:''}`
+          : '—'}</td>
       <td style="text-align:right" data-v="${w||0}">${w!=null&&i.verkoop>0?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
       <td data-v="${esc(i.status)}">${i.status==='verkocht'?'<span class="badge badge-green">verkocht</span>':'<span class="badge badge-blue">op voorraad</span>'}</td>
       <td style="white-space:nowrap">
