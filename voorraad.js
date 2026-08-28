@@ -1,12 +1,13 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260901a';
+import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260902a';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260901a';
-import { maakSorteerbaar } from './tables.js?v=20260901a';
-import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260901a';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260901a';
+} from './storage.js?v=20260902a';
+import { maakSorteerbaar } from './tables.js?v=20260902a';
+import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260902a';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260902a';
+import { downloadModelPdf } from './pdf.js?v=20260902a';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -291,6 +292,83 @@ const STATUS_BADGE = {
   onbekend: '<span class="badge badge-gray">niet vastgelegd</span>'
 };
 
+/**
+ * De artikelen zoals ze nu op het scherm staan: de open tab, het statusfilter
+ * en de zoekterm. De pdf gebruikt dezelfde lijst, zodat wat je afdrukt gelijk
+ * is aan wat je ziet.
+ */
+function zichtbareArtikelen() {
+  const statusFilter = el('f-covers-status') ? el('f-covers-status').value : '';
+  const zoekterm = (el('voorraad-zoek') ? el('voorraad-zoek').value : '').trim().toLowerCase();
+  let lijst = artikelenVoorTab();
+  if (statusFilter) lijst = lijst.filter(c => status(c, standVan(c)) === statusFilter);
+  if (zoekterm) lijst = lijst.filter(c => `${c.artikel} ${c.zoekterm || ''}`.toLowerCase().includes(zoekterm));
+  return lijst;
+}
+
+/** Voorraadlijst als pdf, met de cijfers van het gekozen jaar. */
+export function exporteerVoorraadPdf() {
+  const jaarModus = gekozenJaar !== 'nu';
+  const lijst = zichtbareArtikelen();
+  const periode = jaarModus ? `stand per 31 december ${gekozenJaar}` : 'actuele voorraad';
+  const tabNaam = actieveTab === 'alle' ? 'alle groepen' : groepNaam(actieveTab);
+
+  // Samen 483 punten: precies de breedte tussen de marges op A4.
+  const kolommen = [
+    { kop: 'Artikel',     breedte: 138 },
+    { kop: 'Groep',       breedte: 72 },
+    { kop: 'Ingekocht',   breedte: 55, rechts: true },
+    { kop: 'Verkocht',    breedte: 52, rechts: true },
+    { kop: jaarModus ? 'Eind' : 'Voorraad', breedte: 50, rechts: true },
+    { kop: 'Inkoopprijs', breedte: 60, rechts: true },
+    { kop: 'Waarde',      breedte: 56, rechts: true }
+  ];
+
+  let totWaarde = 0, totStuks = 0, totIn = 0, totVer = 0;
+  const rijen = lijst.map(c => {
+    const stand = standVan(c);
+    const ip = inkoopprijsVan(c);
+    const waarde = waardeVan(c, stand);
+    const stuks = stand.voorraad ?? 0;
+    totStuks += stuks;
+    totIn += stand.inkoop || 0;
+    totVer += stand.verkocht || 0;
+    if (waarde != null) totWaarde += waarde;
+    return [
+      c.artikel,
+      groepNaam(c.categorie),
+      String(stand.inkoop || 0),
+      String(stand.verkocht || 0),
+      stand.voorraad == null ? '\u2014' : String(stuks),
+      ip == null ? '\u2014' : fmt(ip),
+      waarde == null ? '\u2014' : fmt(waarde)
+    ];
+  });
+
+  rijen.push({
+    vet: true, streep: true,
+    cellen: ['Totaal', `${lijst.length} artikelen`, String(totIn), String(totVer),
+             String(totStuks), '', fmt(totWaarde)]
+  });
+
+  downloadModelPdf({
+    titel: 'Voorraadoverzicht',
+    ondertitel: `${periode} \u00b7 ${tabNaam} \u00b7 opgemaakt op ${vandaagNl()}`,
+    blokken: [
+      { type: 'tabel', kolommen, rijen },
+      { type: 'voet', tekst: jaarModus
+        ? `Ingekocht, verkocht en de eindstand gaan over boekjaar ${gekozenJaar}. De waarde is de eindstand maal de inkoopprijs per stuk. Een inkoopprijs die uit de bankboekingen is afgeleid kan afwijken van wat je per stuk hebt betaald.`
+        : 'Dit is de actuele voorraad. Kies linksboven een boekjaar om de stand per 31 december van dat jaar af te drukken.' }
+    ]
+  }, jaarModus ? `Voorraad_${gekozenJaar}.pdf` : 'Voorraad_actueel.pdf');
+}
+
+/** Datum in de notatie die we ook op het scherm gebruiken. */
+function vandaagNl() {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+}
+
 export function renderCovers() {
   // Zorg dat de lokale gekozenJaar in sync is met de globale state
   if (!gekozenJaar || state.huidigJaar !== 'all') {
@@ -323,9 +401,7 @@ export function renderCovers() {
   renderKerncijfers(basis);
   renderWaardeDiagnose(basis);
 
-  let lijst = basis;
-  if (statusFilter) lijst = lijst.filter(c => status(c, standVan(c)) === statusFilter);
-  if (zoekterm) lijst = lijst.filter(c => `${c.artikel} ${c.zoekterm || ''}`.toLowerCase().includes(zoekterm));
+  const lijst = zichtbareArtikelen();
 
   const toonGroep = actieveTab === 'alle';
   el('voorraad-cat-kop').style.display = toonGroep ? '' : 'none';

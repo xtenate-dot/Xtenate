@@ -20,10 +20,10 @@
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link rel="stylesheet" href="style.css?v=20260901a">
-<link rel="stylesheet" href="layout.css?v=20260901a">
-<link rel="stylesheet" href="components.css?v=20260901a">
-<link rel="stylesheet" href="responsive.css?v=20260901a">
+<link rel="stylesheet" href="style.css?v=20260902a">
+<link rel="stylesheet" href="layout.css?v=20260902a">
+<link rel="stylesheet" href="components.css?v=20260902a">
+<link rel="stylesheet" href="responsive.css?v=20260902a">
 </head>
 <body>
 
@@ -573,6 +573,7 @@
     </select>
     <button class="btn btn-primary btn-ml" onclick="openImportModalVoorraad()" title="Import Excel 2022-2026">📥 Import</button>
     <button class="btn btn-ml" onclick="openVerdeling()" title="Verdeel het bankbedrag van de inkooprekening over je artikelen">Inkoopverdeling</button>
+    <button class="btn btn-ml" onclick="exporteerVoorraadPdf()" title="Druk de zichtbare lijst af als pdf">PDF</button>
     <button class="btn btn-primary btn-ml" onclick="openCoverModal()">+ Artikel toevoegen</button>
   </div>
 
@@ -639,6 +640,7 @@
       <option value="verkocht">Verkocht</option>
     </select>
     <button class="btn btn-danger" id="hnvi-delete-btn" onclick="verwijderGeselecteerdeHNVI()" style="display:none">Verwijder selectie</button>
+    <button class="btn btn-ml" onclick="exporteerHnviPdf()" title="Druk de zichtbare loten af als pdf">PDF</button>
     <button class="btn btn-primary btn-ml" onclick="openHNVIModal()">+ Lot toevoegen</button>
   </div>
   <div class="card card-flush">
@@ -1070,6 +1072,6 @@
 </div>
 </div>
 
-<script type="module" src="app.js?v=20260901a"></script>
+<script type="module" src="app.js?v=20260902a"></script>
 </body>
 </html>

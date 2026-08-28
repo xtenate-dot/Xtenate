@@ -156,6 +156,58 @@ export function modelNaarPdf(doc) {
       }
       y -= 4;
 
+    } else if (b.type === 'tabel') {
+      // Een tabel met vaste kolombreedtes. De kop wordt op elke nieuwe pagina
+      // herhaald, anders staat een lijst die doorloopt zonder kolomnamen.
+      const kolommen = b.kolommen || [];
+      const posities = [];
+      let x = links;
+      for (const k of kolommen) { posities.push(x); x += k.breedte; }
+
+      const kortAf = (tekst, maxBreedte, corps) => {
+        let t = String(tekst ?? '');
+        if (breedte(t, corps) <= maxBreedte) return t;
+        while (t.length > 1 && breedte(t + '\u2026', corps) > maxBreedte) t = t.slice(0, -1);
+        return t + '\u2026';
+      };
+
+      const zetKop = () => {
+        ruimte(REGELHOOGTE + 10);
+        y -= REGELHOOGTE;
+        kolommen.forEach((k, i) => {
+          const corps = CORPS - 1;
+          const t = kortAf(k.kop, k.breedte - 4, corps);
+          const px = k.rechts ? posities[i] + k.breedte - 4 - breedte(t, corps) : posities[i];
+          pagina.tekst.push({ tekst: t, x: px, y, corps, vet: true });
+        });
+        pagina.lijnen.push({ x1: links, x2: Math.min(x, rechts), y: y - 4 });
+        y -= 6;
+      };
+
+      if (b.kop) {
+        ruimte(REGELHOOGTE + 20);
+        y -= 20;
+        pagina.tekst.push({ tekst: b.kop, x: links, y, corps: CORPS + 1, vet: true });
+        y -= 4;
+      }
+      zetKop();
+
+      for (const rij of b.rijen || []) {
+        // Past de rij niet meer, dan naar de volgende pagina met een nieuwe kop.
+        if (y - REGELHOOGTE < MARGE) { volgende(); zetKop(); }
+        y -= REGELHOOGTE - 1;
+        const vet = !!rij.vet;
+        const cellen = rij.cellen || rij;
+        kolommen.forEach((k, i) => {
+          const corps = CORPS - 1;
+          const t = kortAf(cellen[i], k.breedte - 4, corps);
+          const px = k.rechts ? posities[i] + k.breedte - 4 - breedte(t, corps) : posities[i];
+          pagina.tekst.push({ tekst: t, x: px, y, corps, vet });
+        });
+        if (rij.streep) pagina.lijnen.push({ x1: links, x2: Math.min(x, rechts), y: y - 4 });
+      }
+      y -= 6;
+
     } else if (b.type === 'tekst' || b.type === 'voet') {
       ruimte(REGELHOOGTE * 2);
       y -= b.type === 'voet' ? 22 : REGELHOOGTE;
