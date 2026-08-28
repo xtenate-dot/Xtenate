@@ -675,3 +675,6 @@ body.nav-collapsed .nav-section-btn { pointer-events: none; }
 @media (max-width: 720px) {
   .sync-status { display: none; }
 }
+
+/* Melding als een wijziging niet in de cloud aankomt (v53). */
+.sync-status.sync-fout { color: var(--red); font-weight: 500; }

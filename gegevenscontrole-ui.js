@@ -10,7 +10,7 @@
 
 import { bouwMeldingen, kiesActie, wisKeuze, keuzeVan, alleKeuzes, keuzeOverzicht, ACTIES,
   exporteerMeldingen, opslagVingerafdrukken, vergelijkVingerafdrukken }
-  from './gegevenscontrole.js?v=20260824a';
+  from './gegevenscontrole.js?v=20260825a';
 
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
