@@ -1,10 +1,93 @@
 // hnvi.js — HNVI/Xtenate voorraadbeheer, inclusief AI-factuurimport.
 
-import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260901a';
-import { maakSorteerbaar } from './tables.js?v=20260901a';
-import { openApiKeyModal } from './modals.js?v=20260901a';
-import { saveHnviData, state } from './storage.js?v=20260901a';
-import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260901a';
+import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260902a';
+import { maakSorteerbaar } from './tables.js?v=20260902a';
+import { openApiKeyModal } from './modals.js?v=20260902a';
+import { saveHnviData, state } from './storage.js?v=20260902a';
+import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260902a';
+import { downloadModelPdf } from './pdf.js?v=20260902a';
+
+/** De loten zoals ze nu op het scherm staan: status- en jaarfilter meegenomen. */
+function zichtbareLoten() {
+  const st = document.getElementById('f-hnvi-status')?.value || '';
+  const jaar = document.getElementById('f-hnvi-jaar')?.value || '';
+  return state.HNVI_LOTS
+    .filter(i => {
+      if (st && i.status !== st) return false;
+      if (jaar && !String(i.datum || '').startsWith(jaar)) return false;
+      return true;
+    })
+    .sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
+}
+
+/** Lotenlijst als pdf, met dezelfde filters als het scherm. */
+export function exporteerHnviPdf() {
+  const st = document.getElementById('f-hnvi-status')?.value || '';
+  const jaar = document.getElementById('f-hnvi-jaar')?.value || '';
+  const loten = zichtbareLoten();
+
+  const kolommen = [
+    { kop: 'Ingekocht',  breedte: 56 },
+    { kop: 'Omschrijving', breedte: 132 },
+    { kop: 'Factuur',    breedte: 52 },
+    { kop: 'Inkoop',     breedte: 50, rechts: true },
+    { kop: 'Verkocht',   breedte: 56 },
+    { kop: 'Verkoop',    breedte: 50, rechts: true },
+    { kop: 'Resultaat',  breedte: 55, rechts: true },
+    { kop: 'Status',     breedte: 32 }
+  ];
+
+  let totInkoop = 0, totVerkoop = 0, aantalVerkocht = 0;
+  const rijen = loten.map(l => {
+    const inkoop = Number(l.inkoop) || 0;
+    const verkoop = Number(l.verkoop) || 0;
+    totInkoop += inkoop;
+    const heeftVerkoop = l.verkoop != null && verkoop > 0;
+    if (heeftVerkoop) { totVerkoop += verkoop; aantalVerkocht++; }
+    const resultaat = heeftVerkoop ? verkoop - inkoop : null;
+    return [
+      l.datum ? ddmm(l.datum) : '\u2014',
+      l.omschr || '',
+      l.factuur || '',
+      fmt(inkoop),
+      l.verkoopDatum ? ddmm(l.verkoopDatum) : '',
+      heeftVerkoop ? fmt(verkoop) : '\u2014',
+      resultaat == null ? '\u2014' : (resultaat >= 0 ? '+' : '\u2013') + fmt(Math.abs(resultaat)),
+      l.status === 'verkocht' ? 'verk.' : 'vrd.'
+    ];
+  });
+
+  const resultaat = totVerkoop - loten
+    .filter(l => l.verkoop != null && Number(l.verkoop) > 0)
+    .reduce((s, l) => s + (Number(l.inkoop) || 0), 0);
+
+  rijen.push({
+    vet: true, streep: true,
+    cellen: ['Totaal', `${loten.length} loten`, '', fmt(totInkoop), '', fmt(totVerkoop),
+             (resultaat >= 0 ? '+' : '\u2013') + fmt(Math.abs(resultaat)), '']
+  });
+
+  const inVoorraad = loten.filter(l => l.status !== 'verkocht');
+  const waardeVoorraad = inVoorraad.reduce((s, l) => s + (Number(l.inkoop) || 0), 0);
+
+  const d = new Date();
+  const vandaag = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+  const filters = [jaar ? `boekjaar ${jaar}` : 'alle jaren',
+                   st ? (st === 'verkocht' ? 'alleen verkocht' : 'alleen op voorraad') : 'alle statussen'];
+
+  downloadModelPdf({
+    titel: 'Veiling: inkopen en verkopen',
+    ondertitel: `${filters.join(' \u00b7 ')} \u00b7 opgemaakt op ${vandaag}`,
+    blokken: [
+      { type: 'tabel', kolommen, rijen },
+      { type: 'kop', tekst: 'Samenvatting' },
+      { type: 'regel', label: `Inkoopwaarde nog op voorraad (${inVoorraad.length} loten)`, bedrag: waardeVoorraad },
+      { type: 'regel', label: `Opbrengst verkochte loten (${aantalVerkocht} loten)`, bedrag: totVerkoop },
+      { type: 'regel', label: 'Resultaat op verkochte loten', bedrag: resultaat, totaal: true },
+      { type: 'voet', tekst: 'Het resultaat is de opbrengst min de inkoopprijs van alleen de loten die verkocht zijn. Loten die nog op voorraad liggen tellen daar niet in mee; die staan als voorraadwaarde op de balans.' }
+    ]
+  }, jaar ? `Veiling_${jaar}.pdf` : 'Veiling_alle_jaren.pdf');
+}
 
 export function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
