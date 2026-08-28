@@ -13,8 +13,45 @@ import {
   pendingQueue,
   isSupabaseReady,
   addToPendingQueue,
-  savePendingQueue
-} from './supabase-client-v2.js?v=20260826d';
+  savePendingQueue,
+  saveAppData,
+  loadAppData
+} from './supabase-client-v2.js?v=20260824a';
+
+/**
+ * Stuurt een los lijstje (groepen, facturen, tellers) naar de cloud zonder
+ * erop te wachten. Mislukt het, dan blijft het lokaal staan en probeert de
+ * automatische synchronisatie het straks opnieuw.
+ */
+const appDataVuil = new Set();
+function duwAppData(sleutel, waarde) {
+  appDataVuil.add(sleutel);
+  saveAppData(sleutel, waarde)
+    .then(ok => { if (ok) appDataVuil.delete(sleutel); })
+    .catch(() => {});
+}
+
+/** Probeert alles wat nog niet aankwam opnieuw. Gebruikt door de autosync. */
+export async function duwOpenstaandeAppData() {
+  for (const sleutel of [...appDataVuil]) {
+    const waarde = appDataWaarde(sleutel);
+    if (waarde === undefined) { appDataVuil.delete(sleutel); continue; }
+    if (await saveAppData(sleutel, waarde)) appDataVuil.delete(sleutel);
+  }
+}
+
+function appDataWaarde(sleutel) {
+  if (sleutel === 'groepen') return state.GROEPEN;
+  if (sleutel === 'facturen') return { lijst: state.FACTUREN, volgende: state.nxtFactuur };
+  if (sleutel === 'factuur_instellingen') return FACTUUR_INSTELLINGEN;
+  if (sleutel === 'tellers') return { tx: state.nxtTx, cover: state.nxtCover, hnvi: state.nxtHnvi };
+  return undefined;
+}
+
+/** Zet de tellers apart weg zodat twee apparaten geen gelijke id's uitdelen. */
+export function duwTellers() {
+  duwAppData('tellers', appDataWaarde('tellers'));
+}
 
 export const state = {
   TX: [],
@@ -127,7 +164,10 @@ state.GROEPEN = load('xtenate_voorraad_groepen', GROEPEN_STANDAARD)
   .filter(g => g && g.id && g.naam);
 if (!state.GROEPEN.length) state.GROEPEN = [...GROEPEN_STANDAARD];
 
-export function saveGroepen() { save('xtenate_voorraad_groepen', state.GROEPEN); }
+export function saveGroepen() {
+  save('xtenate_voorraad_groepen', state.GROEPEN);
+  duwAppData('groepen', state.GROEPEN);
+}
 
 /** De groep waar artikelen in vallen als er niets anders bekend is. */
 export function standaardGroep() {
@@ -155,93 +195,19 @@ export function groepId(naam) {
  * die er vóór de vervanging uitzag, zodat groep, inkoopprijs en meldgrens
  * behouden blijven — gekoppeld op id, en anders op artikelnaam.
  */
-/** De sleutel waarop twee voorraadregels hetzelfde artikel zijn. */
-function artikelSleutel(naam) {
-  return String(naam || '').trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-/**
- * Voegt twee regels van hetzelfde artikel samen tot één.
- *
- * De eerste regel gaat voor; de tweede vult alleen aan waar de eerste niets
- * heeft. Jaarcijfers worden per jaar samengevoegd, zodat een regel met alleen
- * de eindstand en een regel met alleen de in- en verkoopaantallen samen
- * compleet worden.
- */
-function voegArtikelenSamen(a, b) {
-  const jaren = { ...(b.jaren || {}) };
-  for (const [jr, v] of Object.entries(a.jaren || {})) {
-    const gevuld = Object.fromEntries(Object.entries(v || {}).filter(([, x]) => x != null));
-    jaren[jr] = { ...(jaren[jr] || {}), ...gevuld };
-  }
-  const kies = (x, y) => (x != null && x !== '' ? x : y);
-  return {
-    ...b,
-    ...a,
-    id: a.id ?? b.id,
-    categorie: kies(a.categorie, b.categorie),
-    prijs: kies(a.prijs, b.prijs),
-    inkoopprijs: kies(a.inkoopprijs, b.inkoopprijs),
-    minVoorraad: kies(a.minVoorraad, b.minVoorraad),
-    inkoopGb: kies(a.inkoopGb, b.inkoopGb),
-    prijsFactor: kies(a.prijsFactor, b.prijsFactor),
-    handelsvoorraad: a.handelsvoorraad ?? b.handelsvoorraad,
-    voorraad: Number.isFinite(Number(a.voorraad)) ? a.voorraad : b.voorraad,
-    jaren
-  };
-}
-
-/**
- * Haalt dubbele artikelen uit de lijst.
- *
- * Elke importroute deelde tot nu toe eigen nummers uit: de grote import telde
- * vanaf 200, de voorraadimport maakte er een op tijdstip gebaseerd nummer bij.
- * Hetzelfde artikel kwam daardoor onder twee nummers in de lijst, en omdat de
- * cloud op nummer bijwerkt bleven beide staan. Twee regels met dezelfde naam
- * zijn hier hetzelfde artikel; ze worden samengevoegd en houden één nummer.
- */
-export function ontdubbelVoorraad(lijst) {
-  const perNaam = new Map();
-  for (const art of lijst || []) {
-    const k = artikelSleutel(art?.artikel);
-    if (!k) continue;
-    const bestaand = perNaam.get(k);
-    perNaam.set(k, bestaand ? voegArtikelenSamen(bestaand, art) : art);
-  }
-  return [...perNaam.values()];
-}
-
 export function normaliseerVoorraad(lijst, vorige = []) {
-  // De naam is de betrouwbare sleutel, niet het nummer. Het nummer stond hier
-  // eerder voorop, maar elke import deelde die opnieuw uit in de volgorde van
-  // het werkblad. Nummer 200 was dan het ene bestand een ander artikel dan het
-  // vorige, waardoor instellingen bij het verkeerde artikel terechtkwamen.
-  const opNaam = new Map(vorige.map(c => [artikelSleutel(c.artikel), c]));
   const opId = new Map(vorige.map(c => [String(c.id), c]));
-  const genormaliseerd = (lijst || []).map(c => {
-    const oud = opNaam.get(artikelSleutel(c.artikel)) || opId.get(String(c.id)) || {};
+  const opNaam = new Map(vorige.map(c => [String(c.artikel || '').trim().toLowerCase(), c]));
+  return (lijst || []).map(c => {
+    const oud = opId.get(String(c.id)) || opNaam.get(String(c.artikel || '').trim().toLowerCase()) || {};
     // Jaarcijfers van beide kanten samenvoegen: wat al vastgelegd was blijft
     // staan, wat uit het bestand komt wint voor dat ene jaar.
     const jaren = { ...(oud.jaren || {}), ...(c.jaren || {}) };
     if (c.omzet2026 != null && jaren['2026']?.verkocht == null) {
       jaren['2026'] = { eind: jaren['2026']?.eind ?? null, verkocht: c.omzet2026 };
     }
-    // Instellingen die je zelf in de app hebt gemaakt staan niet in het
-    // Excel-bestand. Ze moeten een herimport dus overleven, anders vallen ze
-    // terug op de standaardwaarde: elk artikel weer op inkooprekening 7000, en
-    // elke wegingsfactor weer op 1. Daardoor kreeg de hele voorraad na een
-    // import dezelfde inkoopprijs per stuk.
-    const behoud = {};
-    for (const veld of ['inkoopGb', 'prijsFactor', 'handelsvoorraad']) {
-      if (c[veld] != null) behoud[veld] = c[veld];
-      else if (oud[veld] != null) behoud[veld] = oud[veld];
-    }
     return {
       ...c,
-      ...behoud,
-      // Bestaat het artikel al, dan houdt het zijn nummer. Anders maakt de
-      // cloud er een tweede regel van in plaats van de bestaande bij te werken.
-      id: oud.id ?? c.id,
       categorie: c.categorie || oud.categorie || standaardGroep(),
       inkoopprijs: c.inkoopprijs ?? oud.inkoopprijs ?? null,
       minVoorraad: c.minVoorraad ?? oud.minVoorraad ?? null,
@@ -249,7 +215,6 @@ export function normaliseerVoorraad(lijst, vorige = []) {
       jaren
     };
   });
-  return ontdubbelVoorraad(genormaliseerd);
 }
 
 state.COVERS = normaliseerVoorraad(state.COVERS);
@@ -264,14 +229,14 @@ state.nxtCover = load('xtenate_nxtCover', 100);
 
 state.nxtHnvi = load('xtenate_nxtHnvi', 10);
 
-export function saveTxData() { save('xtenate_tx', state.TX); save('xtenate_nxtTx', state.nxtTx); }
+export function saveTxData() { save('xtenate_tx', state.TX); save('xtenate_nxtTx', state.nxtTx); duwTellers(); }
 
 /** Bewaart wijzigingen in de historische jaren (2022 t/m 2025). */
 export function saveHistTxData() { save('xtenate_hist_tx_override', state.HIST_TX); }
 
-export function saveCoversData() { save('xtenate_covers', state.COVERS); save('xtenate_nxtCover', state.nxtCover); }
+export function saveCoversData() { save('xtenate_covers', state.COVERS); save('xtenate_nxtCover', state.nxtCover); duwTellers(); }
 
-export function saveHnviData() { save('xtenate_hnvi', state.HNVI_LOTS); save('xtenate_nxtHnvi', state.nxtHnvi); }
+export function saveHnviData() { save('xtenate_hnvi', state.HNVI_LOTS); save('xtenate_nxtHnvi', state.nxtHnvi); duwTellers(); }
 
 // ─── FACTUREN (fase 7) ─────────────────────────────────────────────────────
 // Debiteuren en crediteuren staan naast de boekingen, niet erin. Er is geen
@@ -292,11 +257,13 @@ export let FACTUUR_INSTELLINGEN = load('xtenate_factuur_instellingen',
 export function saveFacturen() {
   save('xtenate_facturen', state.FACTUREN);
   save('xtenate_nxt_factuur', state.nxtFactuur);
+  duwAppData('facturen', { lijst: state.FACTUREN, volgende: state.nxtFactuur });
 }
 
 export function saveFactuurInstellingen(nieuwe) {
   if (nieuwe) FACTUUR_INSTELLINGEN = { ...FACTUUR_INSTELLINGEN, ...nieuwe };
   save('xtenate_factuur_instellingen', FACTUUR_INSTELLINGEN);
+  duwAppData('factuur_instellingen', FACTUUR_INSTELLINGEN);
 }
 
 // ─── STATE INITIALISATIE (identiek aan origineel) ──────────────────────────
@@ -352,24 +319,17 @@ export async function loadDataHybrid() {
       }
       
       if (coversData && coversData.length > 0) {
-        // De cloud kan hetzelfde artikel onder twee nummers bevatten, doordat
-        // eerdere imports steeds nieuwe nummers uitdeelden. Hier wordt dat
-        // rechtgetrokken bij het inlezen, zodat je de lijst niet dubbel ziet.
-        const ontdubbeld = ontdubbelVoorraad(coversData);
-        state.COVERS = ontdubbeld;
-        if (ontdubbeld.length !== coversData.length) {
-          console.warn(`ℹ️  ${coversData.length - ontdubbeld.length} dubbele artikelen samengevoegd`);
-        }
-        console.log(`✅ Covers loaded from Supabase: ${ontdubbeld.length} artikelen`);
+        state.COVERS = coversData;
+        console.log(`✅ Covers loaded from Supabase: ${coversData.length} artikelen`);
       } else {
-        state.COVERS = ontdubbelVoorraad(load('xtenate_covers', []));
+        state.COVERS = load('xtenate_covers', []);
       }
     } catch (err) {
       console.warn(`⚠️  Supabase load failed: ${err.message}, falling back to localStorage`);
       state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
       state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
       state.HNVI_LOTS = load('xtenate_hnvi', []);
-      state.COVERS = ontdubbelVoorraad(load('xtenate_covers', []));
+      state.COVERS = load('xtenate_covers', []);
       state.loadedFromSupabase = false;
     }
   } else {
@@ -378,10 +338,40 @@ export async function loadDataHybrid() {
     state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
     state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
     state.HNVI_LOTS = load('xtenate_hnvi', []);
-    state.COVERS = ontdubbelVoorraad(load('xtenate_covers', []));
+    state.COVERS = load('xtenate_covers', []);
     state.loadedFromSupabase = false;
   }
   
+  // Losse lijstjes (groepen, facturen, tellers) terughalen. Deze staan in
+  // app_data en zijn niet kritiek: ontbreken ze, dan blijft wat lokaal staat.
+  if (isSupabaseReady()) {
+    try {
+      const extra = await loadAppData();
+      if (extra) {
+        if (Array.isArray(extra.groepen) && extra.groepen.length) {
+          state.GROEPEN = extra.groepen.filter(g => g && g.id && g.naam);
+          console.log(`✅ Groepen uit Supabase: ${state.GROEPEN.length}`);
+        }
+        if (extra.facturen && Array.isArray(extra.facturen.lijst)) {
+          state.FACTUREN = extra.facturen.lijst;
+          if (Number(extra.facturen.volgende) > 0) state.nxtFactuur = Number(extra.facturen.volgende);
+          console.log(`✅ Facturen uit Supabase: ${state.FACTUREN.length}`);
+        }
+        if (extra.factuur_instellingen) {
+          FACTUUR_INSTELLINGEN = { ...FACTUUR_INSTELLINGEN, ...extra.factuur_instellingen };
+        }
+        // Tellers: het hoogste getal wint, zodat twee apparaten nooit
+        // hetzelfde id uitdelen aan verschillende dingen.
+        const t = extra.tellers || {};
+        if (Number(t.tx) > state.nxtTx) state.nxtTx = Number(t.tx);
+        if (Number(t.cover) > state.nxtCover) state.nxtCover = Number(t.cover);
+        if (Number(t.hnvi) > state.nxtHnvi) state.nxtHnvi = Number(t.hnvi);
+      }
+    } catch (err) {
+      console.warn('Losse appgegevens laden mislukt:', err.message);
+    }
+  }
+
   // Load pending queue (recovery from offline changes)
   loadPendingQueue();
   const pendingCount = Object.keys(pendingQueue).length;

@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260826d';
+import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260824a';
 import {
-  STANDAARD_MIN_VOORRAAD, groepId, groepNaam, normaliseerVoorraad, ontdubbelVoorraad, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260826d';
-import { maakSorteerbaar } from './tables.js?v=20260826d';
-import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260826d';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260826d';
+  STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
+} from './storage.js?v=20260824a';
+import { maakSorteerbaar } from './tables.js?v=20260824a';
+import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260824a';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260824a';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -1138,262 +1138,178 @@ function voegJaarSamen(doel, bron) {
   return doel;
 }
 
-/**
- * Leest het blad met de voorraad uit een werkmap.
- *
- * De kolommen worden op naam gezocht en niet op vaste positie. Het blad heeft
- * drie blokken naast elkaar en de kopregel staat niet op rij 1, dus vaste
- * posities wezen bij dit bestand naar de verkeerde kolom.
- *
- * De jaarkolommen rechts zijn eindstanden: wat er op 31 december nog lag. De
- * kolom van het lopende jaar is in het werkblad gelijkgesteld aan de huidige
- * voorraad. De aantallen uit het mutatieblok in het midden horen bij het jaar
- * van het bestand.
- */
-export function leesVoorraadBlad(wb) {
-  const bladNaam = wb.SheetNames.find(n =>
-    n.toLowerCase().includes('voorraad') && n.toLowerCase().includes('mutatie')
-  );
-  if (!bladNaam) return null;
-
-  const rows = window.XLSX.utils.sheet_to_json(wb.Sheets[bladNaam], { header: 1, defval: null });
-
-  let kopRij = 0;
-  for (let r = 0; r < Math.min(8, rows.length); r++) {
-    if (String(rows[r]?.[0] || '').trim().toLowerCase() === 'artikel') { kopRij = r; break; }
-  }
-  const kop = rows[kopRij] || [];
-  const schoon = v => String(v ?? '').replace(/[^\p{L}€]/gu, '').toLowerCase();
-
-  const zoek = (...namen) => {
-    for (let c = 0; c < kop.length; c++) if (namen.includes(schoon(kop[c]))) return c;
-    return -1;
-  };
-  // 'Prijs (€)' komt twee keer voor; de verkoopprijs staat in het blok rechts.
-  const zoekLaatste = (...namen) => {
-    let g = -1;
-    for (let c = 0; c < kop.length; c++) if (namen.includes(schoon(kop[c]))) g = c;
-    return g;
-  };
-
-  const colVoorraad = zoek('voorraad');
-  const colMin      = zoek('min', 'minimum');
-  const colInkoop   = zoek('inkoop');
-  const colVerkoop  = zoek('verkoop');
-  const colPrijs    = zoekLaatste('prijs€', 'prijs');
-
-  const jaarKolommen = {};
-  for (let c = 0; c < kop.length; c++) {
-    const h = String(kop[c] ?? '').trim().replace(/\.0+$/, '');
-    if (/^20\d\d$/.test(h)) jaarKolommen[h] = c;
-  }
-  const bestandsJaar = Object.keys(jaarKolommen).sort().pop();
-
-  const getal = v => (typeof v === 'number' && Number.isFinite(v) ? v : null);
-  const getal0 = v => getal(v) ?? 0;
-  const lees = (row, c) => (c >= 0 ? row[c] : null);
-
-  const artikelen = [];
-  rows.slice(kopRij + 1).forEach(row => {
-    const naam = row[0];
-    if (!naam || typeof naam !== 'string') return;
-    const schoneNaam = naam.trim();
-    if (!schoneNaam) return;
-    const laag = schoneNaam.toLowerCase();
-    if (laag.startsWith('totaal') || ['artikel', 'artikelen', 'omschrijving', 'product'].includes(laag)) return;
-    if (/^[\s—–-]*$/.test(schoneNaam)) return;
-
-    const voorraad = getal0(lees(row, colVoorraad));
-    const inkoop   = getal0(lees(row, colInkoop));
-    const verkoop  = getal0(lees(row, colVerkoop));
-
-    const jaren = {};
-    for (const [jaar, c] of Object.entries(jaarKolommen)) jaren[jaar] = { eind: getal0(row[c]) };
-    if (bestandsJaar) {
-      // Zonder 'inkoop' kan de verdeling over de inkooprekening niet rekenen
-      // en komt er geen inkoopprijs per stuk uit.
-      jaren[bestandsJaar] = { ...(jaren[bestandsJaar] || {}), inkoop, verkocht: verkoop };
-    }
-
-    artikelen.push({
-      artikel: schoneNaam,
-      prijs: getal(lees(row, colPrijs)),
-      minVoorraad: getal(lees(row, colMin)),
-      voorraad: Math.round(voorraad),
-      inkoop: Math.round(inkoop),
-      verkoop: Math.round(verkoop),
-      // Dit veld betekent overal in de app het aantal verkochte stuks, niet een
-      // bedrag. De kolom 'Totaal omzet' in het werkblad is prijs maal de som
-      // van twee eindstanden en hoort hier dus niet.
-      omzet2026: Math.round(verkoop),
-      jaren
-    });
-  });
-
-  return { bladNaam, bestandsJaar, artikelen };
-}
-
 export async function handleImportVoorraad(event) {
   const files = event.target.files;
-  event.target.value = '';
   if (!files.length) return;
 
   const status = el('import-status');
-  status.innerHTML = 'Bezig met inlezen...';
+  status.innerHTML = '⏳ Inlezen...';
 
   try {
+    // Lees alle Excel-bestanden
     const alleArtikelenNieuw = {};
-    const gelezenBestanden = [];
 
     for (const file of files) {
       const data = await file.arrayBuffer();
-      const wb = window.XLSX.read(data, { type: 'array', cellDates: true });
-
-      const uitkomst = leesVoorraadBlad(wb);
-      if (!uitkomst) {
-        gelezenBestanden.push(`${file.name}: geen blad "Voorraad & Mutaties"`);
+      const wb = window.XLSX.read(data);
+      
+      // Zoek Voorraad sheet
+      const sheetNaam = wb.SheetNames.find(s => 
+        s.toLowerCase().includes('voorraad') && s.toLowerCase().includes('mutatie')
+      );
+      
+      if (!sheetNaam) {
+        console.warn(`${file.name}: geen Voorraad & Mutaties sheet`);
+        status.innerHTML += `<br>⚠️ ${file.name}: geen Voorraad sheet`;
         continue;
       }
-      gelezenBestanden.push(`${file.name}: ${uitkomst.artikelen.length} artikelen (${uitkomst.bestandsJaar || 'jaar onbekend'})`);
 
-      for (const art of uitkomst.artikelen) {
-        const sleutel = art.artikel.trim().toLowerCase();
-        if (!alleArtikelenNieuw[sleutel]) {
-          alleArtikelenNieuw[sleutel] = { ...art, jaren: {} };
+      const ws = wb.Sheets[sheetNaam];
+      const rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      
+      if (rows.length < 3) continue;
+
+      // Vind header rij
+      let headerRow = 1;
+      for (let r = 0; r < Math.min(5, rows.length); r++) {
+        if (rows[r][0] === 'Artikel') {
+          headerRow = r;
+          break;
         }
-        const doel = alleArtikelenNieuw[sleutel];
-        doel.prijs = doel.prijs ?? art.prijs;
-        doel.minVoorraad = doel.minVoorraad ?? art.minVoorraad;
-        // Het nieuwste bestand bepaalt de actuele stand.
-        doel.voorraad = art.voorraad;
-        doel.inkoop = art.inkoop;
-        doel.verkoop = art.verkoop;
-        doel.omzet2026 = art.omzet2026;
-        voegJaarSamen(doel.jaren, art.jaren);
+      }
+
+      const header = rows[headerRow] || [];
+      const colPrijs = 13;   // rechterblok: Prijs (€)
+      const colInkoop = 7;   // mutatieblok: 📦 Inkoop
+      const colVerkoop = 8;  // mutatieblok: 🛒 Verkoop
+
+      // Jaarkolommen staan rechts van de prijs. Excel levert ze soms als getal
+      // (2022) en soms als 2022.0, dus we knippen de decimalen eraf.
+      const jaarKolommen = {};
+      for (let c = colPrijs + 1; c < header.length; c++) {
+        const h = String(header[c] ?? '').trim().replace(/\.0+$/, '');
+        if (/^20\d\d$/.test(h)) jaarKolommen[h] = c;
+      }
+
+      // Elk bestand is één boekjaar. De inkoop- en verkoopaantallen in het
+      // mutatieblok horen bij dat jaar, en dat is het hoogste jaartal in de kop.
+      const bestandsJaar = Object.keys(jaarKolommen).sort().pop();
+
+      const getal = v => {
+        const n = parseFloat(v);
+        return Number.isFinite(n) ? n : 0;
+      };
+
+      // Lees artikelen
+      for (let r = headerRow + 1; r < rows.length; r++) {
+        const row = rows[r];
+        if (!row[0] || row[0] === '') continue;   // lege regel: overslaan, niet stoppen
+        
+        const artikel = String(row[0]).trim();
+        // Tussentotalen en scheidingsregels zijn geen artikelen. Ze staan midden
+        // in het blad ("Totaal Hoezen", "Totaal Mini beeldjes"), dus we slaan ze
+        // over en lopen door — stoppen zou de helft van de lijst missen.
+        if (!artikel || artikel.toLowerCase().includes('totaal') || artikel === '-') continue;
+        if (/^[\s—–]*$/.test(artikel)) continue;
+
+        const prijs = parseFloat(row[colPrijs]) || 0;
+        const jaren = {};
+
+        // De jaarkolommen zijn eindstanden: wat er op 31-12 nog lag.
+        for (const [jaar, col] of Object.entries(jaarKolommen)) {
+          jaren[jaar] = { eind: getal(row[col]) };
+        }
+
+        // De aantallen uit het mutatieblok horen bij het jaar van dit bestand.
+        if (bestandsJaar) {
+          jaren[bestandsJaar] = {
+            ...(jaren[bestandsJaar] || {}),
+            inkoop: getal(row[colInkoop]),
+            verkocht: getal(row[colVerkoop])
+          };
+        }
+
+        if (!alleArtikelenNieuw[artikel]) {
+          alleArtikelenNieuw[artikel] = {
+            artikel,
+            prijs,
+            jaren: {}
+          };
+        }
+        voegJaarSamen(alleArtikelenNieuw[artikel].jaren, jaren);
       }
     }
 
-    const gelezen = Object.values(alleArtikelenNieuw);
-    if (!gelezen.length) {
-      status.innerHTML = `<div class="alert alert-warn">Er zijn geen artikelen gevonden.<br>${gelezenBestanden.map(esc).join('<br>')}</div>`;
-      return;
+    // Voeg toe aan state
+    let toegevoegd = 0, bijgewerkt = 0;
+    
+    for (const [artikelNaam, nieuwData] of Object.entries(alleArtikelenNieuw)) {
+      // Dubbele controle: skip totaal-rijen
+      if (!artikelNaam || artikelNaam.toLowerCase().includes('totaal') || /^[\s—–]*$/.test(artikelNaam)) {
+        continue;
+      }
+      
+      const bestaand = state.COVERS.find(a => a.artikel === artikelNaam);
+      
+      if (bestaand) {
+        if (!bestaand.jaren) bestaand.jaren = {};
+        voegJaarSamen(bestaand.jaren, nieuwData.jaren);
+        if (nieuwData.prijs && !bestaand.prijs) bestaand.prijs = nieuwData.prijs;
+        bijgewerkt++;
+      } else {
+        state.COVERS.push({
+          id: `imp-${Date.now()}-${Math.random()}`,
+          artikel: artikelNaam,
+          categorie: standaardGroep(),
+          prijs: nieuwData.prijs || null,
+          inkoop: 0,
+          inkoopprijs: null,   // onbekend, niet nul — anders lijkt de waarde €0
+          voorraad: Object.values(nieuwData.jaren)[Object.keys(nieuwData.jaren).length - 1]?.eind || 0,
+          jaren: nieuwData.jaren
+        });
+        toegevoegd++;
+      }
     }
 
-    // Wat er al stond blijft leidend voor de instellingen die je zelf hebt
-    // gemaakt: groep, inkooprekening, wegingsfactor en een eigen inkoopprijs.
-    // Bestaande artikelen houden hun nummer, zodat de cloud ze bijwerkt in
-    // plaats van er een tweede regel naast te zetten.
-    const bestaandeNamen = new Set(
-      state.COVERS.map(c => String(c.artikel || '').trim().toLowerCase())
-    );
-    const nieuweNamen = gelezen
-      .map(a => String(a.artikel || '').trim().toLowerCase())
-      .filter(n => !bestaandeNamen.has(n));
-
-    let volgendNummer = state.COVERS.reduce((m, c) => {
-      const n = Number(c.id);
-      return Number.isFinite(n) && n > m ? n : m;
-    }, Number(state.nxtCover) - 1 || 299) + 1;
-
-    const metNummer = gelezen.map(a => ({
-      ...a,
-      id: a.id ?? volgendNummer++,
-      categorie: a.categorie || standaardGroep(),
-      inkoopprijs: null   // onbekend, niet nul — anders lijkt de waarde € 0
-    }));
-
-    // Bestaande artikelen die niet in het bestand staan blijven gewoon staan.
-    const inBestand = new Set(metNummer.map(a => String(a.artikel).trim().toLowerCase()));
-    const ongemoeid = state.COVERS.filter(
-      c => !inBestand.has(String(c.artikel || '').trim().toLowerCase())
-    );
-
-    state.COVERS = normaliseerVoorraad([...metNummer, ...ongemoeid], state.COVERS);
-    state.nxtCover = volgendNummer;
     saveCoversData();
-    renderCovers();
-
-    const toegevoegd = nieuweNamen.length;
-    const bijgewerkt = metNummer.length - toegevoegd;
-
-    // Alleen de artikelen uit dit bestand naar de cloud, op naam gekozen en
-    // niet op positie in de lijst; dat laatste stuurde de verkeerde regels op.
-    const teSturen = state.COVERS.filter(
-      c => inBestand.has(String(c.artikel || '').trim().toLowerCase())
-    );
-
-    status.innerHTML = `Bezig met versturen naar de cloud (${teSturen.length})...`;
-    let syncOk = 0, syncMislukt = 0;
-    for (const artikel of teSturen) {
+    
+    // Sync ALLEEN de zojuist toegevoegde/bijgewerkte artikelen naar Supabase
+    status.innerHTML = `⏳ Syncing ${toegevoegd + bijgewerkt} items to Supabase...`;
+    console.log(`📤 Syncing ${toegevoegd + bijgewerkt} covers to Supabase...`);
+    console.log(`   staat.COVERS.length = ${state.COVERS.length}`);
+    console.log(`   Math.max(toegevoegd=${toegevoegd}, bijgewerkt=${bijgewerkt}) = ${Math.max(toegevoegd, bijgewerkt)}`);
+    
+    let syncOk = 0, syncFailed = 0;
+    const recentArticles = state.COVERS.slice(-Math.max(toegevoegd, bijgewerkt) || state.COVERS.length);
+    console.log(`   recentArticles = ${recentArticles.length} items`);
+    
+    for (const artikel of recentArticles) {
+      console.log(`   → Saving ${artikel.artikel}...`);
       try {
-        if (await saveCoverToSupabase(artikel)) syncOk++;
-        else { syncMislukt++; addToPendingQueue(artikel, 'cover', false); }
-      } catch {
-        syncMislukt++;
-        addToPendingQueue(artikel, 'cover', false);
+        const ok = await saveCoverToSupabase(artikel);
+        if (ok) {
+          syncOk++;
+          console.log(`     ✅ ${artikel.artikel}`);
+        } else {
+          syncFailed++;
+          console.log(`     ⚠️  ${artikel.artikel} returned false`);
+        }
+      } catch (err) {
+        syncFailed++;
+        console.error(`     ❌ ${artikel.artikel}:`, err.message);
       }
     }
-
-    status.innerHTML =
-      `<div class="alert alert-info">
-         <strong>${toegevoegd}</strong> toegevoegd, <strong>${bijgewerkt}</strong> bijgewerkt ·
-         ${state.COVERS.length} artikelen in totaal<br>
-         <span style="color:var(--text-muted)">${gelezenBestanden.map(esc).join('<br>')}</span><br>
-         <span style="color:var(--text-muted)">${syncOk} naar de cloud${syncMislukt ? ` · ${syncMislukt} mislukt, die volgen bij de volgende synchronisatie` : ''}</span>
-       </div>`;
-
-    setTimeout(() => { sluitImportModal(); renderCovers(); }, 2500);
+    
+    console.log(`📊 Import sync result: ${syncOk} ok, ${syncFailed} failed`);
+    status.innerHTML = `✅ ${toegevoegd} toegevoegd, ${bijgewerkt} bijgewerkt<br><small style="color:var(--text-muted)">✅ ${syncOk} naar Supabase · ${syncFailed ? syncFailed + ' mislukt' : 'alles OK'}</small>`;
+    
+    setTimeout(() => {
+      sluitImportModal();
+      renderCovers();
+    }, 1500);
 
   } catch (e) {
     status.innerHTML = `❌ Fout: ${e.message}`;
     console.error('Import fout:', e);
   }
-}
-
-/**
- * Voegt artikelen met dezelfde naam samen tot één regel.
- *
- * Elke importroute deelde eigen nummers uit, waardoor hetzelfde artikel twee
- * keer in de lijst kon belanden — vaak in twee verschillende groepen. Nieuwe
- * imports maken die dubbelingen niet meer, maar wat er al staat moet nog
- * worden opgeruimd. Dat gebeurt hier, ook in de cloud.
- */
-export async function ruimDubbeleArtikelenOp() {
-  const voor = state.COVERS.length;
-  const samengevoegd = ontdubbelVoorraad(state.COVERS);
-  const weg = voor - samengevoegd.length;
-
-  if (weg === 0) {
-    window.alert('Er staan geen artikelen met dezelfde naam in de lijst.');
-    return;
-  }
-
-  const gaDoor = window.confirm(
-    `${weg} ${weg === 1 ? 'artikel komt' : 'artikelen komen'} meer dan één keer voor. ` +
-    `Samenvoegen brengt de lijst terug van ${voor} naar ${samengevoegd.length} artikelen. ` +
-    `Per artikel blijft de ingevulde groep, prijs en inkooprekening bewaard. Doorgaan?`
-  );
-  if (!gaDoor) return;
-
-  // De regels die verdwijnen moeten ook uit de cloud, anders staan ze er na
-  // een herlaadbeurt gewoon weer.
-  const blijft = new Set(samengevoegd.map(c => String(c.id)));
-  const teVerwijderen = state.COVERS.filter(c => !blijft.has(String(c.id)));
-
-  state.COVERS = samengevoegd;
-  saveCoversData();
-  renderCovers();
-
-  let verwijderd = 0, mislukt = 0;
-  for (const art of teVerwijderen) {
-    try {
-      if (await deleteFromSupabase(art.id, 'cover')) verwijderd++; else mislukt++;
-    } catch { mislukt++; }
-  }
-
-  window.alert(
-    `Klaar: ${samengevoegd.length} artikelen over.` +
-    (verwijderd ? ` ${verwijderd} dubbele regels uit de cloud verwijderd.` : '') +
-    (mislukt ? ` ${mislukt} regels konden daar niet worden verwijderd; die verdwijnen bij de volgende synchronisatie.` : '')
-  );
 }
