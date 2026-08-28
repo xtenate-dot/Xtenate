@@ -5,9 +5,9 @@
 // altijd eerst duwen en dan halen: andersom zou je eigen werk overschreven
 // worden door een oudere versie uit de cloud.
 
-import { state, loadDataHybrid, duwOpenstaandeAppData } from './storage.js?v=20260824a';
-import { isSupabaseReady, pendingQueue, syncPendingQueue } from './supabase-client-v2.js?v=20260824a';
-import { hertekenHuidigePagina } from './ui.js?v=20260824a';
+import { state, loadDataHybrid, duwOpenstaandeAppData } from './storage.js?v=20260825a';
+import { herstartVastgelopen, isSupabaseReady, syncPendingQueue, wachtrijStatus } from './supabase-client-v2.js?v=20260825a';
+import { hertekenHuidigePagina } from './ui.js?v=20260825a';
 
 const TIK_MS = 30000;        // hoe vaak we kijken of er iets te doen is
 const MIN_OPHAAL_MS = 20000; // niet vaker ophalen dan dit, ook niet bij snel wisselen
@@ -34,13 +34,20 @@ function meldStatus(tekst, soort = '') {
 
 /** Zet lokale wijzigingen in de cloud. */
 async function duwen() {
-  const openstaand = Object.keys(pendingQueue).length;
-  if (openstaand) {
+  const voor = wachtrijStatus();
+  if (voor.totaal) {
     meldStatus('Bezig met opslaan…');
     await syncPendingQueue();
   }
   await duwOpenstaandeAppData();
-  return openstaand;
+
+  // Blijft er iets steken, dan zeggen we dat. Stil blijven proberen is erger
+  // dan een melding: je denkt dan dat alles bewaard is terwijl dat niet zo is.
+  const na = wachtrijStatus();
+  if (na.vastgelopen > 0) {
+    meldStatus(`${na.vastgelopen} niet opgeslagen`, 'fout');
+  }
+  return na;
 }
 
 /** Haalt op wat elders veranderd is en tekent de pagina opnieuw. */
@@ -114,9 +121,16 @@ export function startAutosync() {
   syncRonde(false);
 }
 
-/** Handmatig een volledige ronde, inclusief ophalen. Voor de knop in de balk. */
+/**
+ * Handmatig een volledige ronde. De knop moet ook helpen als er iets is
+ * vastgelopen, dus we zetten die pogingen eerst terug op nul.
+ */
 export async function syncNu() {
+  const hersteld = herstartVastgelopen();
+  if (hersteld) console.log(`🔁 ${hersteld} vastgelopen wijziging(en) opnieuw in de rij gezet.`);
   laatsteOphaal = 0;
   await syncRonde(true);
-  meldStatus('Bijgewerkt', 'ok');
+  const status = wachtrijStatus();
+  meldStatus(status.vastgelopen ? `${status.vastgelopen} niet opgeslagen` : 'Bijgewerkt',
+             status.vastgelopen ? 'fout' : 'ok');
 }

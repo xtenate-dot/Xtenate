@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260824a';
+import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260825a';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260824a';
-import { maakSorteerbaar } from './tables.js?v=20260824a';
-import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260824a';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260824a';
+} from './storage.js?v=20260825a';
+import { maakSorteerbaar } from './tables.js?v=20260825a';
+import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260825a';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260825a';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -1257,8 +1257,13 @@ export async function handleImportVoorraad(event) {
         if (nieuwData.prijs && !bestaand.prijs) bestaand.prijs = nieuwData.prijs;
         bijgewerkt++;
       } else {
+        // Maak een stabiele ID op basis van de artikelnaam, zodat twee
+        // imports van hetzelfde artikel DEZELFDE ID krijgen. Voorkomt duplicaten
+        // in Supabase. We voegen het ID-achtige voegwoord `imp-` eraan toe
+        // zodat we kunnen zien dat het van de import komt.
+        const stableId = `imp-${artikelNaam.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-')}`;
         state.COVERS.push({
-          id: `imp-${Date.now()}-${Math.random()}`,
+          id: stableId,
           artikel: artikelNaam,
           categorie: standaardGroep(),
           prijs: nieuwData.prijs || null,
@@ -1275,13 +1280,16 @@ export async function handleImportVoorraad(event) {
     
     // Sync ALLEEN de zojuist toegevoegde/bijgewerkte artikelen naar Supabase
     status.innerHTML = `⏳ Syncing ${toegevoegd + bijgewerkt} items to Supabase...`;
-    console.log(`📤 Syncing ${toegevoegd + bijgewerkt} covers to Supabase...`);
-    console.log(`   staat.COVERS.length = ${state.COVERS.length}`);
-    console.log(`   Math.max(toegevoegd=${toegevoegd}, bijgewerkt=${bijgewerkt}) = ${Math.max(toegevoegd, bijgewerkt)}`);
     
     let syncOk = 0, syncFailed = 0;
-    const recentArticles = state.COVERS.slice(-Math.max(toegevoegd, bijgewerkt) || state.COVERS.length);
-    console.log(`   recentArticles = ${recentArticles.length} items`);
+    
+    // Bouw een set van artikel-namen die we net hebben verwerkt
+    const verwerktArtikelNamen = new Set(Object.keys(alleArtikelenNieuw));
+    
+    // Filter state.COVERS om alleen de net verwerkte items te halen
+    const recentArticles = state.COVERS.filter(a => verwerktArtikelNamen.has(a.artikel));
+    
+    console.log(`📤 Syncing ${recentArticles.length} covers naar Supabase (${toegevoegd} nieuw + ${bijgewerkt} bijgewerkt)...`);
     
     for (const artikel of recentArticles) {
       console.log(`   → Saving ${artikel.artikel}...`);

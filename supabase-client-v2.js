@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260824a';
+import { getClient, heeftClient } from './supabase.js?v=20260825a';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -58,7 +58,12 @@ export function clearPendingQueueItem(key) {
 }
 
 export function addToPendingQueue(boeking, operation, isHistoric = false) {
-  const key = `${operation}_${boeking.id}_${Date.now()}`;
+  // De sleutel bevat geen tijdstip meer. Bewerk je hetzelfde artikel drie keer
+  // achter elkaar, dan stonden er eerst drie regels in de wachtrij die alle
+  // drie verstuurd werden — de eerste twee met verouderde gegevens. Nu
+  // vervangt een nieuwe bewerking de vorige, zodat alleen de laatste stand
+  // wordt verstuurd.
+  const key = `${operation}_${boeking.id}`;
 
   // Voorraadartikelen en HNVI-loten hebben heel andere velden dan een boeking.
   // Die mogen niet worden teruggeknipt tot boekingsvelden, anders staat er
@@ -81,6 +86,17 @@ export function addToPendingQueue(boeking, operation, isHistoric = false) {
       : { ...boeking };
   }
 
+  // Verwijderen maakt eerdere wijzigingen op hetzelfde ding zinloos. Die halen
+  // we weg, anders zou een oude 'update' het net verwijderde item opnieuw
+  // aanmaken.
+  if (operation === 'delete') {
+    for (const k of Object.keys(pendingQueue)) {
+      if (pendingQueue[k].id === boeking.id && pendingQueue[k].operation !== 'delete') {
+        delete pendingQueue[k];
+      }
+    }
+  }
+
   pendingQueue[key] = {
     id: boeking.id,
     operation: operation,
@@ -89,7 +105,7 @@ export function addToPendingQueue(boeking, operation, isHistoric = false) {
     status: 'pending',
     timestamp: Date.now(),
     attempts: 0,
-    maxAttempts: 3,
+    maxAttempts: 5,
     data
   };
   
@@ -97,6 +113,30 @@ export function addToPendingQueue(boeking, operation, isHistoric = false) {
   console.log(`➕ Added to pending queue: ${operation} ${boeking.id}`);
   
   return key;
+}
+
+/**
+ * Hoeveel staat er open en hoeveel is er blijven steken? De autosync gebruikt
+ * dit om te melden dat er iets niet aankomt, in plaats van stil te blijven
+ * proberen.
+ */
+export function wachtrijStatus() {
+  const alles = Object.values(pendingQueue);
+  return {
+    open: alles.filter(p => p.attempts < (p.maxAttempts || 5)).length,
+    vastgelopen: alles.filter(p => p.attempts >= (p.maxAttempts || 5)).length,
+    totaal: alles.length
+  };
+}
+
+/** Zet vastgelopen items terug op nul pogingen, zodat de knop echt opnieuw probeert. */
+export function herstartVastgelopen() {
+  let aantal = 0;
+  for (const p of Object.values(pendingQueue)) {
+    if (p.attempts >= (p.maxAttempts || 5)) { p.attempts = 0; p.status = 'pending'; aantal++; }
+  }
+  if (aantal) savePendingQueue();
+  return aantal;
 }
 
 // ===== LOAD FROM SUPABASE =====
@@ -784,7 +824,11 @@ export async function syncPendingQueue() {
     return;
   }
   
-  const keys = Object.keys(pendingQueue);
+  // Verwijderen gaat voor. Staat er zowel een 'create' als een 'delete' voor
+  // hetzelfde ding, dan moet het verwijderen als laatste gebeuren — anders
+  // maakt de create het meteen weer aan. Sorteren op operatie regelt dat.
+  const keys = Object.keys(pendingQueue)
+    .sort((a, b) => (pendingQueue[a].operation === 'delete' ? 1 : 0) - (pendingQueue[b].operation === 'delete' ? 1 : 0));
   if (keys.length === 0) return;
   
   console.log(`🔄 Syncing ${keys.length} pending items to Supabase...`);
@@ -832,9 +876,15 @@ export async function syncPendingQueue() {
   
   savePendingQueue();
   
+  const status = wachtrijStatus();
   if (synced > 0) {
-    console.log(`✅ Synced ${synced} items, ${failed} still pending`);
+    console.log(`✅ ${synced} verstuurd, ${status.open} nog open`);
   }
+  if (status.vastgelopen > 0) {
+    console.warn(`⚠️  ${status.vastgelopen} wijziging(en) komen niet aan na ${5} pogingen. ` +
+                 `Ze blijven lokaal bewaard; gebruik de synchronisatieknop om opnieuw te proberen.`);
+  }
+  return { synced, failed, ...status };
 }
 
 // ===== HELPERS =====
