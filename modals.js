@@ -1,7 +1,7 @@
 // modals.js — beheer-acties: Excel-import, cloud sync, API-sleutel, data wissen.
 
-import { REKNM } from './helpers.js?v=20260827a';
-import { renderHome } from './dashboard.js?v=20260827a';
+import { REKNM } from './helpers.js?v=20260828a';
+import { renderHome } from './dashboard.js?v=20260828a';
 
 /** Rekeningnummers die de app kent; gebruikt bij het inlezen van kolom G. */
 const REKENINGEN = new Set(Object.keys(REKNM));
@@ -11,8 +11,8 @@ const REKENINGEN = new Set(Object.keys(REKNM));
 // Daardoor viel elke bevestigde import om met "OMZET_GB is not defined", ná het
 // wegschrijven van de boekingen en vóór het toepassen van de jaartotalen.
 const OMZET_GB = ['8000', '8010', '8020'];
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260827a';
-import { addToPendingQueue, deleteFromSupabase } from './supabase-client-v2.js?v=20260827a';
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260828a';
+import { addToPendingQueue, deleteFromSupabase } from './supabase-client-v2.js?v=20260828a';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
 // met een kolom "Totaal" voor het hele boekjaar. Dit is de brontabel van de boekhouding zelf,
@@ -216,10 +216,11 @@ export function importExcel(input) {
         });
       }
 
-      // Voorraad & Mutaties (Funny Covers)
+      // Voorraad & Mutaties (Funny Covers) — zoeken naar variant met hoofd/kleine letters
+      const voorraadBlad = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g,'') === 'voorraadmutaties');
       let coverCount = 0;
-      if (wb.SheetNames.includes('Voorraad & Mutaties')) {
-        const ws = wb.Sheets['Voorraad & Mutaties'];
+      if (voorraadBlad) {
+        const ws = wb.Sheets[voorraadBlad];
         const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
         let cid = 200;
         rows.slice(2).forEach(row => {
