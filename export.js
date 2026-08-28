@@ -6,8 +6,8 @@
 // importfunctie leest; de overige kolommen zijn ingevuld met gegevens die het
 // bestand voor jou leesbaar maken maar bij het inlezen worden overgeslagen.
 
-import { GBNM, REKNM, isInkomst, maandLabel } from './helpers.js?v=20260831a';
-import { HOME_TOTALS, MAAND_SALDOS, groepNaam, state } from './storage.js?v=20260831a';
+import { GBNM, REKNM, isInkomst, maandLabel } from './helpers.js?v=20260901a';
+import { HOME_TOTALS, MAAND_SALDOS, groepNaam, state } from './storage.js?v=20260901a';
 
 const CREDITKAART = '1030';
 
@@ -188,15 +188,15 @@ function hnviBlad() {
 
 /** Vastgelegde eindstanden per jaar, zodat je voorraadhistorie niet in de app opgesloten zit. */
 function voorraadPerJaarBlad() {
-  const rijen = [['Artikel', 'Jaar', 'Eindvoorraad', 'Verkocht']];
+  const rijen = [['Artikel', 'Jaar', 'Eindvoorraad', 'Ingekocht', 'Verkocht', 'Retour']];
   state.COVERS.forEach(c => {
     Object.entries(c.jaren || {}).sort((a, b) => a[0].localeCompare(b[0])).forEach(([jaar, v]) => {
-      if (v.eind == null && v.verkocht == null) return;
-      rijen.push([c.artikel, jaar, v.eind ?? '', v.verkocht ?? '']);
+      if (v.eind == null && v.verkocht == null && v.inkoop == null) return;
+      rijen.push([c.artikel, jaar, v.eind ?? '', v.inkoop ?? '', v.verkocht ?? '', v.retour ?? '']);
     });
   });
   const ws = XLSX.utils.aoa_to_sheet(rijen);
-  ws['!cols'] = [{ wch: 26 }, { wch: 8 }, { wch: 13 }, { wch: 11 }];
+  ws['!cols'] = [{ wch: 26 }, { wch: 8 }, { wch: 13 }, { wch: 11 }, { wch: 11 }, { wch: 9 }];
   return ws;
 }
 
