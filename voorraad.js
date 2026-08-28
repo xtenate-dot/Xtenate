@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260828a';
+import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260831a';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260828a';
-import { maakSorteerbaar } from './tables.js?v=20260828a';
-import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260828a';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260828a';
+} from './storage.js?v=20260831a';
+import { maakSorteerbaar } from './tables.js?v=20260831a';
+import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260831a';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260831a';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -40,7 +40,7 @@ function drempel(c) {
  * `jaren`; is er voor dat jaar niets vastgelegd, dan blijft het leeg in plaats
  * van dat de app de huidige stand als historie presenteert.
  */
-export function standVan(c) {
+function standVan(c) {
   const jaren = c.jaren || {};
   if (gekozenJaar === 'nu') {
     // omzet2026 is het oude veld en blijft leidend als het gevuld is. Staat het
@@ -50,6 +50,7 @@ export function standVan(c) {
     return {
       voorraad: c.voorraad,
       verkocht: c.omzet2026 ?? j.verkocht ?? 0,
+      // De inkoopprijs van dit jaar, niet de centrale inkoopprijs
       inkoop: j.inkoop ?? c.inkoop ?? 0,
       vastgelegd: true
     };
@@ -58,10 +59,12 @@ export function standVan(c) {
   return {
     voorraad: j.eind ?? null,
     verkocht: j.verkocht ?? 0,
+    // De inkoopprijs van het gekozen jaar — NIET de centrale inkoopprijs
     inkoop: j.inkoop ?? 0,
     vastgelegd: j.eind != null
   };
 }
+
 
 /**
  * Inkoopprijzen die uit de bank af te leiden zijn: bedrag op de inkooprekening

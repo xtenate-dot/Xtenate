@@ -16,7 +16,7 @@ import {
   savePendingQueue,
   saveAppData,
   loadAppData
-} from './supabase-client-v2.js?v=20260828a';
+} from './supabase-client-v2.js?v=20260831a';
 
 /**
  * Stuurt een los lijstje (groepen, facturen, tellers) naar de cloud zonder
@@ -195,19 +195,72 @@ export function groepId(naam) {
  * die er vóór de vervanging uitzag, zodat groep, inkoopprijs en meldgrens
  * behouden blijven — gekoppeld op id, en anders op artikelnaam.
  */
+/** Jaargegevens samenvoegen zonder een bekend cijfer door een leeg te vervangen. */
+function voegJarenSamen(oud = {}, nieuw = {}) {
+  const uit = { ...oud };
+  for (const [jaar, waarden] of Object.entries(nieuw)) {
+    const bestaand = uit[jaar] || {};
+    uit[jaar] = {
+      // Een bestand van een later jaar noemt oudere jaren wel bij naam, maar
+      // kent daar geen eindstand van. Die mag de al bekende stand niet wissen.
+      eind: waarden.eind ?? bestaand.eind ?? null,
+      verkocht: waarden.verkocht ?? bestaand.verkocht ?? null
+    };
+  }
+  return uit;
+}
+
+/**
+ * Jaarcijfers uit een import van een afgesloten jaar toevoegen aan de
+ * bestaande artikelen. De huidige voorraad blijft ongemoeid: een bestand uit
+ * 2024 zegt niets over wat er vandaag op de plank ligt, alleen over hoe dat
+ * jaar is verlopen. Artikelen die je toen wel had en nu niet meer, komen erbij
+ * met voorraad 0 zodat je dat jaar kunt terugkijken.
+ */
+export function voegJaarcijfersToe(huidig, uitBestand) {
+  const sleutel = c => String(c.artikel || '').trim().toLowerCase();
+  const opNaam = new Map(huidig.map(c => [sleutel(c), c]));
+
+  for (const nieuw of uitBestand || []) {
+    const bestaand = opNaam.get(sleutel(nieuw));
+    if (bestaand) {
+      bestaand.jaren = voegJarenSamen(bestaand.jaren, nieuw.jaren);
+      if (bestaand.prijs == null && nieuw.prijs != null) bestaand.prijs = nieuw.prijs;
+    } else {
+      const toegevoegd = {
+        ...nieuw,
+        voorraad: 0,
+        uitAssortiment: true,
+        categorie: nieuw.categorie || standaardGroep()
+      };
+      huidig.push(toegevoegd);
+      opNaam.set(sleutel(toegevoegd), toegevoegd);
+    }
+  }
+  return huidig;
+}
+
 export function normaliseerVoorraad(lijst, vorige = []) {
-  const opId = new Map(vorige.map(c => [String(c.id), c]));
-  const opNaam = new Map(vorige.map(c => [String(c.artikel || '').trim().toLowerCase(), c]));
-  return (lijst || []).map(c => {
-    const oud = opId.get(String(c.id)) || opNaam.get(String(c.artikel || '').trim().toLowerCase()) || {};
-    // Jaarcijfers van beide kanten samenvoegen: wat al vastgelegd was blijft
-    // staan, wat uit het bestand komt wint voor dat ene jaar.
-    const jaren = { ...(oud.jaren || {}), ...(c.jaren || {}) };
+  const sleutel = c => String(c.artikel || '').trim().toLowerCase();
+  const opNaam = new Map(vorige.map(c => [sleutel(c), c]));
+  const verwerkt = new Set();
+
+  const nieuw = (lijst || []).map(c => {
+    // Koppelen gebeurt op naam, niet op nummer. De import deelt nummers uit op
+    // volgorde vanaf 200, dus het eerste artikel in het ene bestand kreeg
+    // hetzelfde nummer als het eerste in het andere. Daardoor erfde de Kerstman
+    // de verkoopcijfers van de luchtcompressor.
+    const oud = opNaam.get(sleutel(c)) || {};
+    verwerkt.add(sleutel(c));
+    const jaren = voegJarenSamen(oud.jaren, c.jaren);
     if (c.omzet2026 != null && jaren['2026']?.verkocht == null) {
       jaren['2026'] = { eind: jaren['2026']?.eind ?? null, verkocht: c.omzet2026 };
     }
     return {
       ...c,
+      // Een bestaand artikel houdt zijn eigen nummer, zodat de koppeling met de
+      // cloud niet elke import verspringt.
+      id: oud.id ?? c.id,
       categorie: c.categorie || oud.categorie || standaardGroep(),
       inkoopprijs: c.inkoopprijs ?? oud.inkoopprijs ?? null,
       minVoorraad: c.minVoorraad ?? oud.minVoorraad ?? null,
@@ -215,6 +268,17 @@ export function normaliseerVoorraad(lijst, vorige = []) {
       jaren
     };
   });
+
+  // Artikelen die je vroeger verkocht maar die niet meer in het nieuwste
+  // bestand staan, blijven bewaard. Zonder dit verdween een luchtcompressor
+  // uit 2024 volledig zodra je 2026 importeerde, inclusief zijn geschiedenis,
+  // en kon je dat jaar niet meer terugkijken. Ze staan nu op nul en zijn
+  // gemarkeerd als uit het assortiment.
+  const bewaard = vorige
+    .filter(c => !verwerkt.has(sleutel(c)))
+    .map(c => ({ ...c, voorraad: 0, uitAssortiment: true }));
+
+  return [...nieuw, ...bewaard];
 }
 
 state.COVERS = normaliseerVoorraad(state.COVERS);

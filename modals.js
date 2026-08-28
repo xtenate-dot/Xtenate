@@ -1,7 +1,7 @@
 // modals.js — beheer-acties: Excel-import, cloud sync, API-sleutel, data wissen.
 
-import { REKNM } from './helpers.js?v=20260828a';
-import { renderHome } from './dashboard.js?v=20260828a';
+import { REKNM } from './helpers.js?v=20260831a';
+import { renderHome } from './dashboard.js?v=20260831a';
 
 /** Rekeningnummers die de app kent; gebruikt bij het inlezen van kolom G. */
 const REKENINGEN = new Set(Object.keys(REKNM));
@@ -11,8 +11,8 @@ const REKENINGEN = new Set(Object.keys(REKNM));
 // Daardoor viel elke bevestigde import om met "OMZET_GB is not defined", ná het
 // wegschrijven van de boekingen en vóór het toepassen van de jaartotalen.
 const OMZET_GB = ['8000', '8010', '8020'];
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state } from './storage.js?v=20260828a';
-import { addToPendingQueue, deleteFromSupabase } from './supabase-client-v2.js?v=20260828a';
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state, voegJaarcijfersToe } from './storage.js?v=20260831a';
+import { addToPendingQueue, deleteFromSupabase } from './supabase-client-v2.js?v=20260831a';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
 // met een kolom "Totaal" voor het hele boekjaar. Dit is de brontabel van de boekhouding zelf,
@@ -216,45 +216,71 @@ export function importExcel(input) {
         });
       }
 
-      // Voorraad & Mutaties (Funny Covers) — zoeken naar variant met hoofd/kleine letters
+      // Voorraad & Mutaties — de bladnaam wisselt per jaar in hoofdletters.
       const voorraadBlad = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g,'') === 'voorraadmutaties');
       let coverCount = 0;
       if (voorraadBlad) {
         const ws = wb.Sheets[voorraadBlad];
         const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+
+        // De kopregel staat niet in elk bestand op dezelfde rij: in 2024 op de
+        // tweede, in 2025 en 2026 op de derde. Zoek hem op inhoud.
+        let kopRij = -1;
+        for (let r = 0; r < Math.min(6, rows.length); r++) {
+          if (String((rows[r] || [])[0] ?? '').trim().toLowerCase() === 'artikel') { kopRij = r; break; }
+        }
+        const kop = rows[kopRij] || [];
+
+        // Rechts op het blad staat een jaaroverzicht met per jaar het aantal
+        // verkochte stuks. Welke kolom bij welk jaar hoort verschilt per
+        // bestand, dus we lezen dat uit de kopregel. Zo landt 2024 ook echt in
+        // 2024 in plaats van in het huidige jaar.
+        const jaarKolommen = {};
+        kop.forEach((cel, i) => {
+          const m = String(cel ?? '').trim().match(/^(20\d{2})(\.0)?$/);
+          if (m && i >= 12) jaarKolommen[m[1]] = i;
+        });
+        // Het laatste jaar in dat overzicht is het jaar van dit bestand.
+        const bestandsJaar = Object.keys(jaarKolommen).sort().pop() || null;
+
         let cid = 200;
-        rows.slice(2).forEach(row => {
+        const getal = v => (typeof v === 'number' ? v : null);
+
+        rows.slice(kopRij >= 0 ? kopRij + 1 : 2).forEach(row => {
           const artikel = row[0];
-          const voorraad = row[2];
           if (!artikel || typeof artikel !== 'string') return;
-          // Kop- en totaalregels uit het werkblad zijn geen artikelen.
-          const kop = String(artikel).trim().toLowerCase();
-          if (kop.startsWith('totaal') || ['artikel', 'artikelen', 'omschrijving', 'product'].includes(kop)) return;
-          const inkoop = row[7] || 0;
-          const verkoop = row[8] || 0;
-          const omzet2026 = row[15] || 0;
-          const getal = v => (typeof v === 'number' ? v : null);
-          
-          // Zoek kolommen voor jaren.2026.eind en jaren.2026.verkocht
-          // Deze staan meestal aan het eind als extra kolommen (na omzet2026)
-          // Row format: [artikel, ..., voorraad, ..., verkoop, ..., omzet2026, ..., jaren.2026.eind?, jaren.2026.verkocht?]
-          let jaren = {};
-          // Check of there are any jaren-velden (deze zouden als extra kolommen staan)
-          // Voor nu: als omzet2026 > 0, neem aan dat dit ook verkocht in 2026 is
-          // (dit is een fallback totdat we de kolommen beter kunnen mappen)
-          if (omzet2026 > 0 || verkoop > 0) {
-            jaren['2026'] = {
-              eind: getal(row[16]) || (getal(voorraad) || 0),  // Eindvoorraad = huidige voorraad
-              verkocht: getal(row[17]) || (omzet2026 > 0 ? omzet2026 : null)  // Verkocht = omzet stuks
-            };
+          const kopNaam = String(artikel).trim().toLowerCase();
+          if (kopNaam.startsWith('totaal') ||
+              ['artikel', 'artikelen', 'omschrijving', 'product'].includes(kopNaam)) return;
+
+          const voorraad = getal(row[2]);
+          const inkoop = getal(row[7]);
+          const verkoop = getal(row[8]);
+
+          // Verkochte aantallen per jaar overnemen. Een 0 is een echt getal en
+          // moet bewaard blijven: dat betekent "dit jaar niets verkocht", niet
+          // "onbekend".
+          const jaren = {};
+          for (const [jaar, kolom] of Object.entries(jaarKolommen)) {
+            const aantal = getal(row[kolom]);
+            if (aantal != null) jaren[jaar] = { eind: null, verkocht: aantal };
           }
-          
-          newCovers.push({id:cid++, artikel:String(artikel),
-            inkoopprijs: getal(row[3]), prijs: getal(row[4]), minVoorraad: getal(row[6]),
-            voorraad: typeof voorraad === 'number' ? Math.round(voorraad) : 0,
-            inkoop: typeof inkoop === 'number' ? Math.round(inkoop) : 0,
-            verkoop: typeof verkoop === 'number' ? Math.round(verkoop) : 0,
-            omzet2026: typeof omzet2026 === 'number' ? Math.round(omzet2026) : 0,
+          // De voorraadstand op dit blad is de eindstand van het jaar waar dit
+          // bestand over gaat.
+          if (bestandsJaar && voorraad != null) {
+            jaren[bestandsJaar] = { ...(jaren[bestandsJaar] || { verkocht: null }), eind: voorraad };
+          }
+
+          newCovers.push({
+            id: cid++,
+            artikel: String(artikel).trim(),
+            // Kolom 4 is de verkoopprijs in het voorraadblok, kolom 13 dezelfde
+            // prijs in het jaaroverzicht. De eerste die gevuld is wint.
+            prijs: getal(row[4]) ?? getal(row[13]),
+            minVoorraad: getal(row[1]),
+            voorraad: voorraad != null ? Math.round(voorraad) : 0,
+            inkoop: inkoop != null ? Math.round(inkoop) : 0,
+            verkoop: verkoop != null ? Math.round(verkoop) : 0,
             jaren
           });
           coverCount++;
@@ -597,6 +623,15 @@ export function bevestigImport() {
           Object.keys(MAAND_SALDOS).filter(m=>m.startsWith(j)).forEach(m=>delete MAAND_SALDOS[m]);
         });
         if (legeJaren.length) console.warn('Overgeslagen: tabbladen zonder boekingen voor', legeJaren.join(', '));
+
+        // De voorraadgegevens van een afgesloten jaar werden hier weggegooid,
+        // waardoor je na het importeren van 2026 niet meer kon zien wat er in
+        // 2024 op voorraad lag. Die cijfers gaan nu wel mee, zonder de huidige
+        // voorraad te overschrijven.
+        if (p.newCovers.length) {
+          state.COVERS = voegJaarcijfersToe(state.COVERS, p.newCovers);
+          saveCoversData();
+        }
         Object.assign(MAAND_SALDOS, p.newSaldos);
         save('xtenate_hist_tx_override', state.HIST_TX);
         save('xtenate_maand_saldos_override', MAAND_SALDOS);
