@@ -1,13 +1,13 @@
 // dashboard.js — Home: het financiële dashboard.
 
-import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260831a';
+import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260901a';
 import {
   BEGINSALDO_2026, GBNM, calcIB, ddmm, esc, fmt, fmtKort, isInkomst, isOmzet, isUitgave,
   maandLabel, rekBadge, saldoDelta, typeBadge, weergaveNaam
-} from './helpers.js?v=20260831a';
-import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260831a';
-import { maakSorteerbaar } from './tables.js?v=20260831a';
-import { hertekenHuidigePagina } from './ui.js?v=20260831a';
+} from './helpers.js?v=20260901a';
+import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260901a';
+import { maakSorteerbaar } from './tables.js?v=20260901a';
+import { hertekenHuidigePagina } from './ui.js?v=20260901a';
 
 const HOOFDREKENING = '1010'; // de bankrekening waarop het beginsaldo staat
 
@@ -70,9 +70,9 @@ function berekenVoorraad() {
   const inVoorraad = state.HNVI_LOTS.filter(l => l.status === 'voorraad');
   const lotenWaarde = inVoorraad.reduce((s, l) => s + (Number(l.inkoop) || 0), 0);
 
-  let coversWaarde = 0, coversStuks = 0, zonderPrijs = 0, verkochtStuks = 0;
+  let coversWaarde = 0, coversStuks = 0, zonderPrijs = 0, verkochtStuks = 0, ingekochtStuks = 0;
   for (const c of state.COVERS) {
-    let aantal, verkocht;
+    let aantal, verkocht, ingekocht;
     if (jaarFilter) {
       const j = (c.jaren || {})[jaarFilter];
       // Alleen overslaan als er voor dit jaar niets bekend is. Een stand van 0
@@ -82,13 +82,16 @@ function berekenVoorraad() {
       if (!j) continue;
       aantal = j.eind ?? 0;
       verkocht = j.verkocht ?? 0;
+      ingekocht = j.inkoop ?? 0;
     } else {
       aantal = Number(c.voorraad) || 0;
-      verkocht = Number(c.omzet2026) || 0;
+      verkocht = Number(c.verkoop) || 0;
+      ingekocht = Number(c.inkoop) || 0;
     }
 
     coversStuks += aantal;
     verkochtStuks += verkocht;
+    ingekochtStuks += ingekocht;
 
     // De inkoopprijs is een eigenschap van het artikel, niet van het jaar.
     const prijs = Number(c.inkoopprijs);
@@ -103,6 +106,7 @@ function berekenVoorraad() {
     loten: inVoorraad.length,
     covers: coversStuks,
     verkochtStuks,
+    ingekochtStuks,
     zonderPrijs
   };
 }
@@ -234,7 +238,7 @@ export function renderHome() {
         winst > 0 ? `reserveer ± ${fmt(reservering)}` : 'geen winst dit jaar', ' kpi--secondary') +
     (state.huidigJaar && state.huidigJaar !== 'all'
       ? kpi(`Voorraadwaarde eind ${jaarTekst}`, fmt(voorraad.waarde), '',
-            `${voorraad.covers} op voorraad · ${voorraad.verkochtStuks} verkocht · ${voorraad.loten} loten`,
+            `${voorraad.ingekochtStuks} ingekocht · ${voorraad.verkochtStuks} verkocht · ${voorraad.covers} op voorraad`,
             ' kpi--secondary')
       : kpi('Voorraadwaarde', fmt(voorraad.waarde), '',
             voorraad.zonderPrijs > 0

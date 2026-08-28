@@ -16,7 +16,7 @@ import {
   savePendingQueue,
   saveAppData,
   loadAppData
-} from './supabase-client-v2.js?v=20260831a';
+} from './supabase-client-v2.js?v=20260901a';
 
 /**
  * Stuurt een los lijstje (groepen, facturen, tellers) naar de cloud zonder
@@ -204,7 +204,9 @@ function voegJarenSamen(oud = {}, nieuw = {}) {
       // Een bestand van een later jaar noemt oudere jaren wel bij naam, maar
       // kent daar geen eindstand van. Die mag de al bekende stand niet wissen.
       eind: waarden.eind ?? bestaand.eind ?? null,
-      verkocht: waarden.verkocht ?? bestaand.verkocht ?? null
+      inkoop: waarden.inkoop ?? bestaand.inkoop ?? null,
+      verkocht: waarden.verkocht ?? bestaand.verkocht ?? null,
+      retour: waarden.retour ?? bestaand.retour ?? null
     };
   }
   return uit;

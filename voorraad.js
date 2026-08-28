@@ -1,12 +1,12 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260831a';
+import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260901a';
 import {
   STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
-} from './storage.js?v=20260831a';
-import { maakSorteerbaar } from './tables.js?v=20260831a';
-import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260831a';
-import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260831a';
+} from './storage.js?v=20260901a';
+import { maakSorteerbaar } from './tables.js?v=20260901a';
+import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260901a';
+import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260901a';
 
 const el = id => document.getElementById(id);
 const HUIDIG_JAAR = '2026';
@@ -43,24 +43,23 @@ function drempel(c) {
 function standVan(c) {
   const jaren = c.jaren || {};
   if (gekozenJaar === 'nu') {
-    // omzet2026 is het oude veld en blijft leidend als het gevuld is. Staat het
-    // er niet, dan pakken we de jaargegevens van dit jaar; anders zou alles wat
-    // uit Excel is ingelezen hier leeg blijven.
     const j = jaren[HUIDIG_JAAR] || {};
     return {
       voorraad: c.voorraad,
-      verkocht: c.omzet2026 ?? j.verkocht ?? 0,
-      // De inkoopprijs van dit jaar, niet de centrale inkoopprijs
       inkoop: j.inkoop ?? c.inkoop ?? 0,
+      verkocht: j.verkocht ?? c.verkoop ?? 0,
+      retour: j.retour ?? 0,
       vastgelegd: true
     };
   }
+  // Voor een afgesloten jaar komen alle cijfers uit dat jaar zelf: wat je toen
+  // hebt ingekocht, verkocht en teruggekregen, en wat er op 31 december lag.
   const j = jaren[gekozenJaar] || {};
   return {
     voorraad: j.eind ?? null,
-    verkocht: j.verkocht ?? 0,
-    // De inkoopprijs van het gekozen jaar — NIET de centrale inkoopprijs
     inkoop: j.inkoop ?? 0,
+    verkocht: j.verkocht ?? 0,
+    retour: j.retour ?? 0,
     vastgelegd: j.eind != null
   };
 }
@@ -311,7 +310,11 @@ export function renderCovers() {
     el('voorraad-vastleg-knop').textContent = `Huidige voorraad vastleggen als eind ${gekozenJaar}`;
   }
   el('voorraad-kop-aantal').textContent = jaarModus ? `Eind ${gekozenJaar}` : 'Voorraad';
-  el('voorraad-kop-omzet').textContent = jaarModus ? `Verkocht ${gekozenJaar}` : 'Omzet 2026';
+  el('voorraad-kop-omzet').textContent = jaarModus ? `Retour ${gekozenJaar}` : 'Omzet 2026';
+  // De kolommen Ingekocht en Verkocht slaan in jaarweergave op dat boekjaar.
+  const kopIn = el('voorraad-kop-ingekocht'), kopVer = el('voorraad-kop-verkocht');
+  if (kopIn) kopIn.textContent = jaarModus ? `Ingekocht ${gekozenJaar}` : 'Ingekocht';
+  if (kopVer) kopVer.textContent = jaarModus ? `Verkocht ${gekozenJaar}` : 'Verkocht';
 
   const statusFilter = el('f-covers-status') ? el('f-covers-status').value : '';
   const zoekterm = (el('voorraad-zoek') ? el('voorraad-zoek').value : '').trim().toLowerCase();
@@ -335,7 +338,7 @@ export function renderCovers() {
         const handmatigeIp = Number(c.inkoopprijs) > 0;
         const waarde = waardeVan(c, stand);
         const omzet = !jaarModus && vk != null ? stand.verkocht * vk : null;
-        const rechts = jaarModus ? (stand.verkocht || 0) : (omzet ? fmt(omzet) : '—');
+        const rechts = jaarModus ? (stand.retour || 0) : (omzet ? fmt(omzet) : '—');
         return `<tr>
           <td class="cel-kies" style="padding-left:16px;width:34px"><input type="checkbox" data-artikel-id="${esc(c.id)}"${selectie.has(String(c.id)) ? ' checked' : ''}
             onchange="wisselVoorraadSelectie('${esc(c.id)}', this)" aria-label="Selecteer ${esc(c.artikel)}"></td>
@@ -349,7 +352,7 @@ export function renderCovers() {
           <td style="text-align:right" data-label="Verkoopprijs" data-v="${vk ?? -1}">${vk == null ? '<span class="muted">—</span>' : fmt(vk)}</td>
           <td style="text-align:right" data-label="Ingekocht" data-v="${stand.inkoop ?? -1}">${stand.inkoop || '—'}</td>
           <td style="text-align:right" data-label="Verkocht" data-v="${stand.verkocht ?? -1}">${stand.verkocht || '—'}</td>
-          <td style="text-align:right" data-label="${jaarModus ? 'Verkocht' : 'Omzet'}" class="${!jaarModus && omzet ? 'pos' : ''}" data-v="${jaarModus ? (stand.verkocht || 0) : (omzet ?? 0)}">${rechts}</td>
+          <td style="text-align:right" data-label="${jaarModus ? 'Retour' : 'Omzet'}" class="${!jaarModus && omzet ? 'pos' : ''}" data-v="${jaarModus ? (stand.retour || 0) : (omzet ?? 0)}">${rechts}</td>
           <td class="cel-status" data-v="${status(c, stand)}">${STATUS_BADGE[status(c, stand)]}</td>
           <td class="cel-zoek">${c.zoekterm
             ? `<a href="https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(c.zoekterm)}" target="_blank" rel="noopener" style="font-size:11px;white-space:nowrap">Zoek op AliExpress</a>`

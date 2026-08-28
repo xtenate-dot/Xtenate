@@ -1,7 +1,7 @@
 // modals.js — beheer-acties: Excel-import, cloud sync, API-sleutel, data wissen.
 
-import { REKNM } from './helpers.js?v=20260831a';
-import { renderHome } from './dashboard.js?v=20260831a';
+import { REKNM } from './helpers.js?v=20260901a';
+import { renderHome } from './dashboard.js?v=20260901a';
 
 /** Rekeningnummers die de app kent; gebruikt bij het inlezen van kolom G. */
 const REKENINGEN = new Set(Object.keys(REKNM));
@@ -11,8 +11,8 @@ const REKENINGEN = new Set(Object.keys(REKNM));
 // Daardoor viel elke bevestigde import om met "OMZET_GB is not defined", ná het
 // wegschrijven van de boekingen en vóór het toepassen van de jaartotalen.
 const OMZET_GB = ['8000', '8010', '8020'];
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state, voegJaarcijfersToe } from './storage.js?v=20260831a';
-import { addToPendingQueue, deleteFromSupabase } from './supabase-client-v2.js?v=20260831a';
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state, voegJaarcijfersToe } from './storage.js?v=20260901a';
+import { addToPendingQueue, deleteFromSupabase } from './supabase-client-v2.js?v=20260901a';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
 // met een kolom "Totaal" voor het hele boekjaar. Dit is de brontabel van de boekhouding zelf,
@@ -256,19 +256,25 @@ export function importExcel(input) {
           const voorraad = getal(row[2]);
           const inkoop = getal(row[7]);
           const verkoop = getal(row[8]);
+          const retour = getal(row[9]);
 
-          // Verkochte aantallen per jaar overnemen. Een 0 is een echt getal en
-          // moet bewaard blijven: dat betekent "dit jaar niets verkocht", niet
-          // "onbekend".
+          // De bewegingskolommen (Inkoop, Verkoop, Retour) horen bij het
+          // boekjaar van dit bestand. Dat blijkt uit de formule waarmee het
+          // blad zelf de voorraad berekent:
+          //   voorraad = inkoop - verkoop + retour + eindstand vorig jaar
+          //
+          // Het jaaroverzicht rechts op het blad gebruiken we bewust niet meer
+          // voor verkoopaantallen. De kolom van het lopende jaar bevat daar
+          // "=C" (de voorraad zelf) en de oudere kolommen zijn in de loop der
+          // tijd met de hand bijgesteld, dus die twee betekenen niet hetzelfde.
           const jaren = {};
-          for (const [jaar, kolom] of Object.entries(jaarKolommen)) {
-            const aantal = getal(row[kolom]);
-            if (aantal != null) jaren[jaar] = { eind: null, verkocht: aantal };
-          }
-          // De voorraadstand op dit blad is de eindstand van het jaar waar dit
-          // bestand over gaat.
-          if (bestandsJaar && voorraad != null) {
-            jaren[bestandsJaar] = { ...(jaren[bestandsJaar] || { verkocht: null }), eind: voorraad };
+          if (bestandsJaar) {
+            jaren[bestandsJaar] = {
+              eind: voorraad,
+              inkoop: inkoop ?? 0,
+              verkocht: verkoop ?? 0,
+              retour: retour ?? 0
+            };
           }
 
           newCovers.push({
@@ -419,10 +425,14 @@ export function importExcel(input) {
           const artikel = row[0], jaar = row[1];
           if (!artikel || !jaar) return;
           const sleutel = String(artikel).trim().toLowerCase();
-          (jaarStanden[sleutel] ||= {})[String(jaar)] = {
-            eind: typeof row[2] === 'number' ? row[2] : null,
-            verkocht: typeof row[3] === 'number' ? row[3] : null
-          };
+          // Kolomvolgorde: Eindvoorraad, Ingekocht, Verkocht, Retour. Oudere
+          // exports hadden alleen Eindvoorraad en Verkocht; dan blijft de rest
+          // leeg in plaats van dat er een verkeerd getal in landt.
+          const g = v => (typeof v === 'number' ? v : null);
+          const heeftInkoopKolom = rows[0] && String(rows[0][3] ?? '').toLowerCase().includes('ingekocht');
+          (jaarStanden[sleutel] ||= {})[String(jaar)] = heeftInkoopKolom
+            ? { eind: g(row[2]), inkoop: g(row[3]), verkocht: g(row[4]), retour: g(row[5]) }
+            : { eind: g(row[2]), inkoop: null, verkocht: g(row[3]), retour: null };
         });
         if (newCovers.length) {
           newCovers.forEach(c => {
