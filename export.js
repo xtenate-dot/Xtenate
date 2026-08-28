@@ -6,8 +6,8 @@
 // importfunctie leest; de overige kolommen zijn ingevuld met gegevens die het
 // bestand voor jou leesbaar maken maar bij het inlezen worden overgeslagen.
 
-import { GBNM, REKNM, isInkomst, maandLabel } from './helpers.js?v=20260828a';
-import { HOME_TOTALS, MAAND_SALDOS, groepNaam, state } from './storage.js?v=20260828a';
+import { GBNM, REKNM, isInkomst, maandLabel } from './helpers.js?v=20260831a';
+import { HOME_TOTALS, MAAND_SALDOS, groepNaam, state } from './storage.js?v=20260831a';
 
 const CREDITKAART = '1030';
 
@@ -163,15 +163,26 @@ function perPeriodeBlad(jaar, boekingen) {
 
 /** Loten van HNVI. Wordt bij het inlezen herkend, zodat een herstel compleet is. */
 function hnviBlad() {
-  const rijen = [['Datum', 'Omschrijving', 'Inkoop', 'Verkoop', 'Winst', 'Status', 'Notitie', 'Id']];
+  // De kolomnamen zijn bewust dezelfde als die de import herkent, zodat een
+  // geexporteerd bestand ook weer volledig ingelezen kan worden. Factuurnummer
+  // en verkoopdatum stonden hier eerder niet in en gingen bij zo'n rondgang
+  // verloren.
+  const rijen = [['Datum', 'Omschrijving', 'Factuur', 'Inkoop', 'Verkoop',
+                  'Verkoopdatum', 'Winst', 'Status', 'Notitie', 'Id']];
   [...state.HNVI_LOTS].sort((a, b) => String(a.datum).localeCompare(String(b.datum))).forEach(l => {
     const winst = Number(l.verkoop) > 0 ? Number(l.verkoop) - (Number(l.inkoop) || 0) : '';
-    rijen.push([l.datum || '', l.omschr || '', Number(l.inkoop) || 0,
-      Number(l.verkoop) > 0 ? Number(l.verkoop) : '', winst === '' ? '' : Math.round(winst * 100) / 100,
-      l.status || 'voorraad', l.noot || '', l.id]);
+    rijen.push([
+      l.datum || '', l.omschr || '', l.factuur || '',
+      Number(l.inkoop) || 0,
+      Number(l.verkoop) > 0 ? Number(l.verkoop) : '',
+      l.verkoopDatum || '',
+      winst === '' ? '' : Math.round(winst * 100) / 100,
+      l.status || 'voorraad', l.noot || '', l.id
+    ]);
   });
   const ws = XLSX.utils.aoa_to_sheet(rijen);
-  ws['!cols'] = [{ wch: 12 }, { wch: 34 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 26 }, { wch: 10 }];
+  ws['!cols'] = [{ wch: 12 }, { wch: 34 }, { wch: 12 }, { wch: 11 }, { wch: 11 },
+                 { wch: 13 }, { wch: 11 }, { wch: 11 }, { wch: 26 }, { wch: 28 }];
   return ws;
 }
 

@@ -1,13 +1,13 @@
 // dashboard.js — Home: het financiële dashboard.
 
-import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260828a';
+import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260831a';
 import {
   BEGINSALDO_2026, GBNM, calcIB, ddmm, esc, fmt, fmtKort, isInkomst, isOmzet, isUitgave,
   maandLabel, rekBadge, saldoDelta, typeBadge, weergaveNaam
-} from './helpers.js?v=20260828a';
-import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260828a';
-import { maakSorteerbaar } from './tables.js?v=20260828a';
-import { hertekenHuidigePagina } from './ui.js?v=20260828a';
+} from './helpers.js?v=20260831a';
+import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260831a';
+import { maakSorteerbaar } from './tables.js?v=20260831a';
+import { hertekenHuidigePagina } from './ui.js?v=20260831a';
 
 const HOOFDREKENING = '1010'; // de bankrekening waarop het beginsaldo staat
 
@@ -62,15 +62,35 @@ function berekenBanksaldo(jaar) {
 
 /** Waarde van de voorraad: HNVI-loten tegen inkoopprijs, plus het aantal covers. */
 function berekenVoorraad() {
+  // Kijk je naar een afgesloten jaar, dan tellen alleen de artikelen mee die in
+  // dat jaar bestonden — en dan met hun stand van toen, niet die van vandaag.
+  const jaarFilter = state.huidigJaar && state.huidigJaar !== 'all' && state.huidigJaar !== 'nu'
+    ? state.huidigJaar : null;
+
   const inVoorraad = state.HNVI_LOTS.filter(l => l.status === 'voorraad');
   const lotenWaarde = inVoorraad.reduce((s, l) => s + (Number(l.inkoop) || 0), 0);
 
-  // Voorraadwaarde van de artikelen: aantal x inkoopprijs. Artikelen zonder
-  // bekende inkoopprijs tellen niet mee in het bedrag, maar wel in het aantal.
-  let coversWaarde = 0, coversStuks = 0, zonderPrijs = 0;
+  let coversWaarde = 0, coversStuks = 0, zonderPrijs = 0, verkochtStuks = 0;
   for (const c of state.COVERS) {
-    const aantal = Number(c.voorraad) || 0;
+    let aantal, verkocht;
+    if (jaarFilter) {
+      const j = (c.jaren || {})[jaarFilter];
+      // Alleen overslaan als er voor dit jaar niets bekend is. Een stand van 0
+      // is een echt gegeven: het artikel bestond, maar was uitverkocht. Eerder
+      // stond hier een controle op waarheid, en omdat 0 in JavaScript als
+      // onwaar geldt verdwenen juist die artikelen uit beeld.
+      if (!j) continue;
+      aantal = j.eind ?? 0;
+      verkocht = j.verkocht ?? 0;
+    } else {
+      aantal = Number(c.voorraad) || 0;
+      verkocht = Number(c.omzet2026) || 0;
+    }
+
     coversStuks += aantal;
+    verkochtStuks += verkocht;
+
+    // De inkoopprijs is een eigenschap van het artikel, niet van het jaar.
     const prijs = Number(c.inkoopprijs);
     if (Number.isFinite(prijs) && prijs > 0) coversWaarde += aantal * prijs;
     else if (aantal > 0) zonderPrijs++;
@@ -82,6 +102,7 @@ function berekenVoorraad() {
     coversWaarde,
     loten: inVoorraad.length,
     covers: coversStuks,
+    verkochtStuks,
     zonderPrijs
   };
 }
@@ -211,10 +232,14 @@ export function renderHome() {
         (ib <= 0 ? '+' : '') + fmt(Math.abs(Math.round(ib))),
         ib <= 0 ? 'pos' : 'neg',
         winst > 0 ? `reserveer ± ${fmt(reservering)}` : 'geen winst dit jaar', ' kpi--secondary') +
-    kpi('Voorraadwaarde', fmt(voorraad.waarde), '',
-        voorraad.zonderPrijs > 0
-          ? `${voorraad.loten} loten · ${voorraad.covers} covers · ${voorraad.zonderPrijs} zonder inkoopprijs`
-          : `${voorraad.loten} loten · ${voorraad.covers} covers`, ' kpi--secondary');
+    (state.huidigJaar && state.huidigJaar !== 'all'
+      ? kpi(`Voorraadwaarde eind ${jaarTekst}`, fmt(voorraad.waarde), '',
+            `${voorraad.covers} op voorraad · ${voorraad.verkochtStuks} verkocht · ${voorraad.loten} loten`,
+            ' kpi--secondary')
+      : kpi('Voorraadwaarde', fmt(voorraad.waarde), '',
+            voorraad.zonderPrijs > 0
+              ? `${voorraad.loten} loten · ${voorraad.covers} covers · ${voorraad.zonderPrijs} zonder inkoopprijs`
+              : `${voorraad.loten} loten · ${voorraad.covers} covers`, ' kpi--secondary'));
 
   tekenAandacht();
 
