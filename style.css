@@ -4,105 +4,127 @@
    welk thema actief is. */
 
 :root {
+  /* PUZZLE DESIGN SYSTEM - Donker Navy + Paars */
+  
   /* Vlakken */
-  --bg: #f4f5f7;
-  --surface: #ffffff;
-  --surface-2: #fafbfc;
-  --surface-hover: #f4f5f7;
+  --bg: #0B1020;                /* Donker navy/charcoal */
+  --surface: #111827;           /* Kaarten/dialogen */
+  --surface-2: #151D2F;         /* Subtiel lichter */
+  --surface-hover: #1a2640;     /* Hover state */
+  --surface-active: #1f2d47;    /* Active state */
 
-  /* Lijnen */
-  --border: rgba(16,22,32,0.10);
-  --border-strong: rgba(16,22,32,0.20);
+  /* Lijnen - subtiel */
+  --border: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.15);
 
   /* Tekst */
-  --text: #16191f;
-  --text-muted: #5c6470;
-  --text-hint: #949bA6;
+  --text: #f3f4f6;              /* Helderwit */
+  --text-muted: #9ca3af;        /* Middelgrijs */
+  --text-hint: #6b7280;         /* Donkergrijs */
 
-  /* Merk / actief */
-  --accent: #1f4b99;
-  --accent-bg: #ecf1fa;
+  /* Merk / actief - PAARS in plaats van blauw! */
+  --accent: #8B5CF6;            /* Paars accent */
+  --accent-hover: #A78BFA;      /* Lichter paars */
+  --accent-bg: #3730a3;         /* Donkerpaars background */
   --accent-contrast: #ffffff;
 
   /* Betekeniskleuren */
-  --green: #0e7a52;   --green-bg: #e8f4ef;
-  --red: #b23a2f;     --red-bg: #fbeeec;
-  --blue: #1f4b99;    --blue-bg: #ecf1fa;
-  --amber: #8a5a06;   --amber-bg: #fbf2e2;
-  --purple: #5245b8;  --purple-bg: #eeecfa;
-  --gray-bg: #eef0f3;
+  --green: #10b981;   --green-bg: #064e3b;
+  --red: #ef4444;     --red-bg: #7f1d1d;
+  --blue: #3b82f6;    --blue-bg: #1e3a8a;
+  --amber: #f59e0b;   --amber-bg: #78350f;
+  --purple: #8B5CF6;  --purple-bg: #3730a3;
+  --gray-bg: #1f2937;
 
-  /* Grafiekpalet — consistent over alle pagina's */
-  --ch-1: #1f4b99;
-  --ch-2: #0e7a52;
-  --ch-3: #c2672a;
-  --ch-4: #5245b8;
-  --ch-5: #a03a6b;
-  --ch-6: #4a7a94;
-  --ch-grid: rgba(16,22,32,0.08);
+  /* Grafiekpalet — paars-dominant */
+  --ch-1: #8B5CF6;    /* Primair paars */
+  --ch-2: #10b981;    /* Groen */
+  --ch-3: #f59e0b;    /* Amber */
+  --ch-4: #06b6d4;    /* Cyan */
+  --ch-5: #ec4899;    /* Roze */
+  --ch-6: #6366f1;    /* Indigo */
+  --ch-grid: rgba(255,255,255,0.06);
 
-  /* Vorm en diepte */
-  --radius: 10px;
+  /* Vorm en diepte - subtiel */
+  --radius: 8px;
   --radius-sm: 6px;
-  --radius-lg: 14px;
-  --shadow-sm: 0 1px 2px rgba(16,22,32,.05);
-  --shadow-md: 0 4px 16px rgba(16,22,32,.10);
-  --shadow-lg: -8px 0 32px rgba(16,22,32,.14);
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-subtle: 0 2px 4px rgba(0,0,0,0.2);
 
   /* Ruimte */
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
   --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
 
   /* Maatvoering */
-  --sidebar-w: 216px;
-  --sidebar-w-collapsed: 60px;
-  --topbar-h: 56px;
-  --content-max: 100%;   /* volle breedte: de tabellen en grafieken hebben de ruimte nodig */
+  --sidebar-w: 240px;
+  --sidebar-w-collapsed: 64px;
+  --topbar-h: 60px;
+  --content-max: 100%;
+
+  /* Animaties */
+  --transition-fast: 0.15s ease-out;
+  --transition-normal: 0.3s ease-out;
+  --transition-slow: 0.5s ease-out;
 
   font-size: 14px;
-  color-scheme: light;
-}
-
-[data-theme="dark"] {
-  --bg: #0e1116;
-  --surface: #161a21;
-  --surface-2: #1b2029;
-  --surface-hover: #1f242e;
-
-  --border: rgba(255,255,255,0.10);
-  --border-strong: rgba(255,255,255,0.22);
-
-  --text: #e6e9ee;
-  --text-muted: #98a1ae;
-  --text-hint: #6d7684;
-
-  --accent: #7ba3e8;
-  --accent-bg: #1a2435;
-  --accent-contrast: #0e1116;
-
-  --green: #4fc08d;   --green-bg: #12271f;
-  --red: #f08579;     --red-bg: #2b1815;
-  --blue: #7ba3e8;    --blue-bg: #1a2435;
-  --amber: #e0a94e;   --amber-bg: #2a2010;
-  --purple: #a89bf0;  --purple-bg: #1f1b33;
-  --gray-bg: #232935;
-
-  --ch-1: #6f9ae8;
-  --ch-2: #4fc08d;
-  --ch-3: #e0955c;
-  --ch-4: #a89bf0;
-  --ch-5: #e07fae;
-  --ch-6: #6fb1cc;
-  --ch-grid: rgba(255,255,255,0.08);
-
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.45);
-  --shadow-lg: -8px 0 32px rgba(0,0,0,.55);
-
   color-scheme: dark;
 }
 
+/* Light mode fallback (minimaal gebruikt) */
+[data-theme="light"] {
+  --bg: #f9fafb;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
+  --surface-hover: #eeeff5;
+
+  --border: rgba(99,102,241,0.1);
+  --border-strong: rgba(99,102,241,0.2);
+
+  --text: #111827;
+  --text-muted: #6b7280;
+  --text-hint: #9ca3af;
+
+  --accent: #7c3aed;
+  --accent-hover: #8b5cf6;
+  --accent-bg: #ede9fe;
+  --accent-contrast: #ffffff;
+
+  --green: #059669;   --green-bg: #ecfdf5;
+  --red: #dc2626;     --red-bg: #fef2f2;
+  --blue: #2563eb;    --blue-bg: #eff6ff;
+  --amber: #d97706;   --amber-bg: #fffbeb;
+  --purple: #7c3aed;  --purple-bg: #faf5ff;
+  --gray-bg: #f3f4f6;
+
+  --ch-1: #7c3aed;
+  --ch-2: #059669;
+  --ch-3: #d97706;
+  --ch-4: #0891b2;
+  --ch-5: #db2777;
+  --ch-6: #4f46e5;
+  --ch-grid: rgba(99,102,241,0.08);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.15);
+
+  color-scheme: light;
+}
+
+/* Donker mode is nu default */
+[data-theme="dark"] {
+  /* Alles hetzelfde als :root - dark mode is standaard */
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  /* Scroll behavior smooth voor betere UX */
+  scroll-behavior: smooth;
+}
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
@@ -110,7 +132,9 @@ body {
   color: var(--text);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'tnum' 1, 'cv05' 1;
+  line-height: 1.6;
 }
 
 /* Bedragen en aantallen krijgen tabulaire cijfers: kolommen lijnen dan
@@ -135,16 +159,24 @@ body {
 
 a { color: var(--accent); }
 
-/* Zichtbare focus voor toetsenbordgebruik */
+/* Zichtbare focus voor toetsenbordgebruik - subtiel paars */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
 }
 
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+/* Moderne scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { 
+  background: var(--border-strong); 
+  border-radius: 4px;
+  transition: background var(--transition-fast);
+}
+::-webkit-scrollbar-thumb:hover { 
+  background: var(--accent);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }

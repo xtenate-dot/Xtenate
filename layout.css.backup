@@ -88,12 +88,11 @@ body.nav-collapsed .main { margin-left: var(--sidebar-w-collapsed); }
 .topbar {
   position: sticky; top: 0; z-index: 30;
   height: var(--topbar-h);
-  background: rgba(11, 16, 32, 0.7);
-  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: var(--sp-4);
+  display: flex; align-items: center; gap: var(--sp-3);
   padding: 0 var(--sp-5);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 .topbar-title { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; white-space: nowrap; }
 .topbar-spacer { flex: 1; }
