@@ -82,8 +82,25 @@
 .card-flush .card-title { padding: var(--sp-5) var(--sp-5) 0; margin-bottom: var(--sp-4); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); margin-bottom: var(--sp-4); }
 .grid3 { display: grid; grid-template-columns: 2fr 1fr; gap: var(--sp-4); margin-bottom: var(--sp-4); }
-.chart-box { position: relative; height: 220px; }
-.chart-box.sm { height: 180px; }
+/* Modern chart containers met Puzzle-stijl */
+.chart-box {
+  position: relative;
+  height: 280px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-subtle);
+  transition: all var(--transition-normal);
+}
+.chart-box:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+.chart-box.sm {
+  height: 200px;
+  padding: var(--sp-3);
+}
 
 /* ---------- BADGES - MODERN ---------- */
 .badge {
