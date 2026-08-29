@@ -4,13 +4,16 @@ import { bedragUit, ddmm, esc, fmt, leegVlak } from './helpers.js?v=20260902a';
 import { maakSorteerbaar } from './tables.js?v=20260902a';
 import { openApiKeyModal } from './modals.js?v=20260902a';
 import { saveHnviData, state } from './storage.js?v=20260902a';
+
+/** Globaal boekjaar vertaald naar het hnvi-filter: 'all' betekent hier ''. */
+const hnviJaar = () => (state.huidigJaar === 'all' ? '' : (state.huidigJaar || ''));
 import { saveHnviToSupabase, deleteFromSupabase, addToPendingQueue } from './supabase-client-v2.js?v=20260902a';
 import { downloadModelPdf } from './pdf.js?v=20260902a';
 
 /** De loten zoals ze nu op het scherm staan: status- en jaarfilter meegenomen. */
 function zichtbareLoten() {
   const st = document.getElementById('f-hnvi-status')?.value || '';
-  const jaar = document.getElementById('f-hnvi-jaar')?.value || '';
+  const jaar = hnviJaar();
   return state.HNVI_LOTS
     .filter(i => {
       if (st && i.status !== st) return false;
@@ -23,7 +26,7 @@ function zichtbareLoten() {
 /** Lotenlijst als pdf, met dezelfde filters als het scherm. */
 export function exporteerHnviPdf() {
   const st = document.getElementById('f-hnvi-status')?.value || '';
-  const jaar = document.getElementById('f-hnvi-jaar')?.value || '';
+  const jaar = hnviJaar();
   const loten = zichtbareLoten();
 
   const kolommen = [
@@ -91,7 +94,7 @@ export function exporteerHnviPdf() {
 
 export function renderHNVI() {
   const st = document.getElementById('f-hnvi-status').value;
-  const jaar = document.getElementById('f-hnvi-jaar') ? document.getElementById('f-hnvi-jaar').value : '';
+  const jaar = hnviJaar();
   const list = state.HNVI_LOTS.filter(i => {
     if (st && i.status !== st) return false;
     if (jaar && !i.datum.startsWith(jaar)) return false;

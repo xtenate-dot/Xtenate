@@ -36,7 +36,7 @@ function bronVoorJaar(jaar) {
 
 /** De boekingen die binnen de huidige periodefilters vallen. */
 function gefilterdeBoekingen() {
-  const jaar = el('f-jaar-gb') ? el('f-jaar-gb').value : '2026';
+  const jaar = state.huidigJaar || '2026';
   const bron = bronVoorJaar(jaar);
   vulMaandSelect(el('f-maand-gb'), bron);
   const maand = waarde('f-maand-gb');

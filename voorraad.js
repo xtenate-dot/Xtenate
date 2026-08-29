@@ -18,6 +18,12 @@ let actieveTab = 'alle';
 /** 'nu' toont de actuele voorraad; een jaartal toont de stand per 31 december. */
 let gekozenJaar = '2025';
 
+/** Heeft de bezoeker zelf een periode gekozen, of volgt de voorraad het boekjaar? */
+let handmatigJaar = false;
+
+/** Het boekjaar waarop we het laatst gesynchroniseerd hebben. */
+let laatstGlobaalJaar = null;
+
 /** Artikelen die zijn aangevinkt voor een bulkactie. */
 const selectie = new Set();
 
@@ -171,7 +177,11 @@ function vulJaarKeuze() {
 }
 
 export function kiesVoorraadJaar() {
-  gekozenJaar = state.huidigJaar = el('f-voorraad-jaar').value;
+  // Alleen de lokale keuze bijstellen. Vroeger werd state.huidigJaar hier
+  // meegeschreven; dan kwam bij 'Actuele voorraad' de waarde 'nu' in het
+  // globale boekjaar terecht, waar Bank en Grootboek niets mee kunnen.
+  gekozenJaar = el('f-voorraad-jaar').value;
+  handmatigJaar = true;
   selectie.clear();
   renderCovers();
 }
@@ -370,9 +380,15 @@ function vandaagNl() {
 }
 
 export function renderCovers() {
-  // Zorg dat de lokale gekozenJaar in sync is met de globale state
-  if (!gekozenJaar || state.huidigJaar !== 'all') {
-    gekozenJaar = state.huidigJaar || 'nu';
+  // De jaarkiezer rechtsboven is leidend. Wijzigt die, dan volgt de voorraad;
+  // 'Alle jaren' heeft hier geen betekenis en wordt de actuele stand. Een
+  // eigen keuze in de voorraadkiezer blijft staan tot het boekjaar wijzigt.
+  if (state.huidigJaar !== laatstGlobaalJaar) {
+    laatstGlobaalJaar = state.huidigJaar;
+    handmatigJaar = false;
+  }
+  if (!handmatigJaar) {
+    gekozenJaar = (!state.huidigJaar || state.huidigJaar === 'all') ? 'nu' : state.huidigJaar;
   }
   ververBankPrijzen();
   renderTabs();

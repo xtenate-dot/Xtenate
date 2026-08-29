@@ -36,7 +36,7 @@ function vorigeMaand(maand) {
 }
 
 export function renderBank() {
-  const jaar = el('f-jaar-bank') ? el('f-jaar-bank').value : '2026';
+  const jaar = state.huidigJaar || '2026';
   const bron = bronVoorJaar(jaar);
   vulMaandSelect(el('f-maand'), bron);
 
@@ -324,8 +324,9 @@ export function saveTx() {
 
   // Een nieuwe boeking is altijd 2026; sta je in een ander jaar te kijken,
   // dan zou hij anders ongemerkt buiten beeld vallen.
-  if (state.editTxId == null && el('f-jaar-bank') && el('f-jaar-bank').value !== '2026' && el('f-jaar-bank').value !== 'all') {
-    el('f-jaar-bank').value = '2026';
+  if (state.editTxId == null && state.huidigJaar !== '2026' && state.huidigJaar !== 'all') {
+    state.huidigJaar = '2026';
+    if (el('jaar-selector')) el('jaar-selector').value = '2026';
     el('f-maand').value = '';
   }
   state.editTxId = null;
