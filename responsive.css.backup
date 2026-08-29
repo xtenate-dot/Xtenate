@@ -1,0 +1,207 @@
+/* responsive.css — tablet en mobiel. */
+
+@media (max-width: 1080px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid3 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 860px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .uitsch-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  /* Zijmenu wordt een uitschuifpaneel */
+  .sidebar { transform: translateX(-100%); transition: transform .2s ease; width: var(--sidebar-w); }
+  body.nav-open .sidebar { transform: translateX(0); }
+  body.nav-collapsed .sidebar { width: var(--sidebar-w); }
+  .main, body.nav-collapsed .main { margin-left: 0; }
+  .menu-toggle { display: inline-flex; }
+  .nav-collapse-btn { display: none; }
+  body.nav-collapsed .nav-label,
+  body.nav-collapsed .brand-text { display: block; }
+  body.nav-collapsed .nav-item { justify-content: flex-start; padding: 7px 8px; }
+  body.nav-collapsed .nav-section { font-size: 10px; }
+  body.nav-collapsed .nav-section::after { display: none; }
+
+  .topbar { padding: 0 var(--sp-3); gap: var(--sp-2); }
+  .topbar-title { display: none; }
+  .page-wrap { padding: var(--sp-4) var(--sp-3); }
+
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
+  .kpi { padding: var(--sp-3); }
+  .kpi-val { font-size: 19px; }
+
+  .form-grid { grid-template-columns: 1fr; }
+  .form-group.full { grid-column: 1; }
+  .modal { padding: var(--sp-4); }
+  .drawer { width: 100%; }
+  .search-wrap { max-width: none; }
+  .kbd { display: none; }
+  .chart-box { height: 190px; }
+}
+
+@media (max-width: 460px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .toolbar { gap: 6px; }
+  .toolbar select, .toolbar input { flex: 1 1 44%; min-width: 0; }
+  .btn-ml { margin-left: 0; flex: 1 1 100%; justify-content: center; }
+}
+
+/* Belastingpagina op een telefoon.
+   De schijven staan dan onder elkaar (grid2 klapt al om bij 860px), maar ze
+   mogen wat lager worden zodat de legenda niet van het scherm valt. */
+
+@media (max-width: 900px) {
+  /* Op tablet: grafieken gaan onder de berekening in plaats van ernaast */
+  #p-belasting > div[style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .metrics { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
+  .metric { padding: var(--sp-3); }
+  .metric .val { font-size: 17px; }
+
+  /* Grafiekvlakken krimpen mee met de schermbreedte. */
+  #p-belasting .card > div[style*="height:250px"],
+  #p-belasting .card > div[style*="height:210px"] { height: 190px !important; }
+
+  /* Legenda's onder elkaar in plaats van naast elkaar: op een smal scherm
+     werden de bedragen anders afgekapt. */
+  #bel-legend, #bel-legend-kosten, #bel-legend-inkoop {
+    flex-direction: column;
+    gap: 6px !important;
+  }
+
+  /* De berekening blijft leesbaar door label en bedrag te laten afbreken. */
+  .ib-row { font-size: 13px; }
+}
+
+@media (max-width: 380px) {
+  .metrics { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   v50 — Telefoonweergave
+   Alleen presentatie. De tabel blijft dezelfde tabel met dezelfde
+   gegevens; op een smal scherm tonen we elke rij als kaart zodat je
+   niet meer opzij hoeft te schuiven.
+   ============================================================ */
+
+/* --- Tabbalk onderaan --- */
+.tabbar { display: none; }
+
+@media (max-width: 720px) {
+  .tabbar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 60;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 4px 7px;
+    min-height: 54px;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 10.5px;
+    font-weight: 500;
+    font-family: inherit;
+    transition: color .15s ease;
+  }
+  .tab-item.active { color: var(--accent); }
+  .tab-item:active { background: var(--surface-hover); }
+
+  /* Ruimte onderaan zodat de tabbalk niets afdekt. */
+  .page-wrap { padding-bottom: 78px; }
+  .bulkbar { bottom: 62px; }
+}
+
+/* --- Voorraadtabel als kaarten --- */
+@media (max-width: 720px) {
+  #tbl-voorraad thead { display: none; }
+
+  #tbl-voorraad,
+  #tbl-voorraad tbody,
+  #tbl-voorraad tr,
+  #tbl-voorraad td { display: block; width: auto; }
+
+  #tbl-voorraad tr {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    padding: 12px 14px 10px;
+  }
+
+  #tbl-voorraad td {
+    border: 0;
+    padding: 3px 0;
+    text-align: left !important;
+    font-size: 13px;
+  }
+
+  /* Naam groot bovenaan, met ruimte voor het vinkje rechts. */
+  #tbl-voorraad td.cel-naam {
+    font-size: 15px;
+    font-weight: 500;
+    padding: 0 34px 8px 0;
+  }
+
+  /* Het selectievakje rechtsboven in de kaart. */
+  #tbl-voorraad td.cel-kies {
+    position: absolute;
+    top: 10px; right: 10px;
+    padding: 0;
+  }
+
+  /* Cellen met een label krijgen label links, waarde rechts. */
+  #tbl-voorraad td[data-label] {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 4px 0;
+    border-top: 1px solid var(--border);
+  }
+  #tbl-voorraad td[data-label]::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 400;
+    flex: 0 0 auto;
+  }
+
+  #tbl-voorraad td.cel-status { padding: 8px 0 4px; }
+  #tbl-voorraad td.cel-zoek:empty { display: none; }
+  #tbl-voorraad td.cel-zoek { padding: 4px 0 0; }
+
+  #tbl-voorraad td.cel-acties {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 0 !important;
+    margin-top: 6px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* De lege-staat blijft één vlak in plaats van een kaart. */
+  #tbl-voorraad tr[data-geen-sort] {
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+}
