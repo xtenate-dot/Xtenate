@@ -7,7 +7,6 @@ import { tekenPartijen } from './partijen.js?v=20260902a';
 const opties = {
   lijstId: 'crediteuren-list',
   totaalId: 'crediteuren-totaal',
-  jaarId: 'f-jaar-crediteuren',
   soort: 'uitgave',
   leegTekst: 'Geen uitgaven',
   herteken: () => renderCrediteuren()

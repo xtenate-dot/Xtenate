@@ -68,7 +68,7 @@ function meld(sleutel, velden) {
 // ------------------------------------------------------------- de controles
 
 function bepaalBron() {
-  const jaar = el('f-controle-jaar') ? el('f-controle-jaar').value : 'all';
+  const jaar = state.huidigJaar || 'all';
   if (jaar === 'all') return { tx: [...state.HIST_TX, ...state.TX], jaar };
   if (jaar === '2026') return { tx: state.TX, jaar };
   return { tx: state.HIST_TX.filter(t => t.datum.startsWith(jaar)), jaar };

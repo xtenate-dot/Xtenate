@@ -336,7 +336,7 @@ export function openControleDialog() {
 }
 
 export function renderBelasting() {
-  const jaar = document.getElementById('f-jaar-bel') ? document.getElementById('f-jaar-bel').value : '2026';
+  const jaar = state.huidigJaar || '2026';
   const belTX = jaar === 'all' ? [...state.HIST_TX, ...state.TX] : (jaar === '2026' ? state.TX : state.HIST_TX.filter(t => t.datum.startsWith(jaar)));
 
   // Update card title
@@ -762,7 +762,7 @@ const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /** Het jaar dat nu in de jaarkiezer staat. */
-const gekozenJaar = () => document.getElementById('f-jaar-bel')?.value || HUIDIG_JAAR;
+const gekozenJaar = () => state.huidigJaar || HUIDIG_JAAR;
 
 /**
  * Dezelfde cijfers als de kaart, maar als platte tekst in de volgorde van het
