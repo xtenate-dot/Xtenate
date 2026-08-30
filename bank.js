@@ -92,7 +92,7 @@ export function renderBank() {
     if (!badge) {
       badge = document.createElement('div');
       badge.id = 'pending-badge';
-      badge.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;color:#333;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:12px;text-align:center';
+      badge.className = 'alert alert-warn';
       metrics.parentNode.insertBefore(badge, metrics);
     }
     badge.textContent = `⏳ ${pendingCount} wijziging(en) wachten op synchronisatie`;

@@ -7,13 +7,13 @@ const THEMA_KEY = 'xtenate_thema';
 const MENU_KEY = 'xtenate_menu_ingeklapt';
 
 /**
- * Xtenate is een donkere applicatie: dat is de standaard. Alleen wanneer
- * iemand zelf voor de lichte modus kiest via de knop in de bovenbalk,
- * wordt die keuze onthouden en gerespecteerd.
+ * Licht is de standaard van Xtenate. Alleen wanneer iemand zelf voor de
+ * donkere modus kiest via de knop in de bovenbalk, wordt die keuze
+ * onthouden en gerespecteerd.
  */
 export function huidigThema() {
   const gekozen = localStorage.getItem(THEMA_KEY);
-  return gekozen === 'light' || gekozen === 'dark' ? gekozen : 'dark';
+  return gekozen === 'light' || gekozen === 'dark' ? gekozen : 'light';
 }
 
 function pasThemaToe(thema, herteken) {

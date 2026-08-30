@@ -1,46 +1,54 @@
 /* style.css — XTENATE design system
    Eén centrale bron voor kleur, ruimte, typografie, radius, schaduw en beweging.
-   Componenten verwijzen uitsluitend naar deze tokens. */
+   Componenten verwijzen uitsluitend naar deze tokens; geen enkele pagina zet
+   zelf kleuren.
+
+   Uitgangspunt: paars is de huisstijl. Kleur draagt betekenis, geen decoratie.
+   Groen en rood blijven voorbehouden aan positieve en negatieve waarden,
+   oranje aan waarschuwingen. Al het overige is paars of neutraal. */
 
 :root {
-  /* ---------- VLAKKEN ----------
-     Basis uit de ontwerpspecificatie, met een lichte violette ondertoon
-     zodat het geheel warmer en minder marineblauw leest. */
-  --bg: #0A0A16;              /* paginacanvas */
-  --sidebar-bg: #0D0C1C;      /* zijmenu */
-  --surface: #141327;         /* kaarten, dialogen, tabellen */
-  --surface-2: #1A1930;       /* subvlak: tabelkoppen, inputs */
-  --surface-3: #201E3A;       /* hover op een subvlak */
-  --surface-hover: #1C1B33;
-  --surface-active: #232145;
-
-  /* Zeer subtiel kaartverloop — diepte zonder gradient-look */
-  --card-gradient: linear-gradient(180deg, rgba(167,139,250,0.035) 0%, rgba(167,139,250,0) 58%);
-
-  /* ---------- LIJNEN ---------- */
-  --border: #262340;
-  --border-soft: rgba(196,181,253,0.07);
-  --border-strong: #332F52;
-
-  /* ---------- TEKST ---------- */
-  --text: #F8FAFC;
-  --text-muted: #9B96B8;
-  --text-hint: #6B6690;
-
-  /* ---------- MERK ---------- */
-  --accent: #8B5CF6;
-  --accent-hover: #7C3AED;
-  --accent-soft: rgba(139,92,246,0.12);
-  --accent-softer: rgba(139,92,246,0.07);
-  --accent-ring: rgba(139,92,246,0.28);
+  /* ---------- PAARS: DE HUISSTIJL ---------- */
+  --accent: #7C3AED;             /* primair */
+  --accent-hover: #5B21B6;       /* dieper paars voor hover en druk */
+  --accent-soft: #F5F0FF;        /* lichtpaarse vulling */
+  --accent-softer: #FAF8FF;      /* nauwelijks paars */
+  --accent-ring: rgba(124,58,237,0.22);
+  --accent-line: #DDD2FB;        /* paarse haarlijn */
   --accent-contrast: #ffffff;
 
-  /* ---------- BETEKENIS ---------- */
-  --green: #10B981;  --green-soft: rgba(16,185,129,0.12);  --green-line: rgba(16,185,129,0.30);
-  --amber: #F59E0B;  --amber-soft: rgba(245,158,11,0.12);  --amber-line: rgba(245,158,11,0.30);
-  --red:   #EF4444;  --red-soft:   rgba(239,68,68,0.12);   --red-line:   rgba(239,68,68,0.30);
-  --blue:  #3B82F6;  --blue-soft:  rgba(59,130,246,0.12);  --blue-line:  rgba(59,130,246,0.30);
-  --purple: #8B5CF6; --purple-soft: rgba(139,92,246,0.12);
+  /* ---------- VLAKKEN ---------- */
+  --bg: #FCFCFD;                 /* paginacanvas */
+  --sidebar-bg: #FFFFFF;
+  --surface: #FFFFFF;            /* kaarten, dialogen, tabellen */
+  --surface-2: #F9FAFB;          /* subvlak: tabelkoppen, inputs */
+  --surface-3: #F3F4F6;
+  --surface-hover: var(--accent-softer);
+  --surface-active: var(--accent-soft);
+
+  /* Kaarten zijn vlak. Diepte komt van de rand, niet van een verloop. */
+  --card-gradient: none;
+
+  /* ---------- LIJNEN ---------- */
+  --border: #E5E7EB;
+  --border-soft: #F0F1F3;
+  --border-strong: #D6D9DF;
+
+  /* ---------- TEKST ---------- */
+  --text: #1F2937;
+  --text-muted: #6B7280;
+  --text-hint: #9CA3AF;
+
+  /* ---------- BETEKENIS ----------
+     Alleen inzetten waar de kleur iets zegt. */
+  --green: #059669;  --green-soft: #ECFDF5;  --green-line: #A7F3D0;
+  --amber: #B45309;  --amber-soft: #FFFBEB;  --amber-line: #FDE68A;
+  --red:   #DC2626;  --red-soft:   #FEF2F2;  --red-line:   #FECACA;
+  --blue:  #2563EB;  --blue-soft:  #EFF6FF;  --blue-line:  #BFDBFE;
+  --purple: var(--accent); --purple-soft: var(--accent-soft);
+
+  /* Neutrale vulling voor alles zonder betekenis. */
+  --gray-bg: #F3F4F6;
 
   /* Compat met bestaande klassen die *-bg gebruiken */
   --green-bg: var(--green-soft);
@@ -49,31 +57,37 @@
   --amber-bg: var(--amber-soft);
   --purple-bg: var(--accent-soft);
   --accent-bg: var(--accent-soft);
-  --gray-bg: rgba(155,150,184,0.12);
 
-  /* ---------- GRAFIEKPALET ---------- */
-  --ch-1: #8B5CF6;
-  --ch-2: #10B981;
-  --ch-3: #F59E0B;
-  --ch-4: #38BDF8;
-  --ch-5: #F472B6;
-  --ch-6: #64748B;
-  --ch-grid: rgba(155,150,184,0.12);
-  --ch-axis: rgba(155,150,184,0.55);
+  /* ---------- GRAFIEKPALET ----------
+     Paars-gedomineerd: één familie in aflopende sterkte, met neutraal grijs
+     voor restposten. Zo leest een grafiek als één geheel in plaats van als
+     een verzameling losse categorieën. */
+  --ch-1: #7C3AED;
+  --ch-2: #A78BFA;
+  --ch-3: #C4B5FD;
+  --ch-4: #8B7BC7;
+  --ch-5: #DDD6FE;
+  --ch-6: #9CA3AF;
+  --ch-grid: #EEF0F3;
+  --ch-axis: #9CA3AF;
 
-  /* ---------- RADIUS ---------- */
-  --radius-xs: 5px;
-  --radius-sm: 7px;
+  /* ---------- VORM ---------- */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
   --radius: 10px;
   --radius-lg: 14px;
   --radius-pill: 999px;
 
-  /* ---------- SCHADUW ---------- */
-  --shadow-subtle: 0 1px 2px rgba(0,0,0,0.28);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.34);
-  --shadow-md: 0 6px 20px -6px rgba(0,0,0,0.55);
-  --shadow-lg: 0 18px 48px -12px rgba(0,0,0,0.68);
-  --shadow-glow: 0 0 0 1px var(--accent-ring), 0 6px 22px -8px rgba(139,92,246,0.45);
+  /* ---------- SCHADUW ----------
+     Zeer licht. De rand doet het werk. */
+  --shadow-subtle: 0 1px 2px rgba(16,24,40,0.04);
+  --shadow-sm: 0 1px 3px rgba(16,24,40,0.06);
+  --shadow-md: 0 4px 12px -2px rgba(16,24,40,0.08);
+  --shadow-lg: 0 16px 40px -12px rgba(16,24,40,0.16);
+  --shadow-glow: 0 0 0 1px var(--accent-ring), 0 4px 14px -6px rgba(124,58,237,0.24);
+
+  /* Achtergrond achter dialogen en uitschuifpanelen. */
+  --overlay: rgba(31,41,55,0.42);
 
   /* ---------- RUIMTE ---------- */
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
@@ -87,14 +101,15 @@
 
   /* ---------- TYPOGRAFIE ---------- */
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
-  /* Aliassen — sommige modules verwijzen naar deze namen. */
+  /* ---------- ALIASSEN ----------
+     Enkele modules verwijzen naar deze namen. */
   --pos: var(--green);
   --neg: var(--red);
   --card-bg: var(--surface);
   --surface-alt: var(--surface-2);
   --bg-subtle: var(--surface-2);
-  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
   /* ---------- BEWEGING ---------- */
   --dur-fast: 110ms;
@@ -103,65 +118,66 @@
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Compat met oudere regels */
   --transition-fast: var(--dur-fast) var(--ease);
   --transition-normal: var(--dur) var(--ease);
   --transition-slow: var(--dur-slow) var(--ease);
 
   font-size: 14px;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
-/* Lichte modus — dezelfde structuur, andere waarden. */
-[data-theme="light"] {
-  --bg: #F7F8FB;
-  --sidebar-bg: #FFFFFF;
-  --surface: #FFFFFF;
-  --surface-2: #F4F6FA;
-  --surface-3: #EDF0F6;
-  --surface-hover: #F4F6FA;
-  --surface-active: #ECEAFB;
+/* Donkere modus — dezelfde structuur en dezelfde paars-eerst logica. */
+[data-theme="dark"] {
+  --accent: #A78BFA;
+  --accent-hover: #C4B5FD;
+  --accent-soft: rgba(167,139,250,0.14);
+  --accent-softer: rgba(167,139,250,0.07);
+  --accent-ring: rgba(167,139,250,0.30);
+  --accent-line: rgba(167,139,250,0.32);
+  --accent-contrast: #1A1235;
 
-  --card-gradient: linear-gradient(180deg, rgba(15,23,42,0.012) 0%, rgba(15,23,42,0) 55%);
+  --bg: #0F0E1A;
+  --sidebar-bg: #14131F;
+  --surface: #1A1828;
+  --surface-2: #201E30;
+  --surface-3: #272438;
+  --surface-hover: rgba(167,139,250,0.07);
+  --surface-active: rgba(167,139,250,0.14);
 
-  --border: #E4E8F0;
-  --border-soft: rgba(15,23,42,0.06);
-  --border-strong: #CFD6E4;
+  --card-gradient: none;
 
-  --text: #0F172A;
-  --text-muted: #5A6779;
-  --text-hint: #8A94A6;
+  --border: #2D2A40;
+  --border-soft: #262338;
+  --border-strong: #3B3752;
 
-  --accent: #7C3AED;
-  --accent-hover: #6D28D9;
-  --accent-soft: rgba(124,58,237,0.10);
-  --accent-softer: rgba(124,58,237,0.05);
-  --accent-ring: rgba(124,58,237,0.22);
+  --text: #F4F3F8;
+  --text-muted: #A29DB8;
+  --text-hint: #756F90;
 
-  --green: #059669;  --green-soft: rgba(5,150,105,0.10);  --green-line: rgba(5,150,105,0.28);
-  --amber: #B45309;  --amber-soft: rgba(180,83,9,0.10);   --amber-line: rgba(180,83,9,0.28);
-  --red:   #DC2626;  --red-soft:   rgba(220,38,38,0.10);  --red-line:   rgba(220,38,38,0.28);
-  --blue:  #2563EB;  --blue-soft:  rgba(37,99,235,0.10);  --blue-line:  rgba(37,99,235,0.28);
-  --purple: #7C3AED; --purple-soft: rgba(124,58,237,0.10);
+  --green: #34D399;  --green-soft: rgba(52,211,153,0.13);  --green-line: rgba(52,211,153,0.32);
+  --amber: #FBBF24;  --amber-soft: rgba(251,191,36,0.13);  --amber-line: rgba(251,191,36,0.32);
+  --red:   #F87171;  --red-soft:   rgba(248,113,113,0.13); --red-line:   rgba(248,113,113,0.32);
+  --blue:  #60A5FA;  --blue-soft:  rgba(96,165,250,0.13);  --blue-line:  rgba(96,165,250,0.32);
 
-  --gray-bg: rgba(15,23,42,0.06);
+  --gray-bg: rgba(162,157,184,0.12);
 
-  --ch-1: #7C3AED;
-  --ch-2: #059669;
-  --ch-3: #B45309;
-  --ch-4: #0284C7;
-  --ch-5: #DB2777;
-  --ch-6: #64748B;
-  --ch-grid: rgba(15,23,42,0.07);
-  --ch-axis: rgba(15,23,42,0.45);
+  --ch-1: #A78BFA;
+  --ch-2: #8B5CF6;
+  --ch-3: #C4B5FD;
+  --ch-4: #7C6BB5;
+  --ch-5: #DDD6FE;
+  --ch-6: #756F90;
+  --ch-grid: rgba(162,157,184,0.13);
+  --ch-axis: #A29DB8;
 
-  --shadow-subtle: 0 1px 2px rgba(15,23,42,0.05);
-  --shadow-sm: 0 1px 3px rgba(15,23,42,0.07);
-  --shadow-md: 0 6px 20px -6px rgba(15,23,42,0.13);
-  --shadow-lg: 0 18px 48px -12px rgba(15,23,42,0.20);
-  --shadow-glow: 0 0 0 1px var(--accent-ring), 0 6px 22px -8px rgba(124,58,237,0.28);
+  --shadow-subtle: 0 1px 2px rgba(0,0,0,0.28);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.34);
+  --shadow-md: 0 4px 12px -2px rgba(0,0,0,0.48);
+  --shadow-lg: 0 16px 40px -12px rgba(0,0,0,0.62);
+  --shadow-glow: 0 0 0 1px var(--accent-ring), 0 4px 14px -6px rgba(167,139,250,0.35);
+  --overlay: rgba(5,4,12,0.62);
 
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 /* ---------- BASIS ---------- */
@@ -185,15 +201,23 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Financiële richting blijft in kleur zichtbaar. */
 .pos { color: var(--green); }
 .neg { color: var(--red); }
 .muted { color: var(--text-muted); }
 
+/* Links zijn paars. */
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+/* Focus is overal dezelfde paarse ring. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-xs);
 }
+
+::selection { background: var(--accent-soft); color: var(--accent-hover); }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }

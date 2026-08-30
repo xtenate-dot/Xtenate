@@ -46,7 +46,17 @@ export function weergaveNaam(t) {
   return t.naam; // laatste redmiddel: toch de IBAN
 }
 
-export const REK_COLOR = {'1010':'badge-blue','1009':'badge-purple','1030':'badge-amber','1020':'badge-green','1090':'badge-gray'};
+/* Rekeningen krijgen bewust géén eigen kleur meer. Een rekeningnummer is
+   een naam, geen status: kleur zou hier decoratie zijn. De rekening blijft
+   herkenbaar aan het label zelf. Wil je één rekening laten opvallen, zet
+   die dan op 'badge-purple'. */
+export const REK_COLOR = {
+  '1010': 'badge-gray',
+  '1009': 'badge-gray',
+  '1030': 'badge-gray',
+  '1020': 'badge-gray',
+  '1090': 'badge-gray'
+};
 
 export const MAANDEN = {'2026-01':'jan','2026-02':'feb','2026-03':'mrt','2026-04':'apr','2026-05':'mei','2026-06':'jun'};
 
