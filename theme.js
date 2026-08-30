@@ -6,12 +6,14 @@ import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 const THEMA_KEY = 'xtenate_thema';
 const MENU_KEY = 'xtenate_menu_ingeklapt';
 
-function systeemDonker() {
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-
+/**
+ * Xtenate is een donkere applicatie: dat is de standaard. Alleen wanneer
+ * iemand zelf voor de lichte modus kiest via de knop in de bovenbalk,
+ * wordt die keuze onthouden en gerespecteerd.
+ */
 export function huidigThema() {
-  return localStorage.getItem(THEMA_KEY) || (systeemDonker() ? 'dark' : 'light');
+  const gekozen = localStorage.getItem(THEMA_KEY);
+  return gekozen === 'light' || gekozen === 'dark' ? gekozen : 'dark';
 }
 
 function pasThemaToe(thema, herteken) {
@@ -55,9 +57,4 @@ export function sluitMobielMenu() {
 export function initUiVoorkeuren() {
   pasThemaToe(huidigThema(), false);
   if (localStorage.getItem(MENU_KEY) === '1') document.body.classList.add('nav-collapsed');
-
-  // Volgt het systeem zolang er geen eigen keuze is gemaakt.
-  window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', e => {
-    if (!localStorage.getItem(THEMA_KEY)) pasThemaToe(e.matches ? 'dark' : 'light', true);
-  });
 }
