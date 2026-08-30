@@ -1,6 +1,6 @@
 // dashboard.js — Home: het financiële dashboard.
 
-import { alpha, baseOpts, charts, cssVar, dc, lijn, palette, staaf } from './charts.js?v=20260902a';
+import { alpha, baseOpts, charts, cssVar, dc, donutMidden, lijn, lijnGloed, palette, staaf } from './charts.js?v=20260902a';
 import {
   BEGINSALDO_2026, GBNM, calcIB, ddmm, esc, fmt, fmtKort, isInkomst, isOmzet, isUitgave,
   maandLabel, rekBadge, saldoDelta, typeBadge, weergaveNaam
@@ -402,8 +402,8 @@ export function renderHome() {
       data: {
         labels,
         datasets: [
-          staaf('Omzet', omzetD, kleur[1]),
-          staaf('Kosten', kostenD, kleur[2])
+          staaf('Omzet', omzetD, cssVar('--ch-omzet')),
+          staaf('Kosten', kostenD, cssVar('--ch-kosten'))
         ]
       },
       options: baseOpts({ yFmt: fmtKort, tooltipFmt: tipBedrag })
@@ -417,10 +417,12 @@ export function renderHome() {
       data: {
         labels,
         datasets: [
-          lijn('Resultaat, opgeteld', cumulatief, kleur[0], { punten: maanden.length <= 18 })
+          lijn('Resultaat, opgeteld', cumulatief, cssVar('--ch-winst'),
+               { punten: maanden.length <= 18, gloed: true })
         ]
       },
-      options: baseOpts({ legend: false, yFmt: fmtKort, tooltipFmt: tipBedrag })
+      options: baseOpts({ legend: false, yFmt: fmtKort, tooltipFmt: tipBedrag }),
+      plugins: [lijnGloed]
     });
   }
 
@@ -453,9 +455,9 @@ export function renderHome() {
         labels: kostLabels,
         datasets: [{
           data: kostData,
-          backgroundColor: kleur.map(k => alpha(k, 0.9)),
+          backgroundColor: kleur.map(k => alpha(k, 0.88)),
           hoverBackgroundColor: kleur,
-          borderColor: cssVar('--surface'),
+          borderColor: cssVar('--bg-card'),
           borderWidth: 2,
           hoverOffset: 6
         }]
@@ -468,9 +470,10 @@ export function renderHome() {
             return ` ${ctx.label}: ${fmt(ctx.parsed)} (${deel}%)`;
           }
         }),
-        cutout: '68%',
+        cutout: '70%',
         scales: {}
-      }
+      },
+      plugins: [donutMidden(fmt(kostTotaal))]
     });
   } else {
     kostenCanvas.style.display = 'none';

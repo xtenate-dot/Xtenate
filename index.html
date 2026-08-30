@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark light">
 <title>Xtenate Administratie</title>
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -12,7 +12,7 @@
   // Licht is de standaard; alleen een eigen keuze wijkt daarvan af.
   (function () {
     var t = localStorage.getItem('xtenate_thema');
-    if (t !== 'light' && t !== 'dark') t = 'light';
+    if (t !== 'light' && t !== 'dark') t = 'dark';
     document.documentElement.setAttribute('data-theme', t);
     if (localStorage.getItem('xtenate_menu_ingeklapt') === '1') {
       document.addEventListener('DOMContentLoaded', function () { document.body.classList.add('nav-collapsed'); });

@@ -13,7 +13,7 @@ const MENU_KEY = 'xtenate_menu_ingeklapt';
  */
 export function huidigThema() {
   const gekozen = localStorage.getItem(THEMA_KEY);
-  return gekozen === 'light' || gekozen === 'dark' ? gekozen : 'light';
+  return gekozen === 'light' || gekozen === 'dark' ? gekozen : 'dark';
 }
 
 function pasThemaToe(thema, herteken) {
