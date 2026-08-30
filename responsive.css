@@ -1,51 +1,76 @@
 /* responsive.css — tablet en mobiel. */
 
+/* 1440px en breder: het raster mag ademen. */
+@media (min-width: 1440px) {
+  .page-wrap { padding: var(--sp-6) var(--sp-6) var(--sp-7); }
+}
+
+@media (max-width: 1280px) {
+  .grid-breed-smal,
+  .grid-smal-breed { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+}
+
 @media (max-width: 1080px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-  .grid3 { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid3 { grid-template-columns: minmax(0, 1fr); }
+  .grid-breed-smal,
+  .grid-smal-breed { grid-template-columns: minmax(0, 1fr); }
+  /* De donut heeft naast de legenda minder hoogte nodig zodra hij
+     volle breedte krijgt. */
+  .chart-box.lg { height: 260px; }
 }
 
 @media (max-width: 860px) {
-  .grid2 { grid-template-columns: 1fr; }
-  .uitsch-grid { grid-template-columns: 1fr; }
+  .grid2 { grid-template-columns: minmax(0, 1fr); }
+  .uitsch-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 720px) {
   /* Zijmenu wordt een uitschuifpaneel */
-  .sidebar { transform: translateX(-100%); transition: transform .2s ease; width: var(--sidebar-w); }
-  body.nav-open .sidebar { transform: translateX(0); }
+  .sidebar { transform: translateX(-100%); transition: transform var(--dur) var(--ease); width: var(--sidebar-w); }
+  body.nav-open .sidebar { transform: translateX(0); box-shadow: var(--shadow-lg); }
   body.nav-collapsed .sidebar { width: var(--sidebar-w); }
   .main, body.nav-collapsed .main { margin-left: 0; }
   .menu-toggle { display: inline-flex; }
   .nav-collapse-btn { display: none; }
   body.nav-collapsed .nav-label,
   body.nav-collapsed .brand-text { display: block; }
-  body.nav-collapsed .nav-item { justify-content: flex-start; padding: 7px 8px; }
-  body.nav-collapsed .nav-section { font-size: 10px; }
+  body.nav-collapsed .brand { justify-content: flex-start; padding-left: 14px; }
+  body.nav-collapsed .nav-item { justify-content: flex-start; padding: 8px 10px; }
+  body.nav-collapsed .nav-section { font-size: 10.5px; }
   body.nav-collapsed .nav-section::after { display: none; }
 
   .topbar { padding: 0 var(--sp-3); gap: var(--sp-2); }
   .topbar-title { display: none; }
-  .page-wrap { padding: var(--sp-4) var(--sp-3); }
+  .page-wrap { padding: var(--sp-5) var(--sp-3) var(--sp-7); }
+  .page-title { font-size: 19px; }
 
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
   .kpi { padding: var(--sp-3); }
-  .kpi-val { font-size: 19px; }
+  .kpi-val { font-size: 20px; }
+  .kpi--primair .kpi-val { font-size: 22px; }
+  .kpi-lbl { margin-bottom: 7px; }
 
-  .form-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: minmax(0, 1fr); }
   .form-group.full { grid-column: 1; }
   .modal { padding: var(--sp-4); }
   .drawer { width: 100%; }
   .search-wrap { max-width: none; }
   .kbd { display: none; }
-  .chart-box { height: 190px; }
+  .chart-box,
+  .chart-box.lg { height: 200px; }
+  .chart-box.sm { height: 170px; }
+
+  /* Op een smal scherm past een lange omschrijving niet op één regel. */
+  .aandacht-sub { white-space: normal; }
 }
 
 @media (max-width: 460px) {
-  .kpi-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: minmax(0, 1fr); }
   .toolbar { gap: 6px; }
   .toolbar select, .toolbar input { flex: 1 1 44%; min-width: 0; }
   .btn-ml { margin-left: 0; flex: 1 1 100%; justify-content: center; }
+  .modal-actions .btn { flex: 1 1 100%; justify-content: center; }
 }
 
 /* Belastingpagina op een telefoon.

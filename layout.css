@@ -2,12 +2,14 @@
 
 .app { display: flex; min-height: 100vh; }
 
-/* ---------- ZIJMENU ---------- */
+/* ============================================================
+   ZIJMENU
+   ============================================================ */
 .sidebar {
   width: var(--sidebar-w);
-  background: var(--surface);
+  background: var(--sidebar-bg);
   border-right: 1px solid var(--border);
-  padding: var(--sp-4) 0 var(--sp-5);
+  padding: var(--sp-4) 0 var(--sp-3);
   flex-shrink: 0;
   position: fixed;
   top: 0; left: 0;
@@ -15,110 +17,192 @@
   overflow-y: auto;
   overflow-x: hidden;
   z-index: 40;
-  transition: width .18s ease;
+  transition: width var(--dur) var(--ease);
   display: flex;
   flex-direction: column;
 }
 body.nav-collapsed .sidebar { width: var(--sidebar-w-collapsed); }
 
-.brand { display: flex; align-items: center; gap: 10px; padding: 0 14px var(--sp-4); }
+/* ---------- Merk ---------- */
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 14px var(--sp-5);
+}
 .brand-mark {
-  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
-  background: var(--accent); color: var(--accent-contrast);
+  width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+  background: linear-gradient(145deg, var(--accent) 0%, var(--accent-hover) 100%);
+  color: #fff;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700; letter-spacing: -0.5px;
+  font-size: 14px; font-weight: 700; letter-spacing: -0.5px;
+  box-shadow: 0 2px 10px -2px rgba(139,92,246,0.55);
 }
 .brand-text { min-width: 0; }
-.brand-name { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; white-space: nowrap; }
-.brand-sub { font-size: 10.5px; color: var(--text-hint); white-space: nowrap; }
+.brand-name {
+  font-size: 14px; font-weight: 600; letter-spacing: -0.2px;
+  white-space: nowrap; color: var(--text); line-height: 1.25;
+}
+.brand-sub {
+  font-size: 11px; color: var(--text-hint); white-space: nowrap; line-height: 1.3;
+}
+body.nav-collapsed .brand { justify-content: center; padding-left: 0; padding-right: 0; }
 body.nav-collapsed .brand-text { display: none; }
 
+/* ---------- Sectiekop ---------- */
 .nav-section {
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .9px;
-  color: var(--text-hint); padding: var(--sp-4) 14px var(--sp-1); white-space: nowrap;
+  font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-hint);
+  padding: var(--sp-4) 16px var(--sp-2);
+  white-space: nowrap;
 }
 body.nav-collapsed .nav-section {
-  font-size: 0; padding: var(--sp-3) 14px var(--sp-1); position: relative;
+  font-size: 0; padding: var(--sp-3) 14px var(--sp-2); position: relative;
 }
 body.nav-collapsed .nav-section::after {
   content: ''; display: block; height: 1px; background: var(--border);
 }
 
+/* ---------- Menu-item ---------- */
 .nav-item {
-  display: flex; align-items: center; gap: 10px;
-  margin: 1px 8px; padding: 8px 10px;
+  position: relative;
+  display: flex; align-items: center; gap: 11px;
+  margin: 1px 8px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
-  cursor: pointer; color: var(--text-muted);
-  font-size: 13px; user-select: none;
-  transition: background .12s, color .12s;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 13px; font-weight: 450;
+  user-select: none;
   white-space: nowrap;
+  transition: background var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease);
 }
-.nav-item:hover { color: var(--text); background: var(--surface-hover); }
-.nav-item.active { color: var(--accent); background: var(--accent-bg); font-weight: 500; }
-.nav-item svg { flex-shrink: 0; opacity: .75; }
-.nav-item.active svg { opacity: 1; }
+.nav-item:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+.nav-item svg { flex-shrink: 0; opacity: .72; transition: opacity var(--dur-fast) var(--ease); }
+.nav-item:hover svg { opacity: .92; }
+
+/* Actieve pagina: zachte paarse gloed + smalle accentlijn links.
+   Geen harde gevulde rechthoek. */
+.nav-item.active {
+  color: var(--text);
+  font-weight: 500;
+  background: linear-gradient(90deg, var(--accent-soft) 0%, var(--accent-softer) 65%, transparent 100%);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -8px; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 18px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+  box-shadow: 0 0 10px -1px var(--accent);
+}
+.nav-item.active svg { opacity: 1; color: var(--accent); }
+
 .nav-label { overflow: hidden; text-overflow: ellipsis; }
 body.nav-collapsed .nav-label { display: none; }
-body.nav-collapsed .nav-item { justify-content: center; padding: 8px; }
+body.nav-collapsed .nav-item { justify-content: center; padding: 9px; }
+body.nav-collapsed .nav-item.active::before { left: -8px; height: 20px; }
 
-.nav-spacer { flex: 1; }
+.nav-spacer { flex: 1; min-height: var(--sp-4); }
 
+/* ---------- Voettekst van het menu ---------- */
 .nav-collapse-btn {
-  display: flex; align-items: center; gap: 10px;
-  margin: var(--sp-2) 8px 0; padding: 7px 8px;
+  display: flex; align-items: center; gap: 11px;
+  margin: var(--sp-1) 8px 0;
+  padding: 8px 10px;
   border: none; background: none; cursor: pointer;
   color: var(--text-hint); font-size: 12px; font-family: inherit;
-  border-radius: var(--radius-sm); width: calc(100% - 16px);
+  border-radius: var(--radius-sm);
+  width: calc(100% - 16px);
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 .nav-collapse-btn:hover { background: var(--surface-hover); color: var(--text); }
-.nav-collapse-btn svg { transition: transform .18s ease; flex-shrink: 0; }
+.nav-collapse-btn svg { transition: transform var(--dur) var(--ease); flex-shrink: 0; }
 body.nav-collapsed .nav-collapse-btn svg { transform: rotate(180deg); }
 body.nav-collapsed .nav-collapse-btn { justify-content: center; }
 body.nav-collapsed .nav-collapse-btn span { display: none; }
 
-/* ---------- HOOFDGEBIED ---------- */
+/* ============================================================
+   HOOFDGEBIED
+   ============================================================ */
 .main {
   margin-left: var(--sidebar-w);
   flex: 1; min-width: 0;
-  transition: margin-left .18s ease;
+  transition: margin-left var(--dur) var(--ease);
 }
 body.nav-collapsed .main { margin-left: var(--sidebar-w-collapsed); }
 
-/* ---------- BOVENBALK ---------- */
+/* ============================================================
+   BOVENBALK
+   ============================================================ */
 .topbar {
   position: sticky; top: 0; z-index: 30;
   height: var(--topbar-h);
-  background: rgba(11, 16, 32, 0.7);
-  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
   border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: var(--sp-4);
+  display: flex; align-items: center; gap: var(--sp-3);
   padding: 0 var(--sp-5);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
-.topbar-title { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; white-space: nowrap; }
+.topbar-title {
+  font-size: 14px; font-weight: 600; letter-spacing: -0.2px;
+  white-space: nowrap; color: var(--text);
+  margin-right: var(--sp-2);
+}
 .topbar-spacer { flex: 1; }
 
-.menu-toggle { display: none; background: none; border: none; cursor: pointer; color: var(--text); padding: 6px; border-radius: var(--radius-sm); }
-.menu-toggle:hover { background: var(--surface-hover); }
+.menu-toggle {
+  display: none; background: none; border: none; cursor: pointer;
+  color: var(--text-muted); padding: 7px; border-radius: var(--radius-sm);
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.menu-toggle:hover { background: var(--surface-hover); color: var(--text); }
 
-.page-wrap { padding: var(--sp-5); max-width: var(--content-max); }
+/* ============================================================
+   PAGINARUIMTE
+   ============================================================ */
+.page-wrap { padding: var(--sp-6) var(--sp-5) var(--sp-7); max-width: var(--content-max); }
 
 .page { display: none; }
-.page.active { display: block; }
+.page.active { display: block; animation: paginaIn var(--dur-slow) var(--ease-out); }
 
-.page-head { display: flex; align-items: baseline; gap: var(--sp-3); margin-bottom: var(--sp-4); flex-wrap: wrap; }
-.page-title { font-size: 21px; font-weight: 600; letter-spacing: -0.5px; }
-.page-sub { font-size: 12.5px; color: var(--text-muted); }
+@keyframes paginaIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-head {
+  display: flex; align-items: baseline; gap: var(--sp-3);
+  margin-bottom: var(--sp-5); flex-wrap: wrap;
+}
+.page-title {
+  font-size: 22px; font-weight: 600; letter-spacing: -0.6px;
+  color: var(--text); line-height: 1.25;
+}
+.page-sub { font-size: 13px; color: var(--text-muted); }
 
 .section-head {
   display: flex; align-items: center; justify-content: space-between;
-  gap: var(--sp-3); margin: var(--sp-5) 0 var(--sp-3);
+  gap: var(--sp-3); margin: var(--sp-6) 0 var(--sp-3);
 }
 .section-head:first-child { margin-top: 0; }
+.section-titel {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.9px; color: var(--text-hint);
+}
 
 /* Backdrop voor het mobiele menu */
-.nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 35; }
+.nav-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(3,7,18,.62); z-index: 35;
+  backdrop-filter: blur(2px);
+}
 .nav-backdrop.open { display: block; }
 
-/* Pagina's die nog geen .page-head hebben, houden hun eigen ondermarge */
-.page > .page-title { margin-bottom: var(--sp-4); }
+/* Pagina's zonder .page-head houden hun eigen ondermarge */
+.page > .page-title { margin-bottom: var(--sp-5); }

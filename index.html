@@ -246,31 +246,38 @@
 <!-- OVERZICHT (het financiële dashboard, voorheen Home) -->
 <div id="p-overzicht" class="page">
   <div class="page-head">
-    <div class="page-title">Overzicht</div>
+    <div>
+      <div class="page-title">Overzicht</div>
+      <div class="page-sub" id="overzicht-sub">Een compleet overzicht van je administratie.</div>
+    </div>
   </div>
 
   <div class="kpi-grid" id="home-kpi"></div>
   <div class="kpi-grid" id="home-kpi2" style="margin-bottom:var(--sp-5)"></div>
 
-  <div class="section-head"><div class="eyebrow">Aandacht nodig</div></div>
   <div id="home-aandacht" style="margin-bottom:var(--sp-5)"></div>
 
-  <div class="section-head"><div class="eyebrow">Grootste posten</div></div>
+  <div class="section-head"><div class="section-titel">Grootste posten</div></div>
   <div class="uitsch-grid" id="home-uitsch" style="margin-bottom:var(--sp-5)"></div>
 
-  <div class="grid2">
+  <div class="grid-breed-smal">
     <div class="card">
       <div class="card-title">Omzet en kosten per maand</div>
-      <div class="chart-box"><canvas id="c-ie" role="img" aria-label="Omzet en kosten per maand"></canvas></div>
+      <div class="chart-box lg"><canvas id="c-ie" role="img" aria-label="Omzet en kosten per maand"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">Winstontwikkeling</div>
-      <div class="chart-box"><canvas id="c-net" role="img" aria-label="Winst opgeteld per maand"></canvas></div>
+      <div class="card-title">Kostenverdeling</div>
+      <div class="chart-box sm"><canvas id="c-kosten" role="img" aria-label="Kosten per categorie"></canvas></div>
+      <div id="c-kosten-leeg" class="chart-legenda" style="flex-direction:column;gap:7px"></div>
     </div>
   </div>
 
-  <div class="grid3">
-    <div class="card card-flush">
+  <div class="card">
+    <div class="card-title">Resultaatontwikkeling</div>
+    <div class="chart-box"><canvas id="c-net" role="img" aria-label="Resultaat opgeteld per maand"></canvas></div>
+  </div>
+
+  <div class="card card-flush">
       <div class="card-title">Laatste boekingen</div>
       <div class="table-wrap"><table id="tbl-home-recent" class="js-sorteerbaar">
         <thead><tr>
@@ -282,12 +289,11 @@
         </tr></thead>
         <tbody id="home-recent"></tbody>
       </table></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Kostenverdeling</div>
-      <div class="chart-box sm"><canvas id="c-kosten" role="img" aria-label="Kosten per categorie"></canvas></div>
-      <div id="c-kosten-leeg" style="display:flex;flex-direction:column;gap:6px;margin-top:14px;font-size:11px;color:var(--text-muted)"></div>
-    </div>
+      <div class="tabel-voet">
+        <button class="card-kop-actie" onclick="nav('bank')">Bekijk alle boekingen
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
   </div>
 
   <div class="card card-flush">
@@ -307,7 +313,10 @@
 <!-- BANK -->
 <div id="p-bank" class="page">
   <div class="page-head">
-    <div class="page-title">Bank</div>
+    <div>
+      <div class="page-title">Bank</div>
+      <div class="page-sub">Alle bankboekingen, gekoppeld aan het juiste grootboek.</div>
+    </div>
   </div>
   <div class="toolbar">
     
@@ -345,7 +354,10 @@
 <!-- FACTUREN (debiteuren + crediteuren) -->
 <div id="p-facturen" class="page">
   <div class="page-head">
-    <div class="page-title">Facturen</div>
+    <div>
+      <div class="page-title">Facturen</div>
+      <div class="page-sub">Openstaande posten van debiteuren en crediteuren.</div>
+    </div>
   </div>
   <div class="vtabs" id="facturen-tabs" role="tablist"></div>
   <div id="facturen-inhoud"></div>
@@ -354,7 +366,10 @@
 <!-- CREDITEUREN (wie betaal ik) -->
 <div id="p-crediteuren" class="page">
   <div class="page-head">
-    <div class="page-title">Crediteuren</div>
+    <div>
+      <div class="page-title">Crediteuren</div>
+      <div class="page-sub">Openstaande posten die je nog moet betalen.</div>
+    </div>
   </div>
   <div class="page-controls">
     
@@ -370,7 +385,10 @@
 <!-- DEBITEUREN (wie betaalt mij) -->
 <div id="p-debiteuren" class="page">
   <div class="page-head">
-    <div class="page-title">Debiteuren</div>
+    <div>
+      <div class="page-title">Debiteuren</div>
+      <div class="page-sub">Openstaande posten die je nog moet ontvangen.</div>
+    </div>
   </div>
   <div class="page-controls">
     
@@ -386,7 +404,10 @@
 <!-- BEHEER -->
 <div id="p-beheer" class="page">
   <div class="page-head">
-    <div class="page-title">Beheer</div>
+    <div>
+      <div class="page-title">Beheer</div>
+      <div class="page-sub">Import, export, back-up en instellingen.</div>
+    </div>
   </div>
   <div id="beheer-inhoud"></div>
 </div>
@@ -394,7 +415,10 @@
 <!-- GROOTBOEK -->
 <div id="p-grootboek" class="page">
   <div class="page-head">
-    <div class="page-title">Grootboek</div>
+    <div>
+      <div class="page-title">Grootboek</div>
+      <div class="page-sub">Saldi en mutaties per grootboekrekening.</div>
+    </div>
   </div>
 
   <div class="toolbar">
@@ -458,7 +482,10 @@
 <!-- BELASTING -->
 <div id="p-belasting" class="page">
   <div class="page-head">
-    <div class="page-title">Belasting</div>
+    <div>
+      <div class="page-title">Belasting</div>
+      <div class="page-sub">Btw-aangifte en de geschatte inkomstenbelasting.</div>
+    </div>
   </div>
   <div class="alert alert-warn">⚠ Indicatie op basis van ingevoerde data. Raadpleeg een belastingadviseur voor definitieve aangifte.</div>
   <div class="metrics" id="bel-metrics"></div>
@@ -490,7 +517,10 @@
 <!-- CONTROLE -->
 <div id="p-controle" class="page">
   <div class="page-head">
-    <div class="page-title">Controle</div>
+    <div>
+      <div class="page-title">Controle</div>
+      <div class="page-sub">Controleer je administratie op ontbrekende of afwijkende posten.</div>
+    </div>
   </div>
 
   <div class="toolbar">
@@ -507,7 +537,10 @@
 <!-- VOORRAAD -->
 <div id="p-voorraad" class="page">
   <div class="page-head">
-    <div class="page-title">Voorraad</div>
+    <div>
+      <div class="page-title">Voorraad</div>
+      <div class="page-sub">Beheer artikelen, voorraad en waarde.</div>
+    </div>
   </div>
 
   <div class="kpi-grid" id="voorraad-kpi" style="margin-bottom:var(--sp-5)"></div>
@@ -579,7 +612,10 @@
 <!-- HNVI -->
 <div id="p-hnvi" class="page">
   <div class="page-head">
-    <div class="page-title">HNVI / Xtenate</div>
+    <div>
+      <div class="page-title">HNVI / Xtenate</div>
+      <div class="page-sub">Koppeling tussen de veilinginkoop en je eigen artikelen.</div>
+    </div>
   </div>
   <div class="metrics" id="hnvi-metrics"></div>
   <div class="toolbar">
@@ -757,7 +793,7 @@
     <label style="font-size:11px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:4px">Web app URL (eindigt op /exec)</label>
     <input type="text" id="sync-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;font-size:12px;padding:6px 10px">
   </div>
-  <div id="sync-status" style="font-size:12px;color:var(--text-muted);margin-bottom:1rem"></div>
+  <div id="sync-modal-status" style="font-size:12px;color:var(--text-muted);margin-bottom:1rem"></div>
   <div style="display:flex;gap:8px;margin-bottom:.5rem">
     <button class="btn" onclick="syncUpload()" style="flex:1">⬆ Upload naar cloud</button>
     <button class="btn" onclick="syncDownload()" style="flex:1">⬇ Download van cloud</button>
