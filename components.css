@@ -9,19 +9,21 @@
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--spacing-3);
-  margin-bottom: var(--spacing-3);
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
 }
 
+/* De KPI-kaart is neutraal donker; de aandacht moet naar het bedrag,
+   niet naar de rand. Alleen de primaire kaart krijgt paars. */
 .kpi {
   position: relative;
   min-width: 0;
-  padding: var(--spacing-4) var(--spacing-4) var(--spacing-4);
+  padding: var(--spacing-5) var(--spacing-5) calc(var(--spacing-5) - 2px);
   background: var(--bg-card);
   background-image: var(--card-gradient-layer);
-  border: 1px solid var(--border-purple);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-base);
-  box-shadow: var(--shadow-card), var(--shadow-purple);
+  box-shadow: var(--shadow-card), var(--card-topline);
   transition: border-color var(--duration-base) var(--easing-standard),
               box-shadow var(--duration-base) var(--easing-standard),
               background-color var(--duration-base) var(--easing-standard),
@@ -29,29 +31,31 @@
 }
 .kpi:hover {
   background-color: var(--bg-card-hover);
-  border-color: var(--border-purple-strong);
-  box-shadow: var(--shadow-card), var(--shadow-purple-active);
+  border-color: var(--purple-veil-18);
+  box-shadow: var(--shadow-card-raised), var(--shadow-purple), var(--card-topline);
   transform: translateY(-1px);
 }
 
 .kpi-lbl {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 11.5px; font-weight: 500; color: var(--text-secondary);
-  margin-bottom: 10px;
-  letter-spacing: 0.1px;
+  display: flex; align-items: center; gap: 9px;
+  font-size: 10.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.85px;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-3);
 }
 .kpi-icoon {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; flex-shrink: 0;
-  border-radius: var(--radius-xs);
-  background: rgba(139,92,246,0.14);
-  border: 1px solid var(--border-purple);
+  width: 28px; height: 28px; flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--purple-veil-12);
+  border: 1px solid var(--purple-veil-18);
   color: var(--purple-300);
+  box-shadow: inset 0 1px 0 rgba(196,181,253,0.10);
 }
-.kpi-icoon svg { width: 13px; height: 13px; }
+.kpi-icoon svg { width: 14px; height: 14px; }
 /* Paars is de standaard. Betekeniskleuren blijven beschikbaar en worden
    alleen ingezet waar de kleur iets zegt. */
-.kpi-icoon--accent  { background: rgba(139,92,246,0.14); color: var(--purple-300); }
+.kpi-icoon--accent  { background: var(--purple-veil-12); border-color: var(--purple-veil-18); color: var(--purple-300); }
 .kpi-icoon--neutraal{ background: var(--semantic-gray-soft); border-color: var(--border-default); color: var(--text-secondary); }
 .kpi-icoon--green   { background: var(--semantic-success-soft); border-color: var(--semantic-success-line); color: var(--semantic-success-bright); }
 .kpi-icoon--amber   { background: var(--semantic-warning-soft); border-color: var(--semantic-warning-line); color: var(--semantic-warning-bright); }
@@ -59,14 +63,15 @@
 .kpi-icoon--blue    { background: var(--semantic-info-soft);  border-color: var(--semantic-info-line);  color: var(--semantic-info-bright); }
 
 .kpi-val {
-  font-size: 26px; font-weight: 600;
-  letter-spacing: -0.9px; line-height: 1.18;
+  font-size: 28px; font-weight: 600;
+  letter-spacing: -1.1px; line-height: 1.14;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 .kpi-sub {
-  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   font-size: 11.5px; color: var(--text-muted);
-  margin-top: 7px; line-height: 1.45;
+  margin-top: var(--spacing-3); line-height: 1.45;
 }
 
 /* Trendindicator: pijl plus percentage, in de betekeniskleur. */
@@ -82,12 +87,26 @@
 .kpi-trend.vlak { color: var(--text-secondary); background: var(--semantic-gray-soft); }
 
 /* De belangrijkste kaart van een rij mag iets zwaarder wegen. */
+/* De belangrijkste kaart van een rij draagt als enige de paarse identiteit:
+   paarse haarlijn, zachte gloed en een lichtpaarse binnenrand bovenaan. */
 .kpi--primair {
-  border-color: var(--accent-primary-ring);
-  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(139,92,246,0.10);
+  border-color: var(--purple-veil-26);
+  background-image:
+    linear-gradient(180deg, var(--purple-veil-12) 0%, transparent 58%),
+    var(--card-gradient-layer);
+  box-shadow: var(--shadow-card), var(--glow-purple-soft), var(--card-topline-accent);
 }
-.kpi--primair .kpi-val { font-size: 30px; }
-.kpi--primair:hover { box-shadow: var(--shadow-purple-active); }
+.kpi--primair .kpi-val { font-size: 32px; letter-spacing: -1.3px; }
+.kpi--primair .kpi-icoon {
+  background: var(--purple-veil-18);
+  border-color: var(--purple-veil-26);
+  color: var(--purple-200);
+}
+.kpi--primair .kpi-lbl { color: var(--text-lavender); }
+.kpi--primair:hover {
+  border-color: var(--border-purple-strong);
+  box-shadow: var(--shadow-card-raised), var(--glow-purple-strong), var(--card-topline-accent);
+}
 
 /* Tweede rij: dezelfde taal, compacter. */
 .kpi--secondary { padding: var(--spacing-3) var(--spacing-4); }
@@ -128,22 +147,52 @@
 /* ============================================================
    KAARTEN
    ============================================================ */
+/* ---------- KAART ----------
+   Drie niveaus. De gewone kaart is neutraal: donker vlak, haarlijnrand,
+   lichte bovenrand die hem van de achtergrond tilt. Paars is voorbehouden
+   aan kaarten die er echt uit moeten springen, anders zegt paars niets meer. */
 .card {
   background: var(--bg-card);
   background-image: var(--card-gradient-layer);
-  border: 1px solid var(--border-purple);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-base);
-  padding: var(--spacing-4);
+  padding: var(--spacing-5);
   margin-bottom: var(--spacing-3);
-  box-shadow: var(--shadow-card), var(--shadow-purple);
-  transition: border-color var(--duration-base) var(--easing-standard), box-shadow var(--duration-base) var(--easing-standard);
+  box-shadow: var(--shadow-card), var(--card-topline);
+  transition: border-color var(--duration-base) var(--easing-standard),
+              box-shadow var(--duration-base) var(--easing-standard),
+              background-color var(--duration-base) var(--easing-standard);
 }
-.card:hover { border-color: var(--border-purple-strong); }
+.card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-card-raised), var(--card-topline);
+}
+
+/* Belangrijke kaart: paarse haarlijn en een zeer zachte gloed. */
+.card--accent {
+  border-color: var(--purple-veil-18);
+  background-image:
+    linear-gradient(180deg, var(--purple-veil-08) 0%, transparent 42%),
+    var(--card-gradient-layer);
+  box-shadow: var(--shadow-card), var(--shadow-purple), var(--card-topline-accent);
+}
+.card--accent:hover {
+  border-color: var(--purple-veil-26);
+  box-shadow: var(--shadow-card-raised), var(--shadow-purple-active), var(--card-topline-accent);
+}
+
+/* Aanklikbare kaart: reageert duidelijker, maar nog steeds rustig. */
+.card--interactief { cursor: pointer; }
+.card--interactief:hover {
+  border-color: var(--purple-veil-18);
+  background-color: var(--bg-card-hover);
+  box-shadow: var(--shadow-card-raised), var(--shadow-purple), var(--card-topline);
+}
 
 .card-title {
   font-size: 11px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.9px;
-  color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-secondary);
   margin-bottom: var(--spacing-4);
 }
 .card-flush { padding: 0; }
@@ -225,7 +274,7 @@ table {
 th {
   text-align: left;
   background: var(--bg-subtle-layer);
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 10.5px;
   text-transform: uppercase;
@@ -245,7 +294,9 @@ td {
 }
 tbody tr { transition: background var(--duration-fast) var(--easing-standard); }
 tbody tr:last-child td { border-bottom: none; }
+tbody tr { transition: background var(--duration-fast) var(--easing-standard); }
 tbody tr:hover td { background: var(--bg-card-hover); }
+tbody tr:hover td:first-child { box-shadow: inset 2px 0 0 var(--purple-veil-26); }
 
 .td-trunc { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -253,7 +304,7 @@ tbody tr:hover td { background: var(--bg-card-hover); }
 
 .row-click { cursor: pointer; }
 .row-click.is-selected td {
-  background: rgba(124,58,237,0.16);
+  background: var(--purple-veil-12);
   box-shadow: inset 3px 0 0 var(--purple-400);
 }
 
@@ -293,7 +344,7 @@ th.sortable.sort-desc::after { content: '↓'; opacity: 1; color: var(--accent-p
   width: 48px; height: 48px;
   margin: 0 auto var(--spacing-4);
   border-radius: var(--radius-base);
-  background: rgba(139,92,246,0.10);
+  background: var(--purple-veil-08);
   border: 1px solid var(--border-purple);
   display: flex; align-items: center; justify-content: center;
   color: var(--text-muted);
@@ -336,6 +387,10 @@ input[type=password] {
               box-shadow var(--duration-fast) var(--easing-standard);
 }
 select:hover, input:hover { border-color: var(--border-purple-strong); }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-purple-focus);
+}
 select:focus, input:focus {
   border-color: var(--purple-400);
   box-shadow: 0 0 0 3px var(--accent-primary-soft), var(--shadow-purple-active);
@@ -372,18 +427,20 @@ label { color: var(--text-secondary); font-weight: 500; font-size: 12px; }
   background: linear-gradient(180deg, var(--purple-500) 0%, var(--purple-600) 100%);
   color: var(--accent-contrast);
   border-color: var(--purple-500);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.24), var(--shadow-purple-active);
+  box-shadow: var(--shadow-subtle), var(--glow-purple-soft);
 }
 .btn-primary:hover {
   background: linear-gradient(180deg, var(--purple-400) 0%, var(--purple-500) 100%);
   border-color: var(--purple-400);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.24), 0 0 24px rgba(139,92,246,0.28);
+  box-shadow: var(--shadow-subtle), var(--glow-purple-strong);
 }
+.btn-primary:active { transform: translateY(0.5px); }
 
 .btn-danger { color: var(--semantic-danger-bright); border-color: var(--semantic-danger-line); background: var(--semantic-danger-soft); }
-.btn-danger:hover { background: rgba(239,68,68,0.18); border-color: var(--semantic-danger-bright); }
+.btn-danger:hover { background: var(--semantic-danger-soft); border-color: var(--semantic-danger-bright); }
 
 .btn-ghost { border-color: transparent; background: none; color: var(--text-secondary); }
+.btn-ghost:hover { background: var(--purple-veil-08); color: var(--purple-200); border-color: transparent; }
 .btn-ghost:hover { background: var(--accent-primary-soft); border-color: transparent; color: var(--purple-300); }
 
 .btn-ml { margin-left: auto; }
@@ -498,7 +555,7 @@ label { color: var(--text-secondary); font-weight: 500; font-size: 12px; }
   transition: all var(--transition-fast);
 }
 .sr-item:hover, .sr-item.is-active {
-  background: rgba(124,58,237,0.18);
+  background: var(--purple-veil-18);
   color: var(--text-primary);
 }
 .sr-main {
@@ -579,13 +636,13 @@ label { color: var(--text-secondary); font-weight: 500; font-size: 12px; }
   background: var(--bg-elevated);
   background-image: var(--card-gradient-layer);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(139,92,246,0.20);
+  border: 1px solid var(--purple-veil-18);
   padding: var(--spacing-5);
   width: 480px;
   max-width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: var(--shadow-lg), var(--shadow-purple);
+  box-shadow: var(--shadow-lg), var(--glow-purple-soft), var(--card-topline-accent);
   animation: modalIn var(--duration-slow) var(--easing-out);
 }
 @keyframes modalIn {

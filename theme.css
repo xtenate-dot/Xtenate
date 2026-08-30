@@ -43,15 +43,21 @@
   --light-bg-subtle-layer: #F9FAFB;
 
   /* ============ VISUELE EFFECTEN ============ */
-  /* Achtergrond: zeer subtiele violette gloed linksboven voor diepte */
+  /* Achtergrond: drie zeer subtiele lagen. Los van elkaar nauwelijks
+     zichtbaar; samen geven ze het canvas diepte en een paarse ondertoon.
+     De derde laag zit onder het dashboard en tilt het middengebied op. */
   --app-gradient-layer: 
-    radial-gradient(1200px 620px at 12% -8%, rgba(76,29,149,0.28) 0%, transparent 62%),
-    radial-gradient(900px 520px at 96% 6%, rgba(124,58,237,0.10) 0%, transparent 58%);
+    radial-gradient(1200px 620px at 12% -8%, rgba(76,29,149,0.32) 0%, transparent 62%),
+    radial-gradient(900px 520px at 96% 6%, rgba(124,58,237,0.12) 0%, transparent 58%),
+    radial-gradient(1400px 800px at 50% 42%, rgba(91,33,182,0.07) 0%, transparent 70%);
   --app-gradient-light: none;
 
-  /* Kaarten: zeer lichte inner glow van bovenaf */
-  --card-gradient-layer: linear-gradient(180deg, rgba(139,92,246,0.045) 0%, rgba(139,92,246,0) 52%);
+  /* Kaarten: lichte inner glow van bovenaf plus een haarlijn bovenrand.
+     De bovenrand is wat een donker vlak van een gedrukt vlak onderscheidt. */
+  --card-gradient-layer: linear-gradient(180deg, rgba(139,92,246,0.05) 0%, rgba(139,92,246,0) 54%);
   --card-gradient-light: none;
+  --card-topline: inset 0 1px 0 rgba(255,255,255,0.045);
+  --card-topline-accent: inset 0 1px 0 rgba(196,181,253,0.12);
 
   /* ============ GRENZEN/LIJNEN ============ */
   /* Dark mode */
@@ -164,9 +170,23 @@
   --shadow-subtle: 0 1px 2px rgba(0,0,0,0.30);
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.22);
   --shadow-card: 0 8px 30px rgba(0,0,0,0.25);
+  --shadow-card-raised: 0 14px 40px -8px rgba(0,0,0,0.42);
   --shadow-lg: 0 24px 60px -16px rgba(0,0,0,0.62);
+
+  /* Gloedschaal: van nauwelijks aanwezig tot duidelijk actief.
+     Nooit verder dan -active; daarboven wordt het neon. */
   --shadow-purple: 0 0 25px rgba(124,58,237,0.08);
   --shadow-purple-active: 0 0 20px rgba(139,92,246,0.15);
+  --shadow-purple-focus: 0 0 0 3px rgba(139,92,246,0.22);
+  --glow-purple-soft: 0 6px 22px -6px rgba(124,58,237,0.28);
+  --glow-purple-strong: 0 8px 28px -6px rgba(124,58,237,0.42);
+
+  /* Paarse transparantieschaal — voorheen los in de componenten */
+  --purple-veil-05: rgba(139,92,246,0.05);
+  --purple-veil-08: rgba(139,92,246,0.08);
+  --purple-veil-12: rgba(139,92,246,0.12);
+  --purple-veil-18: rgba(139,92,246,0.18);
+  --purple-veil-26: rgba(139,92,246,0.26);
 
   /* Light mode */
   --light-shadow-subtle: 0 1px 2px rgba(16,24,40,0.04);
@@ -301,6 +321,17 @@
   --shadow-lg: var(--light-shadow-lg);
   --shadow-purple: var(--light-shadow-purple);
   --shadow-purple-active: var(--light-shadow-purple-active);
+  --shadow-card-raised: 0 10px 28px -6px rgba(16,24,40,0.14);
+  --shadow-purple-focus: 0 0 0 3px rgba(124,58,237,0.18);
+  --glow-purple-soft: 0 6px 18px -6px rgba(124,58,237,0.20);
+  --glow-purple-strong: 0 8px 22px -6px rgba(124,58,237,0.28);
+  --card-topline: inset 0 1px 0 rgba(255,255,255,0.9);
+  --card-topline-accent: inset 0 1px 0 rgba(124,58,237,0.10);
+  --purple-veil-05: rgba(124,58,237,0.04);
+  --purple-veil-08: rgba(124,58,237,0.06);
+  --purple-veil-12: rgba(124,58,237,0.08);
+  --purple-veil-18: rgba(124,58,237,0.12);
+  --purple-veil-26: rgba(124,58,237,0.16);
 
   --overlay-scrim: var(--overlay-light);
   --state-active-bg: #F5F0FF;

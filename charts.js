@@ -74,8 +74,8 @@ export function baseOpts({ legend = true, yFmt = null, tooltipFmt = null } = {})
         bodyColor: tekst,
         borderColor: cssVar('--border-purple-strong') || rand,
         borderWidth: 1,
-        padding: 12,
-        cornerRadius: 10,
+        padding: 14,
+        cornerRadius: 12,
         displayColors: true,
         boxWidth: 8, boxHeight: 8, boxPadding: 4,
         usePointStyle: true,
@@ -88,18 +88,18 @@ export function baseOpts({ legend = true, yFmt = null, tooltipFmt = null } = {})
     scales: {
       x: {
         grid: { display: false },
-        border: { color: grid },
+        border: { color: cssVar('--chart-grid') },
         ticks: {
-          font: { size: 10.5 }, color: tekst,
-          maxRotation: 0, autoSkipPadding: 12, padding: 6
+          font: { size: 10.5 }, color: cssVar('--chart-axis'),
+          maxRotation: 0, autoSkipPadding: 12, padding: 8
         }
       },
       y: {
         grid: { color: grid, drawTicks: false },
         border: { display: false, dash: [3, 3] },
         ticks: {
-          font: { size: 10.5 }, color: tekst,
-          callback: yFmt || (v => v), padding: 8
+          font: { size: 10.5 }, color: cssVar('--chart-axis'),
+          callback: yFmt || (v => v), padding: 10
         }
       }
     }
@@ -146,14 +146,14 @@ export function staaf(label, data, kleur) {
       const gebied = ctx?.chart?.chartArea;
       if (!gebied) return alpha(kleur, 0.7);
       const g = ctx.chart.ctx.createLinearGradient(0, gebied.top, 0, gebied.bottom);
-      g.addColorStop(0, alpha(kleur, 0.95));
-      g.addColorStop(1, alpha(kleur, 0.45));
+      g.addColorStop(0, alpha(kleur, 1));
+      g.addColorStop(1, alpha(kleur, 0.38));
       return g;
     },
     hoverBackgroundColor: kleur,
-    borderRadius: 5,
+    borderRadius: 7,
     borderSkipped: false,
-    maxBarThickness: 26
+    maxBarThickness: 28
   };
 }
 
@@ -162,12 +162,13 @@ export function lijn(label, data, kleur, { vulling = true, punten = true, gloed 
   const ds = {
     label, data,
     borderColor: kleur,
-    backgroundColor: vulling ? (ctx => vlak(ctx, kleur, 0.34)) : 'transparent',
+    backgroundColor: vulling ? (ctx => vlak(ctx, kleur, 0.42)) : 'transparent',
     fill: vulling,
-    tension: 0.35,
-    borderWidth: 2,
-    pointRadius: punten ? 2.5 : 0,
+    tension: 0.38,
+    borderWidth: 2.2,
+    pointRadius: punten ? 0 : 0,
     pointHoverRadius: 5,
+    pointHoverBorderWidth: 2,
     pointBackgroundColor: kleur,
     pointBorderColor: cssVar('--bg-card'),
     pointBorderWidth: 2
@@ -191,9 +192,9 @@ export const lijnGloed = {
     if (!ds || !ds.shadowKleur) return;
     const c = chart.ctx;
     c.save();
-    c.shadowColor = alpha(ds.shadowKleur, 0.55);
-    c.shadowBlur = 16;
-    c.shadowOffsetY = 2;
+    c.shadowColor = alpha(ds.shadowKleur, 0.5);
+    c.shadowBlur = 20;
+    c.shadowOffsetY = 4;
   },
   afterDatasetDraw(chart, args) {
     const ds = chart.data.datasets[args.index];
