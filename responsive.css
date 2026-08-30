@@ -2,7 +2,7 @@
 
 /* 1440px en breder: het raster mag ademen. */
 @media (min-width: 1440px) {
-  .page-wrap { padding: var(--sp-6) var(--sp-6) var(--sp-7); }
+  .page-wrap { padding: var(--spacing-6) var(--spacing-6) var(--spacing-7); }
 }
 
 @media (max-width: 1280px) {
@@ -27,9 +27,9 @@
 
 @media (max-width: 720px) {
   /* Zijmenu wordt een uitschuifpaneel */
-  .sidebar { transform: translateX(-100%); transition: transform var(--dur) var(--ease); width: var(--sidebar-w); }
+  .sidebar { transform: translateX(-100%); transition: transform var(--duration-base) var(--easing-standard); width: var(--sidebar-width); }
   body.nav-open .sidebar { transform: translateX(0); box-shadow: var(--shadow-lg); }
-  body.nav-collapsed .sidebar { width: var(--sidebar-w); }
+  body.nav-collapsed .sidebar { width: var(--sidebar-width); }
   .main, body.nav-collapsed .main { margin-left: 0; }
   .menu-toggle { display: inline-flex; }
   .nav-collapse-btn { display: none; }
@@ -40,20 +40,20 @@
   body.nav-collapsed .nav-section { font-size: 10.5px; }
   body.nav-collapsed .nav-section::after { display: none; }
 
-  .topbar { padding: 0 var(--sp-3); gap: var(--sp-2); }
+  .topbar { padding: 0 var(--spacing-3); gap: var(--spacing-2); }
   .topbar-title { display: none; }
-  .page-wrap { padding: var(--sp-5) var(--sp-3) var(--sp-7); }
+  .page-wrap { padding: var(--spacing-5) var(--spacing-3) var(--spacing-7); }
   .page-title { font-size: 19px; }
 
-  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
-  .kpi { padding: var(--sp-3); }
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--spacing-2); }
+  .kpi { padding: var(--spacing-3); }
   .kpi-val { font-size: 20px; }
   .kpi--primair .kpi-val { font-size: 22px; }
   .kpi-lbl { margin-bottom: 7px; }
 
   .form-grid { grid-template-columns: minmax(0, 1fr); }
   .form-group.full { grid-column: 1; }
-  .modal { padding: var(--sp-4); }
+  .modal { padding: var(--spacing-4); }
   .drawer { width: 100%; }
   .search-wrap { max-width: none; }
   .kbd { display: none; }
@@ -85,8 +85,8 @@
 }
 
 @media (max-width: 560px) {
-  .metrics { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
-  .metric { padding: var(--sp-3); }
+  .metrics { grid-template-columns: repeat(2, 1fr); gap: var(--spacing-2); }
+  .metric { padding: var(--spacing-3); }
   .metric .val { font-size: 17px; }
 
   /* Grafiekvlakken krimpen mee met de schermbreedte. */
@@ -125,8 +125,8 @@
     position: fixed;
     left: 0; right: 0; bottom: 0;
     z-index: 60;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-default);
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
   .tab-item {
@@ -140,14 +140,14 @@
     background: none;
     border: 0;
     cursor: pointer;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 10.5px;
     font-weight: 500;
     font-family: inherit;
     transition: color .15s ease;
   }
-  .tab-item.active { color: var(--accent); }
-  .tab-item:active { background: var(--surface-hover); }
+  .tab-item.active { color: var(--accent-primary); }
+  .tab-item:active { background: var(--bg-card-hover); }
 
   /* Ruimte onderaan zodat de tabbalk niets afdekt. */
   .page-wrap { padding-bottom: 78px; }
@@ -165,9 +165,9 @@
 
   #tbl-voorraad tr {
     position: relative;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-base);
     margin-bottom: 10px;
     padding: 12px 14px 10px;
   }
@@ -200,11 +200,11 @@
     align-items: baseline;
     gap: 12px;
     padding: 4px 0;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--border-default);
   }
   #tbl-voorraad td[data-label]::before {
     content: attr(data-label);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 12px;
     font-weight: 400;
     flex: 0 0 auto;
@@ -220,7 +220,7 @@
     align-items: center;
     padding: 10px 0 0 !important;
     margin-top: 6px;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--border-default);
   }
 
   /* De lege-staat blijft één vlak in plaats van een kaart. */

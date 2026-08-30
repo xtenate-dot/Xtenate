@@ -123,10 +123,10 @@ function renderOverzicht(boekingen) {
     // Totaal per rubriek
     const totAantal = perRubriek[rub].reduce((s, r) => s + r.aantal, 0);
     const totSaldo = perRubriek[rub].reduce((s, r) => s + r.saldo, 0);
-    tabelRijen.push(`<tr style="border-top:2px solid var(--border);background:var(--surface-alt,var(--surface))">
+    tabelRijen.push(`<tr style="border-top:2px solid var(--border-default);background:var(--bg-subtle-layer)">
       <td colspan="3" style="padding-left:16px;font-weight:600">${RUBRIEK_NAAM[rub]}</td>
-      <td style="text-align:right;font-weight:600;color:var(--text-muted)">${totAantal}</td>
-      <td style="text-align:right;font-weight:600;padding-right:16px;color:${totSaldo >= 0 ? 'var(--pos)' : 'var(--neg)'}">${totSaldo >= 0 ? '+' : '–'}${fmt(Math.abs(totSaldo))}</td>
+      <td style="text-align:right;font-weight:600;color:var(--text-secondary)">${totAantal}</td>
+      <td style="text-align:right;font-weight:600;padding-right:16px;color:${totSaldo >= 0 ? 'var(--value-positive)' : 'var(--value-negative)'}">${totSaldo >= 0 ? '+' : '–'}${fmt(Math.abs(totSaldo))}</td>
     </tr>`);
   }
 
@@ -165,7 +165,7 @@ function renderDetail(boekingen) {
       <div style="font-size:15px;font-weight:600;letter-spacing:-0.3px">
         <span class="gbnr" style="font-size:13px">${esc(gb)}</span> ${esc(GBNM[gb] || 'Onbekende rekening')}
       </div>
-      <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">${rijen.length} boeking${rijen.length === 1 ? '' : 'en'} · ${RUBRIEK_NAAM[rubriekVan(gb)]}</div>
+      <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px">${rijen.length} boeking${rijen.length === 1 ? '' : 'en'} · ${RUBRIEK_NAAM[rubriekVan(gb)]}</div>
     </div>
     <div class="${saldo >= 0 ? 'pos' : 'neg'}" style="font-size:19px;font-weight:600;letter-spacing:-0.5px">${saldo >= 0 ? '+' : '–'}${fmt(Math.abs(saldo))}</div>`;
 

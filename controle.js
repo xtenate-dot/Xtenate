@@ -457,7 +457,7 @@ function renderVerborgen() {
     </div>
     <div class="card card-flush">
       ${controles.map(c => `
-        <div class="ctrl-item" style="border-radius:0;border:none;border-bottom:1px solid var(--border);background:none">
+        <div class="ctrl-item" style="border-radius:0;border:none;border-bottom:1px solid var(--border-default);background:none">
           <span class="ctrl-item-main" style="cursor:default">
             <span class="ctrl-item-label">${esc(c.controleTitel)}</span>
             <span class="ctrl-item-sub">Hele controle uitgezet op ${esc(c.wanneer)}</span>
@@ -467,7 +467,7 @@ function renderVerborgen() {
           </div>
         </div>`).join('')}
       ${meldingen.map(m => `
-        <div class="ctrl-item" style="border-radius:0;border:none;border-bottom:1px solid var(--border);background:none">
+        <div class="ctrl-item" style="border-radius:0;border:none;border-bottom:1px solid var(--border-default);background:none">
           <span class="ctrl-item-main" style="cursor:default">
             <span class="ctrl-item-label">${esc(m.label)}</span>
             <span class="ctrl-item-sub">${esc(REDEN_LABEL[m.reden] || m.reden)} op ${esc(m.wanneer)} · ${esc(m.controleTitel)}</span>
@@ -507,7 +507,7 @@ export function renderControle() {
     </div>
     <div class="kpi">
       <div class="kpi-lbl">Aandachtspunten</div>
-      <div class="kpi-val" style="color:${waarschuwingen.length ? 'var(--amber)' : 'var(--green)'}">${waarschuwingen.length}</div>
+      <div class="kpi-val" style="color:${waarschuwingen.length ? 'var(--semantic-warning-bright)' : 'var(--semantic-success-bright)'}">${waarschuwingen.length}</div>
       <div class="kpi-sub">${waarschuwingen.length ? `${enkelvoud(letOpRegels, 'regel', 'regels')} om te bekijken` : 'niets te bekijken'}${
         aantalVerborgen() ? ` · ${aantalVerborgen()} verborgen` : ''}</div>
     </div>`;
@@ -524,7 +524,7 @@ export function renderControle() {
     return `
       <div class="section-head">
         <div class="eyebrow">${esc(sectie)}</div>
-        <div style="font-size:11.5px;color:${heeftFout ? 'var(--red)' : open ? 'var(--amber)' : 'var(--text-muted)'}">${open ? `${enkelvoud(open, 'punt', 'punten')} open` : 'in orde'}</div>
+        <div style="font-size:11.5px;color:${heeftFout ? 'var(--semantic-danger-bright)' : open ? 'var(--semantic-warning-bright)' : 'var(--text-secondary)'}">${open ? `${enkelvoud(open, 'punt', 'punten')} open` : 'in orde'}</div>
       </div>
       <div class="card card-flush">
         ${inSectie.map(c => renderRegel(c, laatsteResultaten.indexOf(c))).join('')}

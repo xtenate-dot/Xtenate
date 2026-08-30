@@ -114,7 +114,7 @@ function render(d) {
           ? deltas.map(([dagen, n]) => `<strong>${n}×</strong> ${dagen > 0 ? '+' : ''}${dagen} dag`).join(' · ')
           : 'Geen verschoven boekingen gevonden.'}
       </p>
-      ${voorbeelden.length ? `<div class="table-wrap" style="margin-top:var(--sp-3)"><table class="tbl-compact">
+      ${voorbeelden.length ? `<div class="table-wrap" style="margin-top:var(--spacing-3)"><table class="tbl-compact">
         <thead><tr><th>Jaar</th><th>Bij mij</th><th>In code</th><th style="text-align:right">Verschil</th><th style="text-align:right">Bedrag</th><th>Naam</th></tr></thead>
         <tbody>${voorbeelden.map(v => `<tr>
           <td>${v.jaar}</td><td>${esc(v.mijn.datum)}</td><td>${esc(v.code.datum)}</td>
@@ -126,7 +126,7 @@ function render(d) {
     </div>
 
     <div class="section-head"><div class="eyebrow">Losse bevindingen</div></div>
-    <div class="kpi-grid" style="margin-bottom:var(--sp-3)">
+    <div class="kpi-grid" style="margin-bottom:var(--spacing-3)">
       <div class="kpi kpi--secondary"><div class="kpi-lbl">Zonder geldige datum</div>
         <div class="kpi-val ${d.zonderDatum.length ? 'neg' : ''}">${d.zonderDatum.length}</div></div>
       <div class="kpi kpi--secondary"><div class="kpi-lbl">Dubbele nummers</div>
@@ -145,9 +145,9 @@ function render(d) {
       <button class="btn" onclick="voerOpslagDiagnoseUit()">Opnieuw uitvoeren</button>
       <button class="btn btn-primary" id="diag-kopieer" onclick="kopieerOpslagDiagnose()">Resultaten kopiëren</button>
     </div>
-    <textarea id="diag-tekst" readonly style="width:100%;height:340px;margin-top:var(--sp-3);
+    <textarea id="diag-tekst" readonly style="width:100%;height:340px;margin-top:var(--spacing-3);
       font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
-      border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">${esc(laatsteTekst)}</textarea>`;
+      border-radius:var(--radius-sm);background:var(--bg-subtle-layer);color:var(--text-primary)">${esc(laatsteTekst)}</textarea>`;
 }
 
 /** Bevriest de opslag op papier. Leest alleen. */
@@ -183,7 +183,7 @@ export async function maakOpslagSnapshot() {
       </table></div></div>
       <p class="ctrl-uitleg">De checksum verandert zodra ook maar één teken in die sleutel wijzigt.
         Draai deze snapshot later opnieuw om te bewijzen dat er niets is aangeraakt.</p>
-      <div class="kpi-grid" style="margin-bottom:var(--sp-3)">
+      <div class="kpi-grid" style="margin-bottom:var(--spacing-3)">
         <div class="kpi kpi--secondary"><div class="kpi-lbl">Voorraadartikelen</div>
           <div class="kpi-val">${s.covers.length}</div></div>
         <div class="kpi kpi--secondary"><div class="kpi-lbl">HNVI-loten</div>
@@ -198,9 +198,9 @@ export async function maakOpslagSnapshot() {
         <button class="btn" onclick="voerOpslagDiagnoseUit()">Terug naar de diagnose</button>
         <button class="btn btn-primary" id="diag-kopieer" onclick="kopieerOpslagDiagnose()">Resultaten kopiëren</button>
       </div>
-      <textarea id="diag-tekst" readonly style="width:100%;height:340px;margin-top:var(--sp-3);
+      <textarea id="diag-tekst" readonly style="width:100%;height:340px;margin-top:var(--spacing-3);
         font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
-        border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">${esc(laatsteTekst)}</textarea>`;
+        border-radius:var(--radius-sm);background:var(--bg-subtle-layer);color:var(--text-primary)">${esc(laatsteTekst)}</textarea>`;
   } catch (e) {
     el('diag-inhoud').innerHTML =
       `<div class="alert alert-error">De snapshot liep vast: ${esc(e.message)}. Er is niets gewijzigd.</div>`;
@@ -239,11 +239,11 @@ export async function toonOverrides() {
 
       <div class="section-head"><div class="eyebrow">xtenate_home_totals_override</div></div>
       <div class="card">
-        <p class="ctrl-uitleg" style="margin:0 0 var(--sp-2)">
+        <p class="ctrl-uitleg" style="margin:0 0 var(--spacing-2)">
           ${d.ht.aanwezig ? `${d.ht.tekens} tekens · checksum <code>${esc(d.ht.som)}</code>` : 'staat niet in de opslag'}</p>
         <textarea readonly style="width:100%;height:90px;font-family:ui-monospace,monospace;font-size:10px;
           padding:8px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
-          background:var(--surface-2);color:var(--text)">${esc(d.ht.ruw)}</textarea>
+          background:var(--bg-subtle-layer);color:var(--text-primary)">${esc(d.ht.ruw)}</textarea>
       </div>
       <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
         <thead><tr><th style="padding-left:16px">Jaar</th>${velden.map(v => `<th style="text-align:right">${v}</th>`).join('')}
@@ -261,12 +261,12 @@ export async function toonOverrides() {
 
       <div class="section-head"><div class="eyebrow">xtenate_maand_saldos_override</div></div>
       <div class="card">
-        <p class="ctrl-uitleg" style="margin:0 0 var(--sp-2)">
+        <p class="ctrl-uitleg" style="margin:0 0 var(--spacing-2)">
           ${d.ms.aanwezig ? `${d.ms.tekens} tekens · checksum <code>${esc(d.ms.som)}</code>` : 'staat niet in de opslag'}
           ${d.gaten.length ? `<br>Ontbrekende maanden binnen de reeks: <span class="neg">${esc(d.gaten.join(', '))}</span>` : '<br>Geen gaten binnen de reeks.'}</p>
         <textarea readonly style="width:100%;height:90px;font-family:ui-monospace,monospace;font-size:10px;
           padding:8px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
-          background:var(--surface-2);color:var(--text)">${esc(d.ms.ruw)}</textarea>
+          background:var(--bg-subtle-layer);color:var(--text-primary)">${esc(d.ms.ruw)}</textarea>
       </div>
       <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
         <thead><tr><th style="padding-left:16px">Maand</th>
@@ -289,9 +289,9 @@ export async function toonOverrides() {
         <button class="btn" onclick="maakOpslagSnapshot()">Terug naar de snapshot</button>
         <button class="btn btn-primary" id="diag-kopieer" onclick="kopieerOpslagDiagnose()">Resultaten kopiëren</button>
       </div>
-      <textarea id="diag-tekst" readonly style="width:100%;height:300px;margin-top:var(--sp-3);
+      <textarea id="diag-tekst" readonly style="width:100%;height:300px;margin-top:var(--spacing-3);
         font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
-        border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">${esc(laatsteTekst)}</textarea>`;
+        border-radius:var(--radius-sm);background:var(--bg-subtle-layer);color:var(--text-primary)">${esc(laatsteTekst)}</textarea>`;
   } catch (e) {
     el('diag-inhoud').innerHTML =
       `<div class="alert alert-error">Het uitlezen liep vast: ${esc(e.message)}. Er is niets gewijzigd.</div>`;
@@ -322,7 +322,7 @@ export async function toonNegeerlijst() {
         Er is niets geschreven. Niet-eenduidige koppelingen staan op <strong>ONBESLIST</strong>; daar wordt niets geraden.
       </div>
 
-      <div class="kpi-grid" style="margin-bottom:var(--sp-3)">
+      <div class="kpi-grid" style="margin-bottom:var(--spacing-3)">
         <div class="kpi kpi--secondary"><div class="kpi-lbl">Meldingen</div>
           <div class="kpi-val">${a.aantalMeldingen ?? 0}</div></div>
         <div class="kpi kpi--secondary"><div class="kpi-lbl">Uitgezette controles</div>
@@ -359,9 +359,9 @@ export async function toonNegeerlijst() {
         <button class="btn" id="diag-kopieer" onclick="kopieerOpslagDiagnose()">Resultaten kopiëren</button>
         <button class="btn btn-primary" onclick="downloadNegeerBestanden()">Negeerlijst downloaden (JSON + CSV)</button>
       </div>
-      <textarea id="diag-tekst" readonly style="width:100%;height:240px;margin-top:var(--sp-3);
+      <textarea id="diag-tekst" readonly style="width:100%;height:240px;margin-top:var(--spacing-3);
         font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
-        border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">${esc(laatsteTekst)}</textarea>`;
+        border-radius:var(--radius-sm);background:var(--bg-subtle-layer);color:var(--text-primary)">${esc(laatsteTekst)}</textarea>`;
   } catch (e) {
     el('diag-inhoud').innerHTML = `<div class="alert alert-error">Uitlezen mislukt: ${esc(e.message)}. Er is niets gewijzigd.</div>`;
   } finally {
@@ -421,9 +421,9 @@ export async function downloadBackup() {
         <button class="btn" onclick="downloadBackup()">Opnieuw downloaden</button>
         <button class="btn btn-primary" id="diag-kopieer" onclick="kopieerOpslagDiagnose()">Overzicht kopiëren</button>
       </div>
-      <textarea id="diag-tekst" readonly style="width:100%;height:260px;margin-top:var(--sp-3);
+      <textarea id="diag-tekst" readonly style="width:100%;height:260px;margin-top:var(--spacing-3);
         font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
-        border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">${esc(laatsteTekst)}</textarea>`;
+        border-radius:var(--radius-sm);background:var(--bg-subtle-layer);color:var(--text-primary)">${esc(laatsteTekst)}</textarea>`;
   } catch (e) {
     el('diag-inhoud').innerHTML = `<div class="alert alert-error">De reservekopie kon niet worden gemaakt: ${esc(e.message)}. Er is niets gewijzigd.</div>`;
   } finally {

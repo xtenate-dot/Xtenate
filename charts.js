@@ -15,7 +15,7 @@ export function cssVar(naam) {
 
 /** Het vaste grafiekpalet, in volgorde. */
 export function palette() {
-  return ['--ch-1','--ch-2','--ch-3','--ch-4','--ch-5','--ch-6'].map(cssVar);
+  return ['--chart-color-1','--chart-color-2','--chart-color-3','--chart-color-4','--chart-color-5','--chart-color-6'].map(cssVar);
 }
 
 /** Zet een hexkleur om naar rgba met de gevraagde doorzichtigheid. */
@@ -43,10 +43,10 @@ export function vlak(ctx, kleur, sterkte = 0.28) {
 
 /** Basisopties die elke grafiek in de app deelt. */
 export function baseOpts({ legend = true, yFmt = null, tooltipFmt = null } = {}) {
-  const tekst = cssVar('--text-muted');
-  const kop = cssVar('--text');
-  const grid = cssVar('--ch-grid');
-  const vlakKleur = cssVar('--surface');
+  const tekst = cssVar('--text-secondary');
+  const kop = cssVar('--text-primary');
+  const grid = cssVar('--chart-grid');
+  const vlakKleur = cssVar('--bg-card');
   const rand = cssVar('--border-strong');
 
   return {
@@ -61,7 +61,7 @@ export function baseOpts({ legend = true, yFmt = null, tooltipFmt = null } = {})
         display: legend,
         position: 'bottom',
         labels: {
-          font: { size: 11.5, family: cssVar('--font') || undefined },
+          font: { size: 11.5, family: cssVar('--font-family-base') || undefined },
           boxWidth: 8, boxHeight: 8,
           usePointStyle: true, pointStyle: 'circle',
           color: tekst,
@@ -119,18 +119,18 @@ export function donutMidden(bedrag, bijschrift = 'Totale kosten') {
       const c = chart.ctx;
       const x = (gebied.left + gebied.right) / 2;
       const y = (gebied.top + gebied.bottom) / 2;
-      const font = cssVar('--font') || 'sans-serif';
+      const font = cssVar('--font-family-base') || 'sans-serif';
 
       c.save();
       c.textAlign = 'center';
       c.textBaseline = 'middle';
 
       c.font = `500 10px ${font}`;
-      c.fillStyle = cssVar('--text-muted-c') || '#888';
+      c.fillStyle = cssVar('--text-muted');
       c.fillText(bijschrift.toUpperCase(), x, y - 13);
 
       c.font = `600 17px ${font}`;
-      c.fillStyle = cssVar('--text-primary') || '#fff';
+      c.fillStyle = cssVar('--text-primary');
       c.fillText(bedrag, x, y + 6);
 
       c.restore();

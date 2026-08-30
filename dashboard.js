@@ -355,8 +355,8 @@ export function renderHome() {
   document.getElementById('home-uitsch').innerHTML = uitschieters.length
     ? uitschieters.map(t => `
       <div class="uitsch-item row-click" data-id="${esc(t.id)}">
-        <div class="uitsch-icon" style="background:${isInkomst(t) ? 'var(--green-bg)' : 'var(--red-bg)'}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${isInkomst(t) ? 'var(--green)' : 'var(--red)'}" stroke-width="2.5">
+        <div class="uitsch-icon" style="background:${isInkomst(t) ? 'var(--semantic-success-soft)' : 'var(--semantic-danger-soft)'}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${isInkomst(t) ? 'var(--semantic-success-bright)' : 'var(--semantic-danger-bright)'}" stroke-width="2.5">
             ${isInkomst(t)
               ? '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>'
               : '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>'}
@@ -402,8 +402,8 @@ export function renderHome() {
       data: {
         labels,
         datasets: [
-          staaf('Omzet', omzetD, cssVar('--ch-omzet')),
-          staaf('Kosten', kostenD, cssVar('--ch-kosten'))
+          staaf('Omzet', omzetD, cssVar('--chart-revenue')),
+          staaf('Kosten', kostenD, cssVar('--chart-costs'))
         ]
       },
       options: baseOpts({ yFmt: fmtKort, tooltipFmt: tipBedrag })
@@ -417,7 +417,7 @@ export function renderHome() {
       data: {
         labels,
         datasets: [
-          lijn('Resultaat, opgeteld', cumulatief, cssVar('--ch-winst'),
+          lijn('Resultaat, opgeteld', cumulatief, cssVar('--chart-profit'),
                { punten: maanden.length <= 18, gloed: true })
         ]
       },
