@@ -3,27 +3,29 @@
    Componenten verwijzen uitsluitend naar deze tokens. */
 
 :root {
-  /* ---------- VLAKKEN ---------- */
-  --bg: #080D1A;              /* paginacanvas */
-  --sidebar-bg: #0B1120;      /* zijmenu */
-  --surface: #111827;         /* kaarten, dialogen, tabellen */
-  --surface-2: #161F30;       /* subvlak: tabelkoppen, inputs */
-  --surface-3: #1B2436;       /* hover op een subvlak */
-  --surface-hover: #171F31;
-  --surface-active: #1C2740;
+  /* ---------- VLAKKEN ----------
+     Basis uit de ontwerpspecificatie, met een lichte violette ondertoon
+     zodat het geheel warmer en minder marineblauw leest. */
+  --bg: #0A0A16;              /* paginacanvas */
+  --sidebar-bg: #0D0C1C;      /* zijmenu */
+  --surface: #141327;         /* kaarten, dialogen, tabellen */
+  --surface-2: #1A1930;       /* subvlak: tabelkoppen, inputs */
+  --surface-3: #201E3A;       /* hover op een subvlak */
+  --surface-hover: #1C1B33;
+  --surface-active: #232145;
 
   /* Zeer subtiel kaartverloop — diepte zonder gradient-look */
-  --card-gradient: linear-gradient(180deg, rgba(255,255,255,0.022) 0%, rgba(255,255,255,0) 55%);
+  --card-gradient: linear-gradient(180deg, rgba(167,139,250,0.035) 0%, rgba(167,139,250,0) 58%);
 
   /* ---------- LIJNEN ---------- */
-  --border: #1F2937;
-  --border-soft: rgba(255,255,255,0.055);
-  --border-strong: #2B3648;
+  --border: #262340;
+  --border-soft: rgba(196,181,253,0.07);
+  --border-strong: #332F52;
 
   /* ---------- TEKST ---------- */
   --text: #F8FAFC;
-  --text-muted: #94A3B8;
-  --text-hint: #64748B;
+  --text-muted: #9B96B8;
+  --text-hint: #6B6690;
 
   /* ---------- MERK ---------- */
   --accent: #8B5CF6;
@@ -47,7 +49,7 @@
   --amber-bg: var(--amber-soft);
   --purple-bg: var(--accent-soft);
   --accent-bg: var(--accent-soft);
-  --gray-bg: rgba(148,163,184,0.10);
+  --gray-bg: rgba(155,150,184,0.12);
 
   /* ---------- GRAFIEKPALET ---------- */
   --ch-1: #8B5CF6;
@@ -56,8 +58,8 @@
   --ch-4: #38BDF8;
   --ch-5: #F472B6;
   --ch-6: #64748B;
-  --ch-grid: rgba(148,163,184,0.10);
-  --ch-axis: rgba(148,163,184,0.55);
+  --ch-grid: rgba(155,150,184,0.12);
+  --ch-axis: rgba(155,150,184,0.55);
 
   /* ---------- RADIUS ---------- */
   --radius-xs: 5px;
