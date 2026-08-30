@@ -205,7 +205,7 @@ function aandachtspunten() {
   });
 
   if (zonderPrijs.length) punten.push({
-    kleur: 'blue', titel: `${zonderPrijs.length} zonder eigen inkoopprijs`,
+    kleur: 'accent', titel: `${zonderPrijs.length} zonder eigen inkoopprijs`,
     tekst: 'Deze krijgen hun prijs uit de bankboekingen. Met de inkoopverdeling stem je dat per artikel af.',
     actie: "nav('voorraad')", knop: 'Verdeling'
   });
@@ -316,21 +316,23 @@ export function renderHome() {
   document.getElementById('home-kpi').innerHTML =
     kpi(`Omzet ${jaarTekst} ${bronMerk}`, fmt(omzet), 'pos',
         `Xtenate ${fmt(omzXt)} · Bol ${fmt(omzBol)} · Helmetstore ${fmt(omzHC)}`, '',
-        { icoon: 'omzet', toon: 'green', trend: kpiTrend(groei(omzet, vorig?.omzet), true), primair: true }) +
+        { icoon: 'omzet', trend: kpiTrend(groei(omzet, vorig?.omzet), true), primair: true }) +
     kpi('Totale kosten', fmt(kosten), 'neg',
         hnviInv > 0 ? `waarvan ${fmt(hnviInv)} HNVI-inkoop` : '', '',
-        { icoon: 'kosten', toon: 'amber', trend: kpiTrend(groei(kosten, vorig?.kosten), false) }) +
+        { icoon: 'kosten', trend: kpiTrend(groei(kosten, vorig?.kosten), false) }) +
     kpi('Netto resultaat', fmt(winst), winst >= 0 ? 'pos' : 'neg',
         omzet > 0 ? `marge ${Math.round(winst / omzet * 100)}%` : '', '',
-        { icoon: 'winst', toon: winst >= 0 ? 'green' : 'red',
+        { icoon: 'winst',
           trend: kpiTrend(groei(winst, vorig ? vorig.omzet - vorig.kosten : NaN), true) }) +
     kpi('Banksaldo', bank.saldo === null ? '—' : fmt(bank.saldo),
         bank.saldo !== null && bank.saldo < 0 ? 'neg' : '', bank.label, '',
-        { icoon: 'bank', toon: 'accent' });
+        { icoon: 'bank' });
 
   document.getElementById('home-kpi2').innerHTML =
-    kpi('Privé-opnames', fmt(priveOp), 'muted', '', ' kpi--secondary', { icoon: 'prive' }) +
-    kpi('Privé-stortingen', fmt(priveSt), 'muted', '', ' kpi--secondary', { icoon: 'prive' }) +
+    kpi('Privé-opnames', fmt(priveOp), 'muted', '', ' kpi--secondary',
+        { icoon: 'prive', toon: 'neutraal' }) +
+    kpi('Privé-stortingen', fmt(priveSt), 'muted', '', ' kpi--secondary',
+        { icoon: 'prive', toon: 'neutraal' }) +
     kpi(ib <= 0 ? 'Geschatte teruggave' : 'Geschatte inkomstenbelasting',
         (ib <= 0 ? '+' : '') + fmt(Math.abs(Math.round(ib))),
         ib <= 0 ? 'pos' : 'neg',
