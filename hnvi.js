@@ -144,20 +144,20 @@ export function renderHNVI() {
         if (i.factuur) regels.push(`factuur ${esc(i.factuur)}`);
         if (i.noot) regels.push(esc(i.noot));
         return regels.length
-          ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${regels.join(' \u00b7 ')}</div>`
+          ? `<div style="font-size:10px;color:var(--text-secondary);margin-top:2px">${regels.join(' \u00b7 ')}</div>`
           : '';
       })()}</td>
       <td style="text-align:right" data-v="${Number(i.inkoop)||0}">${fmt(i.inkoop)}</td>
       <td style="text-align:right" data-v="${Number(i.verkoop)||0}">${
         i.verkoop!=null&&i.verkoop>0
-          ? `${fmt(i.verkoop)}${i.verkoopDatum?`<div style="font-size:10px;color:var(--text-muted)">${ddmm(i.verkoopDatum)}</div>`:''}`
+          ? `${fmt(i.verkoop)}${i.verkoopDatum?`<div style="font-size:10px;color:var(--text-secondary)">${ddmm(i.verkoopDatum)}</div>`:''}`
           : '—'}</td>
-      <td style="text-align:right" data-v="${w||0}">${w!=null&&i.verkoop>0?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-muted)">${pct}%</div>`:'—'}</td>
+      <td style="text-align:right" data-v="${w||0}">${w!=null&&i.verkoop>0?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-secondary)">${pct}%</div>`:'—'}</td>
       <td data-v="${esc(i.status)}">${i.status==='verkocht'?'<span class="badge badge-green">verkocht</span>':'<span class="badge badge-gray">op voorraad</span>'}</td>
       <td style="white-space:nowrap">
         <span class="sell-link" onclick="openHNVISell('${esc(i.id)}')">${i.status==='voorraad'?'Verkoop':'Wijzig'}</span>
-        ${i.status==='verkocht'?`<span class="sell-link" style="color:var(--text-muted)" onclick="wisHNVIVerkoop('${esc(i.id)}')">Wis</span>`:''}
-        <span class="sell-link" style="color:var(--red)" onclick="verwijderHNVIItem('${esc(i._key||i.id)}')">Verwijder</span>
+        ${i.status==='verkocht'?`<span class="sell-link" style="color:var(--text-secondary)" onclick="wisHNVIVerkoop('${esc(i.id)}')">Wis</span>`:''}
+        <span class="sell-link" style="color:var(--semantic-danger-bright)" onclick="verwijderHNVIItem('${esc(i._key||i.id)}')">Verwijder</span>
       </td>
     </tr>`;
   }).join('') : `<tr data-geen-sort="1"><td colspan="8">${leegVlak(
@@ -455,14 +455,14 @@ Als er meerdere identieke items zijn (bijv 4x iPhone SE) maak dan voor elk een a
   document.getElementById('hnvi-factuur-preview').innerHTML = `
     <table style="width:100%;font-size:12.5px;border-collapse:collapse">
       <thead><tr>
-        <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-weight:500">Omschrijving</th>
-        <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-weight:500">Datum</th>
-        <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-weight:500">Inkoop incl.</th>
+        <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border-default);color:var(--text-secondary);font-weight:500">Omschrijving</th>
+        <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border-default);color:var(--text-secondary);font-weight:500">Datum</th>
+        <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border-default);color:var(--text-secondary);font-weight:500">Inkoop incl.</th>
       </tr></thead>
       <tbody>${state.hnviImportItems.map(i => `<tr>
-        <td style="padding:7px 8px;border-bottom:1px solid var(--border)">${i.omschrijving}</td>
-        <td style="padding:7px 8px;border-bottom:1px solid var(--border);color:var(--text-muted)">${i.datum.slice(8,10)}-${i.datum.slice(5,7)}</td>
-        <td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:500">${fmt2(i.inkoop)}</td>
+        <td style="padding:7px 8px;border-bottom:1px solid var(--border-default)">${i.omschrijving}</td>
+        <td style="padding:7px 8px;border-bottom:1px solid var(--border-default);color:var(--text-secondary)">${i.datum.slice(8,10)}-${i.datum.slice(5,7)}</td>
+        <td style="padding:7px 8px;border-bottom:1px solid var(--border-default);text-align:right;font-weight:500">${fmt2(i.inkoop)}</td>
       </tr>`).join('')}</tbody>
       <tfoot><tr>
         <td colspan="2" style="padding:8px 8px 0;font-weight:600">Totaal ${files.length} facturen</td>

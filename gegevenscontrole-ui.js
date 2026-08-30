@@ -73,8 +73,8 @@ function bevestigingsblok(m, actie) {
   const uitleg = m.gevolgPerActie[actie];
 
   return `
-    <div class="card" style="border:2px solid var(--accent);margin-top:var(--sp-2)">
-      <div class="eyebrow" style="margin-bottom:var(--sp-2)">Bevestigen — ${esc(naam[actie])}</div>
+    <div class="card" style="border:2px solid var(--accent-primary);margin-top:var(--spacing-2)">
+      <div class="eyebrow" style="margin-bottom:var(--spacing-2)">Bevestigen — ${esc(naam[actie])}</div>
       <table class="tbl-compact" style="width:100%">
         <tbody>
           <tr><td style="width:150px" class="muted">Huidige waarde</td>
@@ -94,7 +94,7 @@ function bevestigingsblok(m, actie) {
         </tbody>
       </table>
       ${m.voorbeelden && m.voorbeelden.length ? `
-        <div class="table-wrap" style="margin-top:var(--sp-3)"><table class="tbl-compact">
+        <div class="table-wrap" style="margin-top:var(--spacing-3)"><table class="tbl-compact">
           <thead><tr><th>Nummer</th><th>Nu</th><th>Wordt</th><th style="text-align:right">Bedrag</th><th>Naam</th></tr></thead>
           <tbody>${m.voorbeelden.map(v => `<tr>
             <td><code>${esc(v.id)}</code></td><td class="muted">${esc(v.nu)}</td>
@@ -118,7 +118,7 @@ function meldingBlok(m) {
   const keuze = keuzeVan(m.id);
   const bezig = openBevestiging && openBevestiging.meldingId === m.id;
   return `
-    <div class="card" style="margin-bottom:var(--sp-3)">
+    <div class="card" style="margin-bottom:var(--spacing-3)">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
         <div style="flex:1">
           <div style="font-weight:600">${esc(m.titel)}</div>
@@ -131,8 +131,8 @@ function meldingBlok(m) {
           ${m.categorie === 'bewezen' ? 'correctie bewezen' : 'niet bewezen'}
         </span>
       </div>
-      <p class="ctrl-uitleg" style="margin:var(--sp-2) 0 0">${esc(m.reden)}</p>
-      <table class="tbl-compact" style="width:100%;margin-top:var(--sp-2)">
+      <p class="ctrl-uitleg" style="margin:var(--spacing-2) 0 0">${esc(m.reden)}</p>
+      <table class="tbl-compact" style="width:100%;margin-top:var(--spacing-2)">
         <tbody>
           <tr><td style="width:130px" class="muted">Nu</td><td>${esc(m.huidigeWaarde)}</td></tr>
           <tr><td class="muted">Voorstel</td>
@@ -142,7 +142,7 @@ function meldingBlok(m) {
         </tbody>
       </table>
       ${keuze ? `
-        <div class="alert alert-ok" style="margin-top:var(--sp-2)">
+        <div class="alert alert-ok" style="margin-top:var(--spacing-2)">
           Keuze vastgelegd: <strong>${esc(naam[keuze.actie])}</strong>
           <button class="btn btn-ghost btn-sm" style="margin-left:8px"
             onclick="maakKeuzeOngedaan('${esc(m.id)}')">Ongedaan maken</button>
@@ -211,13 +211,13 @@ function render() {
       geen zichtbaarheidsvlag op boekingen of voorraadartikelen, dus er staat nergens vast wát er
       dan niet meer zou meetellen. Zolang dat niet is vastgelegd, wordt de knop niet aangeboden.
     </div>
-    <div class="modal-actions" style="justify-content:flex-start;margin-bottom:var(--sp-3)">
+    <div class="modal-actions" style="justify-content:flex-start;margin-bottom:var(--spacing-3)">
       <button class="btn" onclick="exporteerGcMeldingen()">Meldingen exporteren (JSON + CSV)</button>
       <button class="btn" onclick="controleerGcSchrijfacties()">Controleren of er iets is geschreven</button>
     </div>
     <div id="gc-integriteit"></div>
 
-    <div class="kpi-grid" style="margin-bottom:var(--sp-3)">
+    <div class="kpi-grid" style="margin-bottom:var(--spacing-3)">
       <div class="kpi kpi--secondary"><div class="kpi-lbl">Meldingen</div>
         <div class="kpi-val">${meldingen.length}</div></div>
       <div class="kpi kpi--secondary"><div class="kpi-lbl">Correctie bewezen</div>

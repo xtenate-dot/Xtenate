@@ -643,12 +643,12 @@ function tekenVerdeling(behoudFocus) {
 
     return `
       <div style="margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 11px;background:var(--bg-subtle,rgba(255,255,255,.03));border-radius:6px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 11px;background:var(--bg-subtle-layer);border-radius:6px;margin-bottom:8px">
           <div><strong>${esc(gb)} — ${esc(GBNM[gb] || 'Inkoop')}</strong>
-            <span style="color:var(--text-muted);font-size:11.5px"> · ${rijen.length} artikelen · ${totaalStuks} stuks</span></div>
+            <span style="color:var(--text-secondary);font-size:11.5px"> · ${rijen.length} artikelen · ${totaalStuks} stuks</span></div>
           <div style="text-align:right">
             <div style="font-weight:600">${fmt(bedrag)}</div>
-            <div style="font-size:11px;color:var(--text-muted)">basisprijs ${fmt(basis)} per stuk</div>
+            <div style="font-size:11px;color:var(--text-secondary)">basisprijs ${fmt(basis)} per stuk</div>
           </div>
         </div>
         <div style="max-height:320px;overflow:auto">
@@ -671,12 +671,12 @@ function tekenVerdeling(behoudFocus) {
                   oninput="wijzigFactor('${esc(r.c.id)}', this.value)"
                   style="width:74px;text-align:right;padding:3px 6px;font-size:12px"></td>
               <td style="text-align:right${Math.abs(f - 1) > 0.001 ? ';font-weight:600' : ''}">${fmt(prijs)}</td>
-              <td style="text-align:right;color:var(--text-muted)">${fmt(prijs * r.stuks)}</td>
+              <td style="text-align:right;color:var(--text-secondary)">${fmt(prijs * r.stuks)}</td>
             </tr>`;
           }).join('')}</tbody>
-          <tfoot><tr style="border-top:2px solid var(--border)">
+          <tfoot><tr style="border-top:2px solid var(--border-default)">
             <td colspan="4" style="text-align:right;font-weight:600">Samen</td>
-            <td style="text-align:right;font-weight:600;color:${Math.abs(controle - bedrag) < 0.02 ? 'var(--green,#4ea87a)' : 'var(--red,#d16a6a)'}">${fmt(controle)}</td>
+            <td style="text-align:right;font-weight:600;color:${Math.abs(controle - bedrag) < 0.02 ? 'var(--semantic-success-bright)' : 'var(--semantic-danger-bright)'}">${fmt(controle)}</td>
           </tr></tfoot>
         </table>
         </div>
@@ -730,7 +730,7 @@ export function openVoorraadSyncModal() {
     <label style="display:flex;align-items:center;gap:9px;padding:8px 2px;cursor:pointer">
       <input type="checkbox" class="vs-soort" value="${sleutel}" checked${aantal ? '' : ' disabled'}>
       <span${aantal ? '' : ' style="opacity:.5"'}>${naam}</span>
-      <span style="color:var(--text-muted);font-size:11.5px">${eenheid}</span>
+      <span style="color:var(--text-secondary);font-size:11.5px">${eenheid}</span>
     </label>`;
 
   doel.innerHTML =
@@ -764,7 +764,7 @@ export async function startVoorraadSync() {
   knop.disabled = false;
 
   if (uitkomst.fout) {
-    status.innerHTML = `<span style="color:var(--red,#d16a6a)">${esc(uitkomst.fout)}</span>`;
+    status.innerHTML = `<span style="color:var(--semantic-danger-bright)">${esc(uitkomst.fout)}</span>`;
     return;
   }
 
@@ -776,7 +776,7 @@ export async function startVoorraadSync() {
     mislukt += r.mislukt;
     regels.push(`${naam}: ${r.ok} verstuurd${r.mislukt ? `, ${r.mislukt} mislukt` : ''}`);
   }
-  const kleur = mislukt ? 'var(--amber,#d19a3a)' : 'var(--green,#4ea87a)';
+  const kleur = mislukt ? 'var(--semantic-warning-bright)' : 'var(--semantic-success-bright)';
   status.innerHTML = `<span style="color:${kleur}">${regels.join('<br>')}</span>`;
   console.log('Alles naar cloud:', uitkomst);
 }
@@ -1025,23 +1025,23 @@ export function openCoverModal() {
 function bankPrijsUitleg({ handelsvoorraad, inkoopGb, jaren, inkoopprijs }) {
   const handmatig = Number(inkoopprijs);
   if (Number.isFinite(handmatig) && handmatig > 0) {
-    return { kleur: 'var(--text-muted)', tekst: `Je vult hier zelf ${fmt(handmatig)} in. Maak het veld leeg om de bank te gebruiken.` };
+    return { kleur: 'var(--text-secondary)', tekst: `Je vult hier zelf ${fmt(handmatig)} in. Maak het veld leeg om de bank te gebruiken.` };
   }
   if (handelsvoorraad === false) {
     return {
-      kleur: 'var(--amber, #d19a3a)',
+      kleur: 'var(--semantic-warning-bright)',
       tekst: 'Geen bankprijs: "Telt mee als handelsvoorraad" staat op Nee. De inkoop is dan meteen kosten, dus er wordt geen voorraadwaarde per stuk berekend. Zet dit op Ja voor een prijs uit de bank.'
     };
   }
   const gb = String(inkoopGb || '7000');
   if (gb !== '7000' && gb !== '7020') {
-    return { kleur: 'var(--amber, #d19a3a)', tekst: `Geen bankprijs: rekening ${gb} telt niet als handelsvoorraad.` };
+    return { kleur: 'var(--semantic-warning-bright)', tekst: `Geen bankprijs: rekening ${gb} telt niet als handelsvoorraad.` };
   }
 
   const stuks = Object.values(jaren || {}).reduce((s, j) => s + (Number(j?.inkoop) || 0), 0);
   if (!(stuks > 0)) {
     return {
-      kleur: 'var(--amber, #d19a3a)',
+      kleur: 'var(--semantic-warning-bright)',
       tekst: `Geen bankprijs: er staan 0 ingekochte stuks op ${gb}. De app deelt het bankbedrag door het aantal stuks, dus vul "Ingekocht totaal" in of importeer de Excel opnieuw.`
     };
   }
@@ -1050,12 +1050,12 @@ function bankPrijsUitleg({ handelsvoorraad, inkoopGb, jaren, inkoopprijs }) {
     bankPrijzen, gekozenJaar === 'nu' ? HUIDIG_JAAR : gekozenJaar));
   if (!(prijs > 0)) {
     return {
-      kleur: 'var(--amber, #d19a3a)',
+      kleur: 'var(--semantic-warning-bright)',
       tekst: `Geen bankprijs: wel ${stuks} stuks, maar geen uitgaven geboekt op rekening ${gb}. Boek de inkoopfactuur op ${gb}, dan verschijnt de prijs vanzelf.`
     };
   }
   return {
-    kleur: 'var(--green, #4ea87a)',
+    kleur: 'var(--semantic-success-bright)',
     tekst: `Uit de bank: ${fmt(prijs)} per stuk — het bedrag op ${gb} gedeeld door ${stuks} ingekochte stuks. Laat leeg om dit te blijven volgen.`
   };
 }
@@ -1411,7 +1411,7 @@ export async function handleImportVoorraad(event) {
     }
     
     console.log(`📊 Import sync result: ${syncOk} ok, ${syncFailed} failed`);
-    status.innerHTML = `✅ ${toegevoegd} toegevoegd, ${bijgewerkt} bijgewerkt<br><small style="color:var(--text-muted)">✅ ${syncOk} naar Supabase · ${syncFailed ? syncFailed + ' mislukt' : 'alles OK'}</small>`;
+    status.innerHTML = `✅ ${toegevoegd} toegevoegd, ${bijgewerkt} bijgewerkt<br><small style="color:var(--text-secondary)">✅ ${syncOk} naar Supabase · ${syncFailed ? syncFailed + ' mislukt' : 'alles OK'}</small>`;
     
     setTimeout(() => {
       sluitImportModal();

@@ -1,0 +1,392 @@
+/* theme.css — XTENATE Design System v2
+   CENTRAAL THEMA: Enige waarheid. Nul aliassen. Alle verwijzingen hier.
+   
+   Donker is de basis, niet een variant. De app bestaat uit reeksen
+   donkere lagen die subtiel in elkaar overlopen, met paars als
+   doorlopende identiteit.
+   
+   Kleur draagt betekenis: paars is interface, groen/rood/oranje/blauw
+   zijn voorbehouden aan financiële en statusinformatie.
+*/
+
+:root {
+  /* ============ PRIMAIRE KLEURENSCHAAL (PAARS) ============ */
+  --purple-900: #2E1065;
+  --purple-800: #4C1D95;
+  --purple-700: #5B21B6;
+  --purple-600: #6D28D9;
+  --purple-500: #7C3AED;   /* primair accent */
+  --purple-400: #8B5CF6;   /* helder accent */
+  --purple-300: #A78BFA;   /* licht accent */
+  --purple-200: #C4B5FD;   /* zacht accent */
+  --purple-100: #E9D5FF;   /* zeer zacht (light mode) */
+  --purple-50: #F5F0FF;    /* zeer zacht (light mode) */
+
+  /* ============ DONKERE LAGEN (DARK MODE) ============ */
+  --bg-app: #080B16;           /* hoofdachtergrond */
+  --bg-sidebar: #090E1C;       /* zijbalk */
+  --bg-topbar: #0B1020;        /* bovenste balk */
+  --bg-card: #11172A;          /* kaarten, panels */
+  --bg-card-hover: #151C32;    /* kaarten bij hover */
+  --bg-input: #0D1425;         /* invoervelden */
+  --bg-elevated: #0F1628;      /* modals, dropdowns, floating elementen */
+  --bg-subtle-layer: #0E1424;  /* tabelkoppen, subvlakken */
+
+  /* Lichte lagen (LIGHT MODE) */
+  --light-bg-app: #FCFCFD;
+  --light-bg-sidebar: #FFFFFF;
+  --light-bg-topbar: #FFFFFF;
+  --light-bg-card: #FFFFFF;
+  --light-bg-card-hover: #FAF8FF;
+  --light-bg-input: #F9FAFB;
+  --light-bg-elevated: #FFFFFF;
+  --light-bg-subtle-layer: #F9FAFB;
+
+  /* ============ VISUELE EFFECTEN ============ */
+  /* Achtergrond: zeer subtiele violette gloed linksboven voor diepte */
+  --app-gradient-layer: 
+    radial-gradient(1200px 620px at 12% -8%, rgba(76,29,149,0.28) 0%, transparent 62%),
+    radial-gradient(900px 520px at 96% 6%, rgba(124,58,237,0.10) 0%, transparent 58%);
+  --app-gradient-light: none;
+
+  /* Kaarten: zeer lichte inner glow van bovenaf */
+  --card-gradient-layer: linear-gradient(180deg, rgba(139,92,246,0.045) 0%, rgba(139,92,246,0) 52%);
+  --card-gradient-light: none;
+
+  /* ============ GRENZEN/LIJNEN ============ */
+  /* Dark mode */
+  --border-default: rgba(255,255,255,0.06);
+  --border-soft: rgba(255,255,255,0.04);
+  --border-strong: rgba(255,255,255,0.12);
+  --border-purple: rgba(139,92,246,0.16);
+  --border-purple-strong: rgba(139,92,246,0.30);
+
+  /* Light mode */
+  --light-border-default: #E5E7EB;
+  --light-border-soft: #F0F1F3;
+  --light-border-strong: #D6D9DF;
+  --light-border-purple: #DDD2FB;
+  --light-border-purple-strong: #C4B5FD;
+
+  /* ============ TYPOGRAFIE: PRIMAIR ============ */
+  /* Dark mode */
+  --text-primary: #F4F5FA;
+  --text-secondary: #A9AECB;
+  --text-muted: #6E7495;       /* BELANGRIJK: muted ≠ secondary */
+  --text-subtle: #4A5568;
+  --text-lavender: #C4B5FD;
+
+  /* Light mode */
+  --light-text-primary: #1F2937;
+  --light-text-secondary: #6B7280;
+  --light-text-muted: #9CA3AF;
+  --light-text-subtle: #D1D5DB;
+  --light-text-lavender: #7C3AED;
+
+  /* ============ SEMANTISCHE KLEUREN: FINANCIEEL EN STATUS ============ */
+  /* Succesvol / Positief (Groen) */
+  --semantic-success: #10B981;
+  --semantic-success-bright: #34D399;
+  --semantic-success-soft: rgba(16,185,129,0.12);
+  --semantic-success-line: rgba(52,211,153,0.28);
+
+  /* Waarschuwing (Amber/Oranje) */
+  --semantic-warning: #F59E0B;
+  --semantic-warning-bright: #FBBF24;
+  --semantic-warning-soft: rgba(245,158,11,0.12);
+  --semantic-warning-line: rgba(251,191,36,0.28);
+
+  /* Gevaar / Fout (Rood) */
+  --semantic-danger: #EF4444;
+  --semantic-danger-bright: #F87171;
+  --semantic-danger-soft: rgba(239,68,68,0.12);
+  --semantic-danger-line: rgba(248,113,113,0.28);
+
+  /* Informatie (Blauw) */
+  --semantic-info: #3B82F6;
+  --semantic-info-bright: #60A5FA;
+  --semantic-info-soft: rgba(59,130,246,0.12);
+  --semantic-info-line: rgba(96,165,250,0.28);
+
+  /* Neutrale grijze achtergrond (Dark) */
+  --semantic-gray-soft: rgba(169,174,203,0.10);
+  --light-semantic-gray-soft: #F3F4F6;
+
+  /* ============ MERKACCENTEN ============ */
+  /* Primair: paars als merkidentiteit */
+  --accent-primary: #8B5CF6;        /* helder paars */
+  --accent-primary-hover: #A78BFA;  /* lichter paars */
+  --accent-primary-solid: #7C3AED; /* doordringend paars */
+  --accent-primary-soft: rgba(139,92,246,0.12);
+  --accent-primary-softer: rgba(139,92,246,0.07);
+  --accent-primary-ring: rgba(139,92,246,0.30);
+  --accent-primary-line: rgba(139,92,246,0.16);
+  --accent-contrast: #ffffff;
+
+  /* Light mode */
+  --light-accent-primary: #7C3AED;
+  --light-accent-primary-hover: #5B21B6;
+  --light-accent-primary-soft: #F5F0FF;
+  --light-accent-primary-softer: #FAF8FF;
+  --light-accent-primary-ring: rgba(124,58,237,0.22);
+
+  /* ============ GRAFIEKEN & DATA-VISUALISATIE ============ */
+  /* Dark mode */
+  --chart-revenue: #8B5CF6;        /* omzet: paars */
+  --chart-costs: #FBBF24;          /* kosten: amber */
+  --chart-profit: #A78BFA;         /* winst: lichter paars */
+  --chart-color-1: #8B5CF6;        /* paars */
+  --chart-color-2: #A78BFA;        /* licht paars */
+  --chart-color-3: #C4B5FD;        /* zeer licht paars */
+  --chart-color-4: #60A5FA;        /* blauw */
+  --chart-color-5: #FBBF24;        /* amber */
+  --chart-color-6: #6E7495;        /* grijs */
+  --chart-background: #101629;
+  --chart-grid: rgba(255,255,255,0.05);
+  --chart-axis: #6E7495;
+
+  /* Light mode */
+  --light-chart-revenue: #7C3AED;
+  --light-chart-costs: #D97706;
+  --light-chart-profit: #8B5CF6;
+  --light-chart-color-1: #7C3AED;
+  --light-chart-color-2: #A78BFA;
+  --light-chart-color-3: #C4B5FD;
+  --light-chart-color-4: #2563EB;
+  --light-chart-color-5: #D97706;
+  --light-chart-color-6: #9CA3AF;
+  --light-chart-background: #FFFFFF;
+  --light-chart-grid: #EEF0F3;
+  --light-chart-axis: #9CA3AF;
+
+  /* ============ SCHADUW & GLOED ============ */
+  /* Dark mode */
+  --shadow-subtle: 0 1px 2px rgba(0,0,0,0.30);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.22);
+  --shadow-card: 0 8px 30px rgba(0,0,0,0.25);
+  --shadow-lg: 0 24px 60px -16px rgba(0,0,0,0.62);
+  --shadow-purple: 0 0 25px rgba(124,58,237,0.08);
+  --shadow-purple-active: 0 0 20px rgba(139,92,246,0.15);
+
+  /* Light mode */
+  --light-shadow-subtle: 0 1px 2px rgba(16,24,40,0.04);
+  --light-shadow-sm: 0 1px 3px rgba(16,24,40,0.06);
+  --light-shadow-card: 0 4px 12px -2px rgba(16,24,40,0.08);
+  --light-shadow-lg: 0 16px 40px -12px rgba(16,24,40,0.16);
+  --light-shadow-purple: 0 0 20px rgba(124,58,237,0.06);
+  --light-shadow-purple-active: 0 0 0 1px rgba(124,58,237,0.22);
+
+  --overlay-scrim: rgba(4,6,14,0.66);
+  --overlay-light: rgba(31,41,55,0.42);
+
+  /* ============ HOEKEN & VORM ============ */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-base: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* ============ RUIMTE/SPACING ============ */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 24px;
+  --spacing-6: 32px;
+  --spacing-7: 48px;
+
+  /* ============ MAATVOERING ============ */
+  --sidebar-width: 232px;
+  --sidebar-width-collapsed: 64px;
+  --topbar-height: 60px;
+  --content-max-width: 100%;
+
+  /* ============ TYPOGRAFIE: FONT-STACKS ============ */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-family-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ============ BEWEGING & TRANSITIES ============ */
+  --duration-fast: 110ms;
+  --duration-base: 170ms;
+  --duration-slow: 260ms;
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --easing-in: cubic-bezier(0.4, 0, 1, 1);
+  --transition-fast: var(--duration-fast) var(--easing-standard);
+  --transition-base: var(--duration-base) var(--easing-standard);
+  --transition-slow: var(--duration-slow) var(--easing-standard);
+
+  /* ============ POSITIEVE & NEGATIEVE WAARDEN ============ */
+  --value-positive: var(--semantic-success-bright);
+  --value-negative: var(--semantic-danger-bright);
+
+  /* Actieve staat: gebruikt paars als standaard */
+  --state-active-bg: rgba(124,58,237,0.14);
+
+  font-size: 14px;
+  color-scheme: dark;
+}
+
+/* ============ LIGHT MODE: VOLLEDIG OVERSCHRIJVEN ============ */
+[data-theme="light"] {
+  /* Achtergronden */
+  --bg-app: var(--light-bg-app);
+  --bg-sidebar: var(--light-bg-sidebar);
+  --bg-topbar: var(--light-bg-topbar);
+  --bg-card: var(--light-bg-card);
+  --bg-card-hover: var(--light-bg-card-hover);
+  --bg-input: var(--light-bg-input);
+  --bg-elevated: var(--light-bg-elevated);
+  --bg-subtle-layer: var(--light-bg-subtle-layer);
+
+  /* Visuele effecten */
+  --app-gradient-layer: var(--app-gradient-light);
+  --card-gradient-layer: var(--card-gradient-light);
+
+  /* Grenzen */
+  --border-default: var(--light-border-default);
+  --border-soft: var(--light-border-soft);
+  --border-strong: var(--light-border-strong);
+  --border-purple: var(--light-border-purple);
+  --border-purple-strong: var(--light-border-purple-strong);
+
+  /* Typografie */
+  --text-primary: var(--light-text-primary);
+  --text-secondary: var(--light-text-secondary);
+  --text-muted: var(--light-text-muted);
+  --text-subtle: var(--light-text-subtle);
+  --text-lavender: var(--light-text-lavender);
+
+  /* Semantische kleuren — op wit hebben deze donkerder varianten nodig,
+     anders zakt het contrast weg. Waarden gelijk aan het origineel. */
+  --semantic-success-bright: #059669;
+  --semantic-success-soft:   #ECFDF5;
+  --semantic-success-line:   #A7F3D0;
+  --semantic-warning-bright: #B45309;
+  --semantic-warning-soft:   #FFFBEB;
+  --semantic-warning-line:   #FDE68A;
+  --semantic-danger-bright:  #DC2626;
+  --semantic-danger-soft:    #FEF2F2;
+  --semantic-danger-line:    #FECACA;
+  --semantic-info-bright:    #2563EB;
+  --semantic-info-soft:      #EFF6FF;
+  --semantic-info-line:      #BFDBFE;
+  --semantic-gray-soft: var(--light-semantic-gray-soft);
+
+  /* Merkaccessoires */
+  --accent-primary: var(--light-accent-primary);
+  --accent-primary-hover: var(--light-accent-primary-hover);
+  --accent-primary-soft: var(--light-accent-primary-soft);
+  --accent-primary-softer: var(--light-accent-primary-softer);
+  --accent-primary-ring: var(--light-accent-primary-ring);
+
+  /* Grafieken */
+  --chart-revenue: var(--light-chart-revenue);
+  --chart-costs: var(--light-chart-costs);
+  --chart-profit: var(--light-chart-profit);
+  --chart-color-1: var(--light-chart-color-1);
+  --chart-color-2: var(--light-chart-color-2);
+  --chart-color-3: var(--light-chart-color-3);
+  --chart-color-4: var(--light-chart-color-4);
+  --chart-color-5: var(--light-chart-color-5);
+  --chart-color-6: var(--light-chart-color-6);
+  --chart-background: var(--light-chart-background);
+  --chart-grid: var(--light-chart-grid);
+  --chart-axis: var(--light-chart-axis);
+
+  /* Schaduwen */
+  --shadow-subtle: var(--light-shadow-subtle);
+  --shadow-sm: var(--light-shadow-sm);
+  --shadow-card: var(--light-shadow-card);
+  --shadow-lg: var(--light-shadow-lg);
+  --shadow-purple: var(--light-shadow-purple);
+  --shadow-purple-active: var(--light-shadow-purple-active);
+
+  --overlay-scrim: var(--overlay-light);
+  --state-active-bg: #F5F0FF;
+
+  color-scheme: light;
+}
+
+/* ============ BASIS-STIJLEN ============ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  background: var(--bg-app);
+}
+
+body {
+  font-family: var(--font-family-base);
+  background: var(--bg-app);
+  background-image: var(--app-gradient-layer);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'tnum' 1, 'cv05' 1;
+}
+
+/* Bedragen en cijfers: gelijke breedte voor uitlijning */
+.kpi-val, .metric .val, td, th, .drawer-amount, .kpi-trend {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hulpklassen */
+.pos { color: var(--value-positive); }
+.neg { color: var(--value-negative); }
+.muted { color: var(--text-secondary); }
+
+a {
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-primary-hover);
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+::selection {
+  background: rgba(139,92,246,0.28);
+  color: var(--text-primary);
+}
+
+/* ============ SCROLLBAR ============ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(139,92,246,0.22);
+  border-radius: var(--radius-pill);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139,92,246,0.42);
+  background-clip: content-box;
+}
+
+/* ============ GEREDUCEERDE BEWEGING ============ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

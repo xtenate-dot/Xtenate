@@ -175,7 +175,7 @@ function renderDryRunUitkomst({ plan, totalen, waarschuwingen, regels, inDatabas
     </div>
 
     <div class="section-head"><div class="eyebrow">Voorraad en saldo</div></div>
-    <div class="kpi-grid" style="margin-bottom:var(--sp-3)">
+    <div class="kpi-grid" style="margin-bottom:var(--spacing-3)">
       <div class="kpi kpi--secondary"><div class="kpi-lbl">Banksaldo</div><div class="kpi-val">${geld(totalen.banksaldo)}</div></div>
       <div class="kpi kpi--secondary"><div class="kpi-lbl">Voorraadwaarde artikelen</div><div class="kpi-val">${geld(totalen.voorraadwaardeArtikelen)}</div><div class="kpi-sub">${totalen.artikelenZonderKostprijs} zonder kostprijs</div></div>
       <div class="kpi kpi--secondary"><div class="kpi-lbl">Stuks op voorraad</div><div class="kpi-val">${totalen.voorraadStuks}</div></div>
@@ -186,7 +186,7 @@ function renderDryRunUitkomst({ plan, totalen, waarschuwingen, regels, inDatabas
       <div class="section-head"><div class="eyebrow">Aandachtspunten</div></div>
       <div class="card card-flush">${waarschuwingen.map(waarschuwingBlok).join('')}</div>` : ''}
 
-    <div class="alert alert-info" style="margin-top:var(--sp-4)">
+    <div class="alert alert-info" style="margin-top:var(--spacing-4)">
       Er is niets weggeschreven. De volgende fase, de daadwerkelijke migratie, is nog niet gebouwd — die komt pas als je akkoord geeft op deze cijfers.
     </div>
 
@@ -198,9 +198,9 @@ function renderDryRunUitkomst({ plan, totalen, waarschuwingen, regels, inDatabas
       <button class="btn" onclick="naarHerstel()">Herstel bekijken</button>
       <button class="btn btn-primary" disabled title="Wordt gebouwd nadat je de cijfers hebt goedgekeurd">Migreren</button>
     </div>
-    <textarea id="mig-tekst" readonly style="width:100%;height:150px;margin-top:var(--sp-3);display:none;
+    <textarea id="mig-tekst" readonly style="width:100%;height:150px;margin-top:var(--spacing-3);display:none;
       font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
-      border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)"></textarea>`;
+      border-radius:var(--radius-sm);background:var(--bg-subtle-layer);color:var(--text-primary)"></textarea>`;
 }
 
 /** Toont wat er ruw in de opslag van deze browser staat. */
@@ -371,7 +371,7 @@ function renderHerstelPreview() {
       tellen de boekingen zelf op, zodat een verschil zichtbaar blijft in plaats van verstopt.</p>
 
     <div class="section-head"><div class="eyebrow">Overig</div></div>
-    <div class="kpi-grid" style="margin-bottom:var(--sp-3)">
+    <div class="kpi-grid" style="margin-bottom:var(--spacing-3)">
       <div class="kpi kpi--secondary"><div class="kpi-lbl">Maandsaldi</div>
         <div class="kpi-val">${p.maandsaldi.nu} → ${p.maandsaldi.na}</div></div>
       <div class="kpi kpi--secondary"><div class="kpi-lbl">Voorraadartikelen</div>
@@ -388,9 +388,9 @@ function renderHerstelPreview() {
       <button class="btn btn-primary" disabled
         title="Wordt pas gebouwd nadat je deze preview hebt goedgekeurd">Herstel uitvoeren</button>
     </div>
-    <textarea id="mig-tekst" readonly style="width:100%;height:200px;margin-top:var(--sp-3);display:none;
+    <textarea id="mig-tekst" readonly style="width:100%;height:200px;margin-top:var(--spacing-3);display:none;
       font-family:ui-monospace,monospace;font-size:11px;padding:10px;border:1px solid var(--border-strong);
-      border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)"></textarea>`;
+      border-radius:var(--radius-sm);background:var(--bg-subtle-layer);color:var(--text-primary)"></textarea>`;
 }
 
 const beschrijfRegel = t =>

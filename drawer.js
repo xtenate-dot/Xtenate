@@ -42,7 +42,7 @@ export function openBoeking(id) {
     <div class="dl-row"><span class="dl-key">Tegenpartij (ruw)</span><span class="dl-val">${esc(t.naam) || '—'}</span></div>
     <div class="dl-row"><span class="dl-key">Boekingsnummer</span><span class="dl-val gbnr">${esc(t.id)}</span></div>
     ${anderen > 0 ? `<div class="dl-row"><span class="dl-key">Zelfde tegenpartij</span><span class="dl-val">${anderen} andere boeking${anderen === 1 ? '' : 'en'}</span></div>` : ''}
-    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:var(--sp-5)"
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:var(--spacing-5)"
             data-bewerk-tx="${esc(t.id)}">Deze boeking bewerken</button>
   `;
   document.getElementById('drawer').classList.add('open');
