@@ -788,7 +788,7 @@ export function doWis() {
 export function openSyncModal() {
   const url = localStorage.getItem('xtenate_sync_url') || '';
   document.getElementById('sync-url-input').value = url;
-  document.getElementById('sync-status').textContent = url ? 'Sync URL is ingesteld.' : 'Nog geen sync URL ingesteld.';
+  document.getElementById('sync-modal-status').textContent = url ? 'Sync URL is ingesteld.' : 'Nog geen sync URL ingesteld.';
   document.getElementById('modal-sync').classList.add('open');
 }
 
@@ -796,7 +796,7 @@ export function saveSyncUrl() {
   const url = document.getElementById('sync-url-input').value.trim();
   if (url) {
     localStorage.setItem('xtenate_sync_url', url);
-    document.getElementById('sync-status').textContent = 'Opgeslagen!';
+    document.getElementById('sync-modal-status').textContent = 'Opgeslagen!';
   } else {
     localStorage.removeItem('xtenate_sync_url');
   }
@@ -808,8 +808,8 @@ export function getSyncUrl() {
 
 export async function syncUpload() {
   const url = getSyncUrl();
-  if (!url) { document.getElementById('sync-status').textContent = 'Stel eerst een sync URL in.'; return; }
-  document.getElementById('sync-status').textContent = 'Uploaden...';
+  if (!url) { document.getElementById('sync-modal-status').textContent = 'Stel eerst een sync URL in.'; return; }
+  document.getElementById('sync-modal-status').textContent = 'Uploaden...';
   try {
     const payload = {
       TX: state.TX,
@@ -826,17 +826,17 @@ export async function syncUpload() {
     });
     const data = await response.json();
     if (data.error) throw new Error(data.error);
-    document.getElementById('sync-status').textContent = '✅ Geüpload! ' + new Date().toLocaleTimeString('nl-NL');
+    document.getElementById('sync-modal-status').textContent = '✅ Geüpload! ' + new Date().toLocaleTimeString('nl-NL');
   } catch (err) {
-    document.getElementById('sync-status').textContent = '❌ Fout: ' + err.message;
+    document.getElementById('sync-modal-status').textContent = '❌ Fout: ' + err.message;
   }
 }
 
 export async function syncDownload() {
   const url = getSyncUrl();
-  if (!url) { document.getElementById('sync-status').textContent = 'Stel eerst een sync URL in.'; return; }
+  if (!url) { document.getElementById('sync-modal-status').textContent = 'Stel eerst een sync URL in.'; return; }
   if (!window.confirm('Dit overschrijft je lokale data met de cloud data. Doorgaan?')) return;
-  document.getElementById('sync-status').textContent = 'Downloaden...';
+  document.getElementById('sync-modal-status').textContent = 'Downloaden...';
   try {
     const response = await fetch(url + '?action=load');
     const data = await response.json();
@@ -847,10 +847,10 @@ export async function syncDownload() {
     if (data.HnviLots) { state.HNVI_LOTS = data.HnviLots; saveHnviData(); }
     if (data.MaandSaldos) { Object.assign(MAAND_SALDOS, data.MaandSaldos); }
 
-    document.getElementById('sync-status').textContent = '✅ Gedownload! ' + new Date().toLocaleTimeString('nl-NL');
+    document.getElementById('sync-modal-status').textContent = '✅ Gedownload! ' + new Date().toLocaleTimeString('nl-NL');
     renderHome();
   } catch (err) {
-    document.getElementById('sync-status').textContent = '❌ Fout: ' + err.message;
+    document.getElementById('sync-modal-status').textContent = '❌ Fout: ' + err.message;
   }
 }
 

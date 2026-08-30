@@ -1,6 +1,6 @@
 // dashboard.js — Home: het financiële dashboard.
 
-import { baseOpts, charts, cssVar, dc, palette } from './charts.js?v=20260902a';
+import { alpha, baseOpts, charts, cssVar, dc, lijn, palette, staaf } from './charts.js?v=20260902a';
 import {
   BEGINSALDO_2026, GBNM, calcIB, ddmm, esc, fmt, fmtKort, isInkomst, isOmzet, isUitgave,
   maandLabel, rekBadge, saldoDelta, typeBadge, weergaveNaam
@@ -111,11 +111,60 @@ function berekenVoorraad() {
   };
 }
 
-function kpi(label, waarde, klasse = '', sub = '', extra = '') {
-  return `<div class="kpi${extra}">
-    <div class="kpi-lbl">${label}</div>
+/* Kleine set iconen voor de KPI-kaarten. Eén tekenstijl: outline, 1.8. */
+const KPI_ICONEN = {
+  omzet:    '<path d="M3 17l6-6 4 4 8-8"/><path d="M21 7h-5v5"/>',
+  kosten:   '<path d="M3 7l6 6 4-4 8 8"/><path d="M21 17h-5v-5"/>',
+  winst:    '<path d="M12 2v20"/><path d="M17 6H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',
+  bank:     '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/>',
+  prive:    '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>',
+  voorraad: '<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>',
+  belasting:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>'
+};
+
+function kpiIcoon(naam, toon = '') {
+  const pad = KPI_ICONEN[naam];
+  if (!pad) return '';
+  return `<span class="kpi-icoon${toon ? ' kpi-icoon--' + toon : ''}" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round">${pad}</svg></span>`;
+}
+
+/**
+ * Trendlabel op basis van een percentage. Geeft niets terug wanneer er geen
+ * betrouwbaar vergelijkingscijfer is — liever leeg dan een verzonnen trend.
+ */
+function kpiTrend(pct, hogerIsBeter = true) {
+  if (!Number.isFinite(pct)) return '';
+  const afgerond = Math.round(Math.abs(pct) * 10) / 10;
+  if (afgerond === 0) {
+    return `<span class="kpi-trend vlak">0%</span>`;
+  }
+  const omhoog = pct > 0;
+  const goed = hogerIsBeter ? omhoog : !omhoog;
+  const pijl = omhoog
+    ? '<path d="M7 17L17 7"/><path d="M9 7h8v8"/>'
+    : '<path d="M7 7l10 10"/><path d="M17 15V7H9"/>';
+  return `<span class="kpi-trend ${goed ? 'pos' : 'neg'}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${pijl}</svg>
+    ${afgerond.toLocaleString('nl-NL')}%</span>`;
+}
+
+/**
+ * Bouwt een KPI-kaart.
+ * opties: { icoon, toon, trend, primair } — allemaal optioneel, zodat
+ * bestaande aanroepen met vier argumenten onveranderd blijven werken.
+ */
+function kpi(label, waarde, klasse = '', sub = '', extra = '', opties = {}) {
+  const { icoon = '', toon = '', trend = '', primair = false } = opties;
+  const klassen = ['kpi'];
+  if (primair) klassen.push('kpi--primair');
+  const onder = [trend, sub].filter(Boolean).join(' ');
+  return `<div class="${klassen.join(' ')}${extra}">
+    <div class="kpi-lbl">${kpiIcoon(icoon, toon)}${label}</div>
     <div class="kpi-val ${klasse}">${waarde}</div>
-    ${sub ? `<div class="kpi-sub">${sub}</div>` : ''}
+    ${onder ? `<div class="kpi-sub">${onder}</div>` : ''}
   </div>`;
 }
 
@@ -164,28 +213,59 @@ function aandachtspunten() {
   return punten;
 }
 
+const PIJL_RECHTS =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
+
 function tekenAandacht() {
   const doel = document.getElementById('home-aandacht');
   if (!doel) return;
   const punten = aandachtspunten();
+  const urgent = punten.some(p => p.kleur === 'red');
+
+  const kop = `<div class="aandacht-kop">
+      <span class="aandacht-kop-titel">Aandacht nodig</span>
+      <span class="aandacht-teller${urgent ? ' heeft-urgent' : ''}">${punten.length}</span>
+    </div>`;
 
   if (!punten.length) {
-    doel.innerHTML = `<div class="aandacht-item aandacht-groen">
-      <div class="aandacht-tekst">
-        <div class="aandacht-titel">Alles op orde</div>
-        <div class="aandacht-sub">Geen artikelen die bijgevuld moeten worden.</div>
+    doel.innerHTML = `<div class="aandacht-kaart">${kop}
+      <div class="aandacht-item aandacht-groen">
+        <span class="aandacht-stip" aria-hidden="true"></span>
+        <div class="aandacht-tekst">
+          <div class="aandacht-titel">Alles op orde</div>
+          <div class="aandacht-sub">Geen artikelen die bijgevuld moeten worden.</div>
+        </div>
       </div></div>`;
     return;
   }
 
-  doel.innerHTML = punten.map(p => `
+  const regels = punten.map(p => `
     <div class="aandacht-item aandacht-${p.kleur}">
+      <span class="aandacht-stip" aria-hidden="true"></span>
       <div class="aandacht-tekst">
         <div class="aandacht-titel">${esc(p.titel)}</div>
         <div class="aandacht-sub">${esc(p.tekst)}</div>
       </div>
-      <button class="btn btn-sm" onclick="${p.actie}">${esc(p.knop)}</button>
+      <button class="aandacht-actie" onclick="${p.actie}">${esc(p.knop)}${PIJL_RECHTS}</button>
     </div>`).join('');
+
+  doel.innerHTML = `<div class="aandacht-kaart">${kop}${regels}</div>`;
+}
+
+/**
+ * Cijfers van het boekjaar vóór het gekozen jaar. Geeft null terug wanneer
+ * er geen vorig jaar is of dat jaar geen boekingen bevat: dan tonen we geen
+ * trend in plaats van een misleidend percentage.
+ */
+function vorigJaarMetrics(jaar) {
+  if (!jaar || jaar === 'all') return null;
+  const vorig = String(Number(jaar) - 1);
+  if (!/^\d{4}$/.test(vorig)) return null;
+  const tx = [...state.HIST_TX, ...state.TX].filter(t => t.datum.startsWith(vorig));
+  if (!tx.length) return null;
+  return berekenJaarMetrics(vorig, tx);
 }
 
 export function renderHome() {
@@ -219,19 +299,38 @@ export function renderHome() {
     ? '<span class="badge badge-green" title="Overgenomen uit de Per Periode-totalen van je Excel-import">Excel</span>'
     : '';
 
+  const sub = document.getElementById('overzicht-sub');
+  if (sub) {
+    sub.textContent = jaar === 'all'
+      ? 'Een compleet overzicht van je administratie over alle jaren.'
+      : `Een compleet overzicht van je administratie voor ${jaarTekst}.`;
+  }
+
+  // ---------- Vergelijking met het vorige boekjaar ----------
+  // Alleen wanneer er een concreet jaar gekozen is én dat vorige jaar
+  // daadwerkelijk boekingen heeft. Anders tonen we geen trend.
+  const vorig = vorigJaarMetrics(jaar);
+  const groei = (nu, toen) =>
+    (vorig && Number.isFinite(toen) && toen !== 0) ? ((nu - toen) / Math.abs(toen)) * 100 : NaN;
+
   document.getElementById('home-kpi').innerHTML =
     kpi(`Omzet ${jaarTekst} ${bronMerk}`, fmt(omzet), 'pos',
-        `Xtenate ${fmt(omzXt)} · Bol ${fmt(omzBol)} · Helmetstore ${fmt(omzHC)}`) +
+        `Xtenate ${fmt(omzXt)} · Bol ${fmt(omzBol)} · Helmetstore ${fmt(omzHC)}`, '',
+        { icoon: 'omzet', toon: 'green', trend: kpiTrend(groei(omzet, vorig?.omzet), true), primair: true }) +
     kpi('Totale kosten', fmt(kosten), 'neg',
-        hnviInv > 0 ? `waarvan ${fmt(hnviInv)} HNVI-inkoop` : '') +
-    kpi('Netto winst', fmt(winst), winst >= 0 ? 'pos' : 'neg',
-        omzet > 0 ? `marge ${Math.round(winst / omzet * 100)}%` : '') +
+        hnviInv > 0 ? `waarvan ${fmt(hnviInv)} HNVI-inkoop` : '', '',
+        { icoon: 'kosten', toon: 'amber', trend: kpiTrend(groei(kosten, vorig?.kosten), false) }) +
+    kpi('Netto resultaat', fmt(winst), winst >= 0 ? 'pos' : 'neg',
+        omzet > 0 ? `marge ${Math.round(winst / omzet * 100)}%` : '', '',
+        { icoon: 'winst', toon: winst >= 0 ? 'green' : 'red',
+          trend: kpiTrend(groei(winst, vorig ? vorig.omzet - vorig.kosten : NaN), true) }) +
     kpi('Banksaldo', bank.saldo === null ? '—' : fmt(bank.saldo),
-        bank.saldo !== null && bank.saldo < 0 ? 'neg' : '', bank.label);
+        bank.saldo !== null && bank.saldo < 0 ? 'neg' : '', bank.label, '',
+        { icoon: 'bank', toon: 'accent' });
 
   document.getElementById('home-kpi2').innerHTML =
-    kpi('Privé-opnames', fmt(priveOp), 'muted', '', ' kpi--secondary') +
-    kpi('Privé-stortingen', fmt(priveSt), 'muted', '', ' kpi--secondary') +
+    kpi('Privé-opnames', fmt(priveOp), 'muted', '', ' kpi--secondary', { icoon: 'prive' }) +
+    kpi('Privé-stortingen', fmt(priveSt), 'muted', '', ' kpi--secondary', { icoon: 'prive' }) +
     kpi(ib <= 0 ? 'Geschatte teruggave' : 'Geschatte inkomstenbelasting',
         (ib <= 0 ? '+' : '') + fmt(Math.abs(Math.round(ib))),
         ib <= 0 ? 'pos' : 'neg',
@@ -291,6 +390,9 @@ export function renderHome() {
 
   const kleur = palette();
 
+  // Bedragen in de tooltip voluit, met euroteken.
+  const tipBedrag = (ctx) => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`;
+
   dc('c-ie');
   if (maanden.length) {
     charts['c-ie'] = new Chart(document.getElementById('c-ie'), {
@@ -298,11 +400,11 @@ export function renderHome() {
       data: {
         labels,
         datasets: [
-          { label: 'Omzet', data: omzetD, backgroundColor: kleur[1], borderRadius: 3, maxBarThickness: 26 },
-          { label: 'Kosten', data: kostenD, backgroundColor: kleur[2], borderRadius: 3, maxBarThickness: 26 }
+          staaf('Omzet', omzetD, kleur[1]),
+          staaf('Kosten', kostenD, kleur[2])
         ]
       },
-      options: baseOpts({ yFmt: fmtKort })
+      options: baseOpts({ yFmt: fmtKort, tooltipFmt: tipBedrag })
     });
   }
 
@@ -312,18 +414,11 @@ export function renderHome() {
       type: 'line',
       data: {
         labels,
-        datasets: [{
-          label: 'Winst, opgeteld',
-          data: cumulatief,
-          borderColor: kleur[0],
-          backgroundColor: 'transparent',
-          tension: .3,
-          borderWidth: 2,
-          pointRadius: maanden.length > 18 ? 0 : 3,
-          pointBackgroundColor: kleur[0]
-        }]
+        datasets: [
+          lijn('Resultaat, opgeteld', cumulatief, kleur[0], { punten: maanden.length <= 18 })
+        ]
       },
-      options: baseOpts({ yFmt: fmtKort })
+      options: baseOpts({ legend: false, yFmt: fmtKort, tooltipFmt: tipBedrag })
     });
   }
 
@@ -341,20 +436,44 @@ export function renderHome() {
   const kostenLeeg = document.getElementById('c-kosten-leeg');
   if (kostData.length) {
     kostenCanvas.style.display = '';
-    kostenLeeg.innerHTML = kostLabels.map((n, i) =>
-      `<span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:2px;background:${kleur[i % kleur.length]}"></span>${esc(n)} ${fmt(kostData[i])}</span>`).join('');
+    const kostTotaal = kostData.reduce((s, v) => s + v, 0);
+    kostenLeeg.innerHTML = kostLabels.map((n, i) => {
+      const deel = kostTotaal > 0 ? Math.round(kostData[i] / kostTotaal * 100) : 0;
+      return `<span class="chart-legenda-item">
+        <span class="chart-legenda-stip" style="background:${kleur[i % kleur.length]}"></span>
+        <span>${esc(n)}</span>
+        <span class="muted">${fmt(kostData[i])} · ${deel}%</span>
+      </span>`;
+    }).join('');
     charts['c-kosten'] = new Chart(kostenCanvas, {
       type: 'doughnut',
-      data: { labels: kostLabels, datasets: [{ data: kostData, backgroundColor: kleur, borderWidth: 0 }] },
+      data: {
+        labels: kostLabels,
+        datasets: [{
+          data: kostData,
+          backgroundColor: kleur.map(k => alpha(k, 0.9)),
+          hoverBackgroundColor: kleur,
+          borderColor: cssVar('--surface'),
+          borderWidth: 2,
+          hoverOffset: 6
+        }]
+      },
       options: {
-        ...baseOpts({ legend: false }),
-        cutout: '64%',
+        ...baseOpts({
+          legend: false,
+          tooltipFmt: (ctx) => {
+            const deel = kostTotaal > 0 ? Math.round(ctx.parsed / kostTotaal * 100) : 0;
+            return ` ${ctx.label}: ${fmt(ctx.parsed)} (${deel}%)`;
+          }
+        }),
+        cutout: '68%',
         scales: {}
       }
     });
   } else {
     kostenCanvas.style.display = 'none';
-    kostenLeeg.innerHTML = '<span class="muted" style="font-size:12.5px">Nog geen kosten geboekt in deze periode.</span>';
+    kostenLeeg.innerHTML = leegVlak('Nog geen kosten',
+      'Zodra er kosten geboekt zijn in deze periode, zie je hier waar het geld naartoe gaat.');
   }
 
   // ---------- Laatste boekingen ----------
