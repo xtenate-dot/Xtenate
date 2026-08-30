@@ -1,56 +1,95 @@
 /* style.css — XTENATE design system
-   Eén centrale bron voor kleur, ruimte, typografie, radius, schaduw en beweging.
-   Componenten verwijzen uitsluitend naar deze tokens; geen enkele pagina zet
-   zelf kleuren.
+   Donker is de basis, niet een variant. De app bestaat uit een reeks
+   donkere lagen die subtiel in elkaar overlopen, met paars als
+   doorlopende identiteit.
 
-   Uitgangspunt: paars is de huisstijl. Kleur draagt betekenis, geen decoratie.
-   Groen en rood blijven voorbehouden aan positieve en negatieve waarden,
-   oranje aan waarschuwingen. Al het overige is paars of neutraal. */
+   Kleur draagt betekenis: paars is de interface, groen/rood/oranje/blauw
+   zijn voorbehouden aan financiële en statusinformatie.
+
+   Alle componenten verwijzen uitsluitend naar deze tokens. */
 
 :root {
-  /* ---------- PAARS: DE HUISSTIJL ---------- */
-  --accent: #7C3AED;             /* primair */
-  --accent-hover: #5B21B6;       /* dieper paars voor hover en druk */
-  --accent-soft: #F5F0FF;        /* lichtpaarse vulling */
-  --accent-softer: #FAF8FF;      /* nauwelijks paars */
-  --accent-ring: rgba(124,58,237,0.22);
-  --accent-line: #DDD2FB;        /* paarse haarlijn */
+  /* ============ PAARSE SCHAAL ============ */
+  --purple-900: #2E1065;
+  --purple-800: #4C1D95;
+  --purple-700: #5B21B6;
+  --purple-600: #6D28D9;
+  --purple-500: #7C3AED;   /* primair */
+  --purple-400: #8B5CF6;   /* helder */
+  --purple-300: #A78BFA;   /* licht */
+  --purple-200: #C4B5FD;   /* zacht */
+
+  /* ============ DONKERE LAGEN ============ */
+  --bg-app: #080B16;
+  --bg-sidebar: #090E1C;
+  --bg-topbar: #0B1020;
+  --bg-card: #11172A;
+  --bg-card-hover: #151C32;
+  --bg-input: #0D1425;
+  --bg-elevated: #0F1628;    /* modals, panelen */
+  --bg-subtle-layer: #0E1424; /* tabelkoppen, subvlakken */
+
+  /* Aliassen op de bestaande componentnamen */
+  --bg: var(--bg-app);
+  --sidebar-bg: var(--bg-sidebar);
+  --surface: var(--bg-card);
+  --surface-2: var(--bg-subtle-layer);
+  --surface-3: var(--bg-card-hover);
+  --surface-hover: var(--bg-card-hover);
+  --surface-active: rgba(124,58,237,0.14);
+
+  /* De achtergrond is niet volledig vlak: een nauwelijks zichtbare
+     violette gloed linksboven geeft het canvas diepte. */
+  --app-gradient:
+    radial-gradient(1200px 620px at 12% -8%, rgba(76,29,149,0.28) 0%, transparent 62%),
+    radial-gradient(900px 520px at 96% 6%, rgba(124,58,237,0.10) 0%, transparent 58%);
+
+  /* Kaarten krijgen een zeer lichte inner glow van bovenaf. */
+  --card-gradient: linear-gradient(180deg, rgba(139,92,246,0.045) 0%, rgba(139,92,246,0) 52%);
+
+  /* ============ LIJNEN ============ */
+  --border: rgba(255,255,255,0.06);
+  --border-purple: rgba(139,92,246,0.16);
+  --border-purple-strong: rgba(139,92,246,0.30);
+  --border-soft: rgba(255,255,255,0.04);
+  --border-strong: rgba(255,255,255,0.12);
+
+  /* ============ TEKST ============ */
+  --text-primary: #F4F5FA;
+  --text-secondary: #A9AECB;
+  --text-muted-c: #6E7495;
+  --text-lavender: #C4B5FD;
+
+  --text: var(--text-primary);
+  --text-muted: var(--text-secondary);
+  --text-hint: var(--text-muted-c);
+
+  /* ============ MERK ============ */
+  --accent: var(--purple-400);
+  --accent-hover: var(--purple-300);
+  --accent-solid: var(--purple-500);
+  --accent-soft: rgba(139,92,246,0.12);
+  --accent-softer: rgba(139,92,246,0.07);
+  --accent-ring: rgba(139,92,246,0.30);
+  --accent-line: var(--border-purple);
   --accent-contrast: #ffffff;
 
-  /* ---------- VLAKKEN ---------- */
-  --bg: #FCFCFD;                 /* paginacanvas */
-  --sidebar-bg: #FFFFFF;
-  --surface: #FFFFFF;            /* kaarten, dialogen, tabellen */
-  --surface-2: #F9FAFB;          /* subvlak: tabelkoppen, inputs */
-  --surface-3: #F3F4F6;
-  --surface-hover: var(--accent-softer);
-  --surface-active: var(--accent-soft);
+  /* ============ BETEKENIS ============ */
+  --success: #10B981;  --green: #34D399;
+  --warning: #F59E0B;  --amber: #FBBF24;
+  --danger:  #EF4444;  --red:   #F87171;
+  --info:    #3B82F6;  --blue:  #60A5FA;
 
-  /* Kaarten zijn vlak. Diepte komt van de rand, niet van een verloop. */
-  --card-gradient: none;
+  --green-soft: rgba(16,185,129,0.12);  --green-line: rgba(52,211,153,0.28);
+  --amber-soft: rgba(245,158,11,0.12);  --amber-line: rgba(251,191,36,0.28);
+  --red-soft:   rgba(239,68,68,0.12);   --red-line:   rgba(248,113,113,0.28);
+  --blue-soft:  rgba(59,130,246,0.12);  --blue-line:  rgba(96,165,250,0.28);
+  --purple: var(--purple-400);
+  --purple-soft: var(--accent-soft);
 
-  /* ---------- LIJNEN ---------- */
-  --border: #E5E7EB;
-  --border-soft: #F0F1F3;
-  --border-strong: #D6D9DF;
+  --gray-bg: rgba(169,174,203,0.10);
 
-  /* ---------- TEKST ---------- */
-  --text: #1F2937;
-  --text-muted: #6B7280;
-  --text-hint: #9CA3AF;
-
-  /* ---------- BETEKENIS ----------
-     Alleen inzetten waar de kleur iets zegt. */
-  --green: #059669;  --green-soft: #ECFDF5;  --green-line: #A7F3D0;
-  --amber: #B45309;  --amber-soft: #FFFBEB;  --amber-line: #FDE68A;
-  --red:   #DC2626;  --red-soft:   #FEF2F2;  --red-line:   #FECACA;
-  --blue:  #2563EB;  --blue-soft:  #EFF6FF;  --blue-line:  #BFDBFE;
-  --purple: var(--accent); --purple-soft: var(--accent-soft);
-
-  /* Neutrale vulling voor alles zonder betekenis. */
-  --gray-bg: #F3F4F6;
-
-  /* Compat met bestaande klassen die *-bg gebruiken */
+  /* Compat met bestaande klassen */
   --green-bg: var(--green-soft);
   --red-bg: var(--red-soft);
   --blue-bg: var(--blue-soft);
@@ -58,137 +97,152 @@
   --purple-bg: var(--accent-soft);
   --accent-bg: var(--accent-soft);
 
-  /* ---------- GRAFIEKPALET ----------
-     Paars-gedomineerd: één familie in aflopende sterkte, met neutraal grijs
-     voor restposten. Zo leest een grafiek als één geheel in plaats van als
-     een verzameling losse categorieën. */
-  --ch-1: #7C3AED;
+  /* ============ GRAFIEKEN ============
+     Paars draagt de interface; omzet, kosten en resultaat houden hun
+     eigen betekenis. */
+  --ch-omzet:  var(--purple-400);
+  --ch-kosten: var(--amber);
+  --ch-winst:  var(--purple-300);
+
+  --ch-1: #8B5CF6;
   --ch-2: #A78BFA;
   --ch-3: #C4B5FD;
-  --ch-4: #8B7BC7;
-  --ch-5: #DDD6FE;
-  --ch-6: #9CA3AF;
-  --ch-grid: #EEF0F3;
-  --ch-axis: #9CA3AF;
+  --ch-4: #60A5FA;
+  --ch-5: #FBBF24;
+  --ch-6: #6E7495;
 
-  /* ---------- VORM ---------- */
+  --ch-bg: #101629;
+  --ch-grid: rgba(255,255,255,0.05);
+  --ch-axis: #6E7495;
+
+  /* ============ VORM ============ */
   --radius-xs: 6px;
   --radius-sm: 8px;
-  --radius: 10px;
-  --radius-lg: 14px;
+  --radius: 12px;
+  --radius-lg: 16px;
   --radius-pill: 999px;
 
-  /* ---------- SCHADUW ----------
-     Zeer licht. De rand doet het werk. */
-  --shadow-subtle: 0 1px 2px rgba(16,24,40,0.04);
-  --shadow-sm: 0 1px 3px rgba(16,24,40,0.06);
-  --shadow-md: 0 4px 12px -2px rgba(16,24,40,0.08);
-  --shadow-lg: 0 16px 40px -12px rgba(16,24,40,0.16);
-  --shadow-glow: 0 0 0 1px var(--accent-ring), 0 4px 14px -6px rgba(124,58,237,0.24);
+  /* ============ SCHADUW EN GLOED ============ */
+  --shadow-subtle: 0 1px 2px rgba(0,0,0,0.30);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.22);
+  --shadow-card: 0 8px 30px rgba(0,0,0,0.25);
+  --shadow-md: var(--shadow-card);
+  --shadow-lg: 0 24px 60px -16px rgba(0,0,0,0.62);
 
-  /* Achtergrond achter dialogen en uitschuifpanelen. */
-  --overlay: rgba(31,41,55,0.42);
+  --shadow-purple: 0 0 25px rgba(124,58,237,0.08);
+  --shadow-purple-active: 0 0 20px rgba(139,92,246,0.15);
+  --shadow-glow: var(--shadow-purple-active);
 
-  /* ---------- RUIMTE ---------- */
+  --overlay: rgba(4,6,14,0.66);
+
+  /* ============ RUIMTE ============ */
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
   --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
 
-  /* ---------- MAATVOERING ---------- */
+  /* ============ MAATVOERING ============ */
   --sidebar-w: 232px;
   --sidebar-w-collapsed: 64px;
   --topbar-h: 60px;
   --content-max: 100%;
 
-  /* ---------- TYPOGRAFIE ---------- */
+  /* ============ TYPOGRAFIE ============ */
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
-  /* ---------- ALIASSEN ----------
-     Enkele modules verwijzen naar deze namen. */
+  /* ============ ALIASSEN ============ */
   --pos: var(--green);
   --neg: var(--red);
-  --card-bg: var(--surface);
-  --surface-alt: var(--surface-2);
-  --bg-subtle: var(--surface-2);
+  --card-bg: var(--bg-card);
+  --surface-alt: var(--bg-subtle-layer);
+  --bg-subtle: var(--bg-subtle-layer);
 
-  /* ---------- BEWEGING ---------- */
+  /* ============ BEWEGING ============ */
   --dur-fast: 110ms;
   --dur: 170ms;
   --dur-slow: 260ms;
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-
   --transition-fast: var(--dur-fast) var(--ease);
   --transition-normal: var(--dur) var(--ease);
   --transition-slow: var(--dur-slow) var(--ease);
 
   font-size: 14px;
-  color-scheme: light;
-}
-
-/* Donkere modus — dezelfde structuur en dezelfde paars-eerst logica. */
-[data-theme="dark"] {
-  --accent: #A78BFA;
-  --accent-hover: #C4B5FD;
-  --accent-soft: rgba(167,139,250,0.14);
-  --accent-softer: rgba(167,139,250,0.07);
-  --accent-ring: rgba(167,139,250,0.30);
-  --accent-line: rgba(167,139,250,0.32);
-  --accent-contrast: #1A1235;
-
-  --bg: #0F0E1A;
-  --sidebar-bg: #14131F;
-  --surface: #1A1828;
-  --surface-2: #201E30;
-  --surface-3: #272438;
-  --surface-hover: rgba(167,139,250,0.07);
-  --surface-active: rgba(167,139,250,0.14);
-
-  --card-gradient: none;
-
-  --border: #2D2A40;
-  --border-soft: #262338;
-  --border-strong: #3B3752;
-
-  --text: #F4F3F8;
-  --text-muted: #A29DB8;
-  --text-hint: #756F90;
-
-  --green: #34D399;  --green-soft: rgba(52,211,153,0.13);  --green-line: rgba(52,211,153,0.32);
-  --amber: #FBBF24;  --amber-soft: rgba(251,191,36,0.13);  --amber-line: rgba(251,191,36,0.32);
-  --red:   #F87171;  --red-soft:   rgba(248,113,113,0.13); --red-line:   rgba(248,113,113,0.32);
-  --blue:  #60A5FA;  --blue-soft:  rgba(96,165,250,0.13);  --blue-line:  rgba(96,165,250,0.32);
-
-  --gray-bg: rgba(162,157,184,0.12);
-
-  --ch-1: #A78BFA;
-  --ch-2: #8B5CF6;
-  --ch-3: #C4B5FD;
-  --ch-4: #7C6BB5;
-  --ch-5: #DDD6FE;
-  --ch-6: #756F90;
-  --ch-grid: rgba(162,157,184,0.13);
-  --ch-axis: #A29DB8;
-
-  --shadow-subtle: 0 1px 2px rgba(0,0,0,0.28);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.34);
-  --shadow-md: 0 4px 12px -2px rgba(0,0,0,0.48);
-  --shadow-lg: 0 16px 40px -12px rgba(0,0,0,0.62);
-  --shadow-glow: 0 0 0 1px var(--accent-ring), 0 4px 14px -6px rgba(167,139,250,0.35);
-  --overlay: rgba(5,4,12,0.62);
-
   color-scheme: dark;
 }
 
-/* ---------- BASIS ---------- */
+/* Lichte modus blijft beschikbaar achter de knop in de bovenbalk en volgt
+   dezelfde paarse identiteit. */
+[data-theme="light"] {
+  --bg-app: #FCFCFD;
+  --bg-sidebar: #FFFFFF;
+  --bg-topbar: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #FAF8FF;
+  --bg-input: #F9FAFB;
+  --bg-elevated: #FFFFFF;
+  --bg-subtle-layer: #F9FAFB;
+
+  --app-gradient: none;
+  --card-gradient: none;
+
+  --border: #E5E7EB;
+  --border-purple: #DDD2FB;
+  --border-purple-strong: #C4B5FD;
+  --border-soft: #F0F1F3;
+  --border-strong: #D6D9DF;
+
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --text-muted-c: #9CA3AF;
+  --text-lavender: #7C3AED;
+
+  --accent: #7C3AED;
+  --accent-hover: #5B21B6;
+  --accent-solid: #7C3AED;
+  --accent-soft: #F5F0FF;
+  --accent-softer: #FAF8FF;
+  --accent-ring: rgba(124,58,237,0.22);
+
+  --surface-active: #F5F0FF;
+
+  --green: #059669;  --amber: #B45309;  --red: #DC2626;  --blue: #2563EB;
+  --green-soft: #ECFDF5;  --green-line: #A7F3D0;
+  --amber-soft: #FFFBEB;  --amber-line: #FDE68A;
+  --red-soft:   #FEF2F2;  --red-line:   #FECACA;
+  --blue-soft:  #EFF6FF;  --blue-line:  #BFDBFE;
+  --gray-bg: #F3F4F6;
+
+  --ch-omzet: #7C3AED;  --ch-kosten: #D97706;  --ch-winst: #8B5CF6;
+  --ch-1: #7C3AED; --ch-2: #A78BFA; --ch-3: #C4B5FD;
+  --ch-4: #2563EB; --ch-5: #D97706; --ch-6: #9CA3AF;
+  --ch-bg: #FFFFFF;
+  --ch-grid: #EEF0F3;
+  --ch-axis: #9CA3AF;
+
+  --shadow-subtle: 0 1px 2px rgba(16,24,40,0.04);
+  --shadow-sm: 0 1px 3px rgba(16,24,40,0.06);
+  --shadow-card: 0 4px 12px -2px rgba(16,24,40,0.08);
+  --shadow-md: var(--shadow-card);
+  --shadow-lg: 0 16px 40px -12px rgba(16,24,40,0.16);
+  --shadow-purple: 0 0 20px rgba(124,58,237,0.06);
+  --shadow-purple-active: 0 0 0 1px var(--accent-ring);
+  --shadow-glow: var(--shadow-purple-active);
+  --overlay: rgba(31,41,55,0.42);
+
+  color-scheme: light;
+}
+
+/* ============ BASIS ============ */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; background: var(--bg-app); }
 
 body {
   font-family: var(--font);
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg-app);
+  background-image: var(--app-gradient);
+  background-attachment: fixed;
+  color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -201,33 +255,33 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Financiële richting blijft in kleur zichtbaar. */
 .pos { color: var(--green); }
 .neg { color: var(--red); }
-.muted { color: var(--text-muted); }
+.muted { color: var(--text-secondary); }
 
-/* Links zijn paars. */
 a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--accent-hover); text-decoration: underline; }
 
-/* Focus is overal dezelfde paarse ring. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-xs);
 }
 
-::selection { background: var(--accent-soft); color: var(--accent-hover); }
+::selection { background: rgba(139,92,246,0.28); color: var(--text-primary); }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: rgba(139,92,246,0.22);
   border-radius: var(--radius-pill);
   border: 3px solid transparent;
   background-clip: content-box;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--text-hint); background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139,92,246,0.42);
+  background-clip: content-box;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

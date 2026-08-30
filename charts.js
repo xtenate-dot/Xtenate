@@ -69,13 +69,13 @@ export function baseOpts({ legend = true, yFmt = null, tooltipFmt = null } = {})
         }
       },
       tooltip: {
-        backgroundColor: vlakKleur,
+        backgroundColor: cssVar('--bg-elevated') || vlakKleur,
         titleColor: kop,
         bodyColor: tekst,
-        borderColor: rand,
+        borderColor: cssVar('--border-purple-strong') || rand,
         borderWidth: 1,
-        padding: 11,
-        cornerRadius: 8,
+        padding: 12,
+        cornerRadius: 10,
         displayColors: true,
         boxWidth: 8, boxHeight: 8, boxPadding: 4,
         usePointStyle: true,
@@ -106,31 +106,98 @@ export function baseOpts({ legend = true, yFmt = null, tooltipFmt = null } = {})
   };
 }
 
-/** Standaardvorm voor een staafreeks. */
+/**
+ * Tekent het totaalbedrag in het midden van een donut. Het gat is anders
+ * loze ruimte, terwijl juist dáár het cijfer hoort dat de segmenten optellen.
+ */
+export function donutMidden(bedrag, bijschrift = 'Totale kosten') {
+  return {
+    id: 'donutMidden',
+    afterDraw(chart) {
+      const gebied = chart.chartArea;
+      if (!gebied) return;
+      const c = chart.ctx;
+      const x = (gebied.left + gebied.right) / 2;
+      const y = (gebied.top + gebied.bottom) / 2;
+      const font = cssVar('--font') || 'sans-serif';
+
+      c.save();
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+
+      c.font = `500 10px ${font}`;
+      c.fillStyle = cssVar('--text-muted-c') || '#888';
+      c.fillText(bijschrift.toUpperCase(), x, y - 13);
+
+      c.font = `600 17px ${font}`;
+      c.fillStyle = cssVar('--text-primary') || '#fff';
+      c.fillText(bedrag, x, y + 6);
+
+      c.restore();
+    }
+  };
+}
+
+/** Staafreeks met een subtiel verticaal verloop in plaats van een vlakke vulling. */
 export function staaf(label, data, kleur) {
   return {
     label, data,
-    backgroundColor: alpha(kleur, 0.85),
+    backgroundColor: (ctx) => {
+      const gebied = ctx?.chart?.chartArea;
+      if (!gebied) return alpha(kleur, 0.7);
+      const g = ctx.chart.ctx.createLinearGradient(0, gebied.top, 0, gebied.bottom);
+      g.addColorStop(0, alpha(kleur, 0.95));
+      g.addColorStop(1, alpha(kleur, 0.45));
+      return g;
+    },
     hoverBackgroundColor: kleur,
-    borderRadius: 4,
+    borderRadius: 5,
     borderSkipped: false,
     maxBarThickness: 26
   };
 }
 
-/** Standaardvorm voor een lijnreeks met verloopvlak eronder. */
-export function lijn(label, data, kleur, { vulling = true, punten = true } = {}) {
-  return {
+/** Lijnreeks met verloopvlak eronder en een zachte gloed op de lijn zelf. */
+export function lijn(label, data, kleur, { vulling = true, punten = true, gloed = false } = {}) {
+  const ds = {
     label, data,
     borderColor: kleur,
-    backgroundColor: vulling ? (ctx => vlak(ctx, kleur)) : 'transparent',
+    backgroundColor: vulling ? (ctx => vlak(ctx, kleur, 0.34)) : 'transparent',
     fill: vulling,
     tension: 0.35,
     borderWidth: 2,
     pointRadius: punten ? 2.5 : 0,
     pointHoverRadius: 5,
     pointBackgroundColor: kleur,
-    pointBorderColor: cssVar('--surface'),
+    pointBorderColor: cssVar('--bg-card'),
     pointBorderWidth: 2
   };
+  if (gloed) {
+    ds.borderWidth = 2.4;
+    ds.segment = {};
+    ds.shadowKleur = kleur;
+  }
+  return ds;
 }
+
+/**
+ * Chart.js-plugin die een zachte gloed onder de lijn tekent. Alleen actief
+ * voor reeksen die daar expliciet om vragen (gloed: true).
+ */
+export const lijnGloed = {
+  id: 'lijnGloed',
+  beforeDatasetDraw(chart, args) {
+    const ds = chart.data.datasets[args.index];
+    if (!ds || !ds.shadowKleur) return;
+    const c = chart.ctx;
+    c.save();
+    c.shadowColor = alpha(ds.shadowKleur, 0.55);
+    c.shadowBlur = 16;
+    c.shadowOffsetY = 2;
+  },
+  afterDatasetDraw(chart, args) {
+    const ds = chart.data.datasets[args.index];
+    if (!ds || !ds.shadowKleur) return;
+    chart.ctx.restore();
+  }
+};
