@@ -12,7 +12,7 @@ const REKENINGEN = new Set(Object.keys(REKNM));
 // wegschrijven van de boekingen en vóór het toepassen van de jaartotalen.
 const OMZET_GB = ['8000', '8010', '8020'];
 import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state, voegJaarcijfersToe } from './storage.js?v=20260902a';
-import { addToPendingQueue, deleteFromSupabase } from './supabase-client-v2.js?v=20260902a';
+import { addToPendingQueue, deleteFromSupabase, vervangBoekingenInSupabase } from './supabase-client-v2.js?v=20260902a';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
 // met een kolom "Totaal" voor het hele boekjaar. Dit is de brontabel van de boekhouding zelf,
@@ -569,6 +569,27 @@ export function annuleerImport() {
 }
 
 /** Past de gelezen import toe. Dit is de enige plek die daarbij schrijft. */
+/**
+ * Waarschuwt zichtbaar als de import wel lokaal is opgeslagen maar niet in de
+ * database. Dat verschil is anders onzichtbaar: de cijfers kloppen op het
+ * scherm en zijn na een refresh weer weg, zonder dat er iets misging in beeld.
+ */
+function meldSyncProbleem(reden) {
+  const body = document.getElementById('import-body');
+  if (!body) return;
+  const waarschuwing = document.createElement('div');
+  waarschuwing.style.cssText =
+    'margin-top:12px;padding:12px 14px;border-radius:10px;' +
+    'background:var(--semantic-warning-bg, rgba(245,158,11,0.12));' +
+    'border:1px solid var(--semantic-warning, #F59E0B);font-size:13px';
+  waarschuwing.innerHTML =
+    '<strong>Let op: alleen lokaal opgeslagen.</strong><br>' +
+    'De boekingen staan wel in deze sessie, maar konden niet naar de database ' +
+    'worden geschreven. Na het verversen van de pagina zie je de oude gegevens ' +
+    'terug. Reden: ' + _esc(String(reden || 'onbekend'));
+  body.appendChild(waarschuwing);
+}
+
 export function bevestigImport() {
   const p = wachtendeImport;
   if (!p) return;
@@ -613,6 +634,22 @@ export function bevestigImport() {
         // De maandsaldi stonden hier alleen in het geheugen; na een herlaadbeurt
         // waren ze weg. De historische tak sloeg ze al wel op.
         save('xtenate_maand_saldos_override', MAAND_SALDOS);
+
+        // De boekingen gingen hierboven alleen naar localStorage. Bij het laden
+        // haalt de app ze uit Supabase, dus na een refresh kwam de oude set
+        // terug en leek de import niet gewerkt te hebben. Het jaar wordt nu in
+        // de database vervangen door wat er zojuist is ingelezen.
+        vervangBoekingenInSupabase(state.TX, { isHistoric: false })
+          .then(r => {
+            if (r.fout) {
+              console.warn('⚠️  Boekingen niet naar Supabase geschreven:', r.fout);
+              meldSyncProbleem(r.fout);
+            }
+          })
+          .catch(err => {
+            console.warn('⚠️  Boekingen niet naar Supabase geschreven:', err.message);
+            meldSyncProbleem(err.message);
+          });
       } else {
         // Sla op als historische data: vervang alleen de jaren die in dit bestand voorkomen
         // Alleen jaren vervangen waarvoor het bestand ook werkelijk boekingen
@@ -638,6 +675,23 @@ export function bevestigImport() {
         Object.assign(MAAND_SALDOS, p.newSaldos);
         save('xtenate_hist_tx_override', state.HIST_TX);
         save('xtenate_maand_saldos_override', MAAND_SALDOS);
+
+        // Ook hier gold dat de boekingen alleen lokaal werden bewaard. Alleen
+        // de jaren uit dit bestand worden in de database vervangen; de overige
+        // archiefjaren blijven staan.
+        const nieuwVoorDezeJaren = state.HIST_TX.filter(
+          t => jarenMetRegels.some(j => t.datum.startsWith(j)));
+        vervangBoekingenInSupabase(nieuwVoorDezeJaren, { isHistoric: true, jaren: jarenMetRegels })
+          .then(r => {
+            if (r.fout) {
+              console.warn('⚠️  Boekingen niet naar Supabase geschreven:', r.fout);
+              meldSyncProbleem(r.fout);
+            }
+          })
+          .catch(err => {
+            console.warn('⚠️  Boekingen niet naar Supabase geschreven:', err.message);
+            meldSyncProbleem(err.message);
+          });
       }
 
       // Jaartotalen uit "Per Periode" (indien aanwezig) — leidend voor de Home-cijfers.

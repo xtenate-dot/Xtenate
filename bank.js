@@ -322,11 +322,13 @@ export function saveTx() {
     });
   }
 
-  // Een nieuwe boeking is altijd 2026; sta je in een ander jaar te kijken,
-  // dan zou hij anders ongemerkt buiten beeld vallen.
-  if (state.editTxId == null && state.huidigJaar !== '2026' && state.huidigJaar !== 'all') {
-    state.huidigJaar = '2026';
-    if (el('jaar-selector')) el('jaar-selector').value = '2026';
+  // Een nieuwe boeking valt in het lopende jaar; sta je in een ander jaar te
+  // kijken, dan zou hij anders ongemerkt buiten beeld vallen. Dit stond vast
+  // op 2026 en zou vanaf 1 januari verkeerd gaan.
+  const lopendJaar = String(new Date().getFullYear());
+  if (state.editTxId == null && state.huidigJaar !== lopendJaar && state.huidigJaar !== 'all') {
+    state.huidigJaar = lopendJaar;
+    if (el('jaar-selector')) el('jaar-selector').value = lopendJaar;
     el('f-maand').value = '';
   }
   state.editTxId = null;

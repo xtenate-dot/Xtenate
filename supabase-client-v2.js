@@ -580,6 +580,78 @@ export async function syncAllesNaarSupabase(data, keuze, onVoortgang) {
 }
 
 /**
+ * Vervangt in Supabase de boekingen van één of meer jaren door een nieuwe set.
+ *
+ * Nodig omdat een Excel-import de boekingen van dat jaar volledig herschrijft.
+ * `stuurInBlokken` verwijdert alleen regels met dezelfde legacy_id en laat
+ * regels die in de nieuwe set niet meer voorkomen dus staan; na een refresh
+ * kwamen die weer terug. Hier wordt eerst het hele jaar weggehaald en daarna
+ * de nieuwe set ingevoegd, zodat wat je in de app ziet ook is wat er staat.
+ *
+ * Huidig jaar (isHistoric=false) staat in de database met archief_jaar NULL;
+ * afgesloten jaren hebben daar het jaartal staan. Dat onderscheid bepaalt hoe
+ * de oude regels worden gezocht.
+ *
+ * @param {Array}  boekingen  de nieuwe set voor die jaren
+ * @param {Object} opties     { isHistoric, jaren: ['2026'] }
+ * @returns {Object} { ok, mislukt, verwijderd, fout? }
+ */
+export async function vervangBoekingenInSupabase(boekingen, { isHistoric = false, jaren = [] } = {}) {
+  if (!heeftClient()) return { fout: 'Geen verbinding met Supabase.', ok: 0, mislukt: 0, verwijderd: 0 };
+
+  const sb = await getClient();
+  const session = await sb.auth.getSession();
+  const userId = session?.data?.session?.user?.id;
+  if (!userId) return { fout: 'Niet ingelogd bij Supabase.', ok: 0, mislukt: 0, verwijderd: 0 };
+
+  // 1. Oude regels van deze jaren weghalen.
+  //    Bewust een harde delete, net als `stuurInBlokken` bij de bulk-sync.
+  //    De soft delete (`deleted_at` zetten) is er voor het wissen van één
+  //    boeking door de gebruiker. Hier wordt een heel jaar vervangen door een
+  //    nieuwe set die dezelfde legacy_id-reeks hergebruikt; blijven de oude
+  //    rijen dan staan, dan botst het invoegen op de uniciteit van
+  //    (user_id, legacy_id) en komt er niets binnen.
+  let verwijderd = 0;
+  try {
+    let q = sb.from('boekingen').delete().eq('user_id', userId);
+    if (isHistoric) {
+      const jaartallen = jaren.map(j => parseInt(j, 10)).filter(Number.isFinite);
+      if (!jaartallen.length) return { fout: 'Geen geldig jaartal opgegeven.', ok: 0, mislukt: 0, verwijderd: 0 };
+      q = q.in('archief_jaar', jaartallen);
+    } else {
+      q = q.is('archief_jaar', null);
+    }
+    const { data, error } = await q.select('id');
+    if (error) return { fout: error.message, ok: 0, mislukt: 0, verwijderd: 0 };
+    verwijderd = data ? data.length : 0;
+  } catch (err) {
+    return { fout: err.message, ok: 0, mislukt: 0, verwijderd: 0 };
+  }
+
+  // 2. Nieuwe set invoegen, in blokken.
+  const records = boekingen
+    .map(b => boekingRecord(b, isHistoric, userId))
+    .filter(r => r.datum && Number.isFinite(r.bedrag));
+
+  const BLOK = 100;
+  let ok = 0, mislukt = 0;
+  for (let i = 0; i < records.length; i += BLOK) {
+    const blok = records.slice(i, i + BLOK);
+    try {
+      const { error } = await sb.from('boekingen').insert(blok);
+      if (error) { mislukt += blok.length; console.error(`❌ Import blok ${i}:`, error.message); }
+      else ok += blok.length;
+    } catch (err) {
+      mislukt += blok.length;
+      console.error(`❌ Import blok ${i}:`, err.message);
+    }
+  }
+
+  console.log(`☁️  Supabase bijgewerkt: ${verwijderd} oude regels weg, ${ok} nieuwe geplaatst${mislukt ? `, ${mislukt} mislukt` : ''}.`);
+  return { ok, mislukt, verwijderd };
+}
+
+/**
  * Sla HNVI lot op naar Supabase
  * hnvi_loten tabel: id=UUID, legacy_id=app-id, datum/omschrijving/inkoop/verkoop/status/notitie
  */
