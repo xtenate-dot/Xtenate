@@ -155,6 +155,8 @@ export function importExcel(input) {
 
       // Creditkaart Prive
       let ccCount = 0;
+      let ccStortingen = 0;
+      let ccStortingBedrag = 0;
       const ccProblemen = [];
       let ccConventie = null;
       const ccSheetName = wb.SheetNames.find(n => n.toLowerCase().replace(/[^a-z]/g, '').includes('creditkaartprive'));
@@ -189,30 +191,21 @@ export function importExcel(input) {
           const isPrive = ['600','601'].includes(r.gbStr);
           let ccType;
           if (isPrive) {
-            // De soort volgt uit het grootboek, niet uit het teken van het
-            // bedrag. In de hele historie hoort 600 bij een storting en 601 bij
-            // een opname, zonder uitzondering; het teken bleek onbetrouwbaar.
+            // De soort volgt uit het grootboek: 600 = storting, 601 = opname.
             ccType = r.gbStr === '600' ? 'prive_storting' : 'prive_opname';
           } else {
-            const isUitgave = ccConventie === 'negatief' ? r.bedrag < 0 : r.bedrag > 0;
-            ccType = isUitgave ? 'uitgave' : 'inkomst';
-            if (!isUitgave) {
-              ccProblemen.push({
-                datum: r.datum, bedrag: r.bedrag, gb: r.gbStr,
-                omschr: r.omschr ? String(r.omschr) : '',
-                uitleg: 'tegengesteld teken — gelezen als terugstorting, niet als uitgave'
-              });
-            }
+            // Creditkaart staat op privé rekening; alles zonder 600/601 is privé.
+            ccType = 'prive_storting';
           }
           newTx.push({id:tid++, datum: r.datum, gb:r.gbStr, bedrag:Math.abs(r.bedrag),
             naam: r.omschr ? String(r.omschr) : 'Creditkaart Privé',
             omschr: r.omschr ? String(r.omschr) : '', rek:'1030', type:ccType});
           ccCount++;
-          // Let op: er wordt HIER GEEN automatische gekoppelde privé-storting meer aangemaakt.
-          // Dat bleek bij analyse van de echte boekhouding structureel niet te kloppen met de
-          // "Per Periode"-ledger (soms te veel, soms te weinig privé storting). De betrouwbare
-          // privé-totalen komen nu uit HOME_TOTALS (het Per Periode-tabblad), niet meer uit een
-          // aanname per creditkaart-boeking.
+
+          // GEEN tegenboeking voor creditkaart-regels meer.
+          // Creditkaart wordt nu direct als prive_storting ingelezen.
+          // Tegenboekingen waren nodig toen creditkaart als 'uitgave' werd ingelezen,
+          // maar nu niet meer.
         });
       }
 
@@ -691,6 +684,7 @@ export function bevestigImport() {
         `📅 Jaar: <strong>${jaarLabel}</strong><br>` +
         `✅ <strong>${p.bankCount}</strong> banktransacties ingelezen<br>` +
         `✅ <strong>${p.ccCount}</strong> creditkaart boekingen ingelezen<br>` +
+        (p.ccStortingen > 0 ? `✅ <strong>${p.ccStortingen}</strong> gekoppelde privé stortingen aangemaakt (€ ${p.ccStortingBedrag.toFixed(2)})<br>` : '') +
         (saldoCount > 0 ? `✅ <strong>${saldoCount}</strong> maandsaldos ingelezen<br>` : '') +
         (p.lotCount > 0 ? `✅ <strong>${p.lotCount}</strong> HNVI-loten ingelezen<br>` : '') +
         (p.newCovers.length > 0 ? `✅ <strong>${p.coverCount}</strong> covers artikelen ingelezen<br>` : '') +
