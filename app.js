@@ -2,6 +2,7 @@
 // attributen in index.html blijven werken, regelt de globale interacties
 // (detailpaneel, zoeken, sneltoetsen) en start de app op.
 
+import { state } from './storage.js?v=20260902a';
 import { nav, gaNaar, hertekenHuidigePagina, paginaUitHash } from './ui.js?v=20260902a';
 import { startAutosync, syncNu } from './autosync.js?v=20260902a';
 import { wisselJaar, renderHome } from './dashboard.js?v=20260902a';
@@ -200,6 +201,25 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ---------- Jaarselector ----------
+// De opties stonden vast in de HTML, met 2025 als geselecteerde. Daardoor
+// kwam je na elke refresh in een afgesloten jaar terecht, en zou 2027 er
+// handmatig bij moeten. Nu wordt de lijst opgebouwd vanaf het kalenderjaar
+// terug tot 2022, en staat het huidige jaar voorgeselecteerd.
+function vulJaarSelector() {
+  const sel = document.getElementById('jaar-selector');
+  if (!sel) return;
+  const nu = new Date().getFullYear();
+  const jaren = [];
+  for (let j = nu; j >= 2022; j--) jaren.push(String(j));
+  sel.innerHTML = '<option value="all">Alle jaren</option>' +
+    jaren.map(j => `<option value="${j}">${j}</option>`).join('');
+  sel.value = state.huidigJaar && [...sel.options].some(o => o.value === state.huidigJaar)
+    ? state.huidigJaar
+    : String(nu);
+  state.huidigJaar = sel.value;
+}
+
 // ---------- Start ----------
 // De administratie wordt pas getekend als er een geldige sessie is. Alles
 // hierboven is voorbereiding; de gegevens komen nog uit dezelfde bron als
@@ -207,6 +227,7 @@ document.addEventListener('keydown', e => {
 // Na inloggen naar de pagina uit de hash, zodat een refresh je op je plek laat.
 // Zonder hash is dat 'home', precies zoals voorheen.
 startAuth(() => {
+  vulJaarSelector();
   gaNaar(paginaUitHash());
   startAutosync();
 });

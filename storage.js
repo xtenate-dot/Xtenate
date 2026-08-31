@@ -333,7 +333,11 @@ export function saveFactuurInstellingen(nieuwe) {
 }
 
 // ─── STATE INITIALISATIE (identiek aan origineel) ──────────────────────────
-state.huidigJaar = '2025';
+// Het jaar stond hier vast op '2025'. Dat is een dode waarde zodra het
+// kalenderjaar verder loopt: bij elke refresh viel de app terug op een jaar
+// waarin niets meer gebeurt. Nu volgt hij de klok, zodat 2026 vanzelf 2027
+// wordt zonder dat er iets aangepast hoeft te worden.
+state.huidigJaar = String(new Date().getFullYear());
 state.hnviSellId = null;
 state.editTxId = null;
 state.editCoverId = null;
