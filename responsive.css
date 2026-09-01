@@ -229,4 +229,46 @@
     border: 0;
     padding: 0;
   }
+
+  /* Bank- en voorraadtabellen op telefoon: horizontaal scrollable met betere leesbaarheid */
+  #bank-body,
+  #covers-body {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 100px;
+  }
+
+  table#tbl-bank,
+  table#tbl-voorraad {
+    min-width: 100%;
+    table-layout: auto;
+  }
+
+  /* Zorg dat de tabel niet krimpt; laat hem schuiven */
+  table#tbl-bank td,
+  table#tbl-voorraad td {
+    white-space: nowrap;
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  table#tbl-bank th,
+  table#tbl-voorraad th {
+    white-space: nowrap;
+    padding: 8px 8px;
+    font-size: 12px;
+  }
+
+  /* Eerste kolom vast zodat je altijd ziet welk artikel/transactie het is */
+  table#tbl-bank td:first-child,
+  table#tbl-voorraad td:first-child,
+  table#tbl-bank th:first-child,
+  table#tbl-voorraad th:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--bg-card);
+    z-index: 1;
+    min-width: 120px;
+  }
 }
