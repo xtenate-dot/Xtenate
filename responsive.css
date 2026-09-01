@@ -214,6 +214,33 @@
   #tbl-voorraad td.cel-zoek:empty { display: none; }
   #tbl-voorraad td.cel-zoek { padding: 4px 0 0; }
 
+  /* Verkoopwaarde is waar je op deze pagina naar zoekt: wat er aan
+     verkoopprijs op de plank ligt. In een kaart met acht gelijkvormige
+     regels valt dat niet op, dus krijgt deze regel een scheidingslijn,
+     een groter cijfer en een sprekender label. */
+  #tbl-voorraad td[data-label="Verkoopwaarde"] {
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-default);
+    font-size: 15px;
+    font-weight: 500;
+  }
+  #tbl-voorraad td[data-label="Verkoopwaarde"]::before {
+    font-size: 12px;
+    color: var(--text-primary);
+  }
+
+  /* Voorraad en verkoopprijs zijn de getallen waar de verkoopwaarde uit
+     volgt; die blijven normaal leesbaar. De rest is naslag en mag rustiger. */
+  #tbl-voorraad td[data-label="Groep"],
+  #tbl-voorraad td[data-label="Ingekocht"],
+  #tbl-voorraad td[data-label="Verkocht"],
+  #tbl-voorraad td[data-label="Inkoopprijs"],
+  #tbl-voorraad td[data-label="Waarde"] {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
   #tbl-voorraad td.cel-acties {
     display: flex;
     justify-content: space-between;
@@ -230,179 +257,90 @@
     padding: 0;
   }
 
-/* ========== EXTRA BREAKPOINT: TELEFOON (max-width: 480px) ========== */
-@media (max-width: 480px) {
-  /* TABLE WRAPPER: voorkomen dat parent horizontaal scrollt */
-  .table-wrap {
-    overflow: hidden;
-    width: 100%;
-  }
+  /* ---------------------------------------------------------------- bank
+     Bank krijgt dezelfde kaartaanpak als voorraad. De tabel is met vijf
+     kolommen te breed voor een telefoon; naast elkaar zetten betekent
+     horizontaal schuiven of afgeknepen tekst. Als kaart past alles binnen
+     de schermbreedte en blijven grootboek en rekening leesbaar in plaats
+     van dat ze verdwijnen.
 
-  /* BANK TABEL OP TELEFOON */
-  table#tbl-bank {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-  }
+     De cellen worden op positie geplaatst, want de bankrijen hebben geen
+     data-label; bank.js zet ze in de volgorde datum, naam, grootboek,
+     rekening, bedrag. */
+  #tbl-bank thead { display: none; }
 
-  /* Bank: sticky headers die bovenaan blijven */
-  table#tbl-bank thead {
-    position: sticky;
-    top: 0;
+  #tbl-bank,
+  #tbl-bank tbody,
+  #tbl-bank td { display: block; width: auto; }
+
+  #tbl-bank tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 12px;
     background: var(--bg-card);
-    z-index: 20;
-    border-bottom: 2px solid var(--border-default);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-base);
+    margin-bottom: 8px;
+    padding: 10px 14px;
   }
 
-  table#tbl-bank thead tr {
-    display: grid;
-    grid-template-columns: 70px 1fr 80px;  /* Datum | Naam | Bedrag */
-  }
-
-  table#tbl-bank thead th {
-    padding: 8px 6px;
-    font-size: 11px;
-    font-weight: 500;
-    text-align: left;
-    white-space: nowrap;
-    color: var(--text-secondary);
-  }
-
-  table#tbl-bank thead th:last-child {
-    text-align: right;
-  }
-
-  /* Bank: rijen in grid layout */
-  table#tbl-bank tbody tr {
-    display: grid;
-    grid-template-columns: 70px 1fr 80px;  /* EXACT dezelfde als header! */
-    border-bottom: 1px solid var(--border-default);
+  #tbl-bank tbody td {
+    border: 0;
     padding: 0;
+    text-align: left !important;
+    min-width: 0;          /* anders duwt lange tekst de kaart breder dan het scherm */
   }
 
-  table#tbl-bank tbody td {
-    padding: 8px 6px;
-    font-size: 13px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* Datum links uitlijnen */
-  table#tbl-bank tbody td:nth-child(1) {
+  /* Regel 1: datum links, bedrag rechts. */
+  #tbl-bank tbody td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
     font-size: 11px;
     color: var(--text-secondary);
   }
-
-  /* Naam kan wrappen */
-  table#tbl-bank tbody td:nth-child(2) {
-    white-space: normal;
-    word-break: break-word;
+  #tbl-bank tbody td:nth-child(5) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    text-align: right !important;
+    align-self: center;
+    font-size: 15px;
     font-weight: 500;
-  }
-
-  /* Bedrag rechts en groen/rood */
-  table#tbl-bank tbody td:nth-child(3) {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    font-weight: 500;
-  }
-
-  /* Verberg Grootboek en Rekening columns */
-  table#tbl-bank tbody td:nth-child(n+3) {
-    /* Toch zichtbaar: bedrag */
-  }
-  table#tbl-bank thead th:nth-child(n+3),
-  table#tbl-bank tbody td:nth-child(3) {
-    /* Keep Bedrag */
-  }
-
-  /* ============ VOORRAAD TABEL OP TELEFOON ============ */
-  table#tbl-voorraad {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-  }
-
-  /* Voorraad: sticky headers */
-  table#tbl-voorraad thead {
-    position: sticky;
-    top: 0;
-    background: var(--bg-card);
-    z-index: 20;
-    border-bottom: 2px solid var(--border-default);
-  }
-
-  table#tbl-voorraad thead tr {
-    display: grid;
-    grid-template-columns: 30px 1fr 55px 60px 70px;
-    /* Checkbox | Artikel | Voorraad | Verkoopprijs | Verkoopwaarde */
-  }
-
-  /* Voorraad: rijen in grid */
-  table#tbl-voorraad tbody tr {
-    display: grid;
-    grid-template-columns: 30px 1fr 55px 60px 70px;
-    border-bottom: 1px solid var(--border-default);
-    padding: 0;
-  }
-
-  table#tbl-voorraad tbody td {
-    padding: 6px 4px;
-    font-size: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  /* Checkbox */
-  table#tbl-voorraad tbody td:nth-child(1) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Artikel-naam: kan wrappen */
-  table#tbl-voorraad tbody td:nth-child(2) {
-    white-space: normal;
-    word-break: break-word;
-    font-weight: 500;
-  }
-
-  /* Getallen: rechts */
-  table#tbl-voorraad tbody td:nth-child(n+3) {
-    text-align: right;
     font-variant-numeric: tabular-nums;
   }
 
-  /* Verberg alle andere kolommen (Groep, Ingekocht, Verkocht, etc) */
-  table#tbl-voorraad tbody td[data-label="Groep"],
-  table#tbl-voorraad tbody td[data-label="Ingekocht"],
-  table#tbl-voorraad tbody td[data-label="Verkocht"],
-  table#tbl-voorraad tbody td[data-label*="Status"],
-  table#tbl-voorraad tbody td[data-label*="Zoek"],
-  table#tbl-voorraad tbody td.cel-acties {
-    display: none;
+  /* Regel 2: de naam, het belangrijkste van de boeking. */
+  #tbl-bank tbody td:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 14px;
+    font-weight: 500;
+    padding-top: 1px;
+    white-space: normal;   /* td-trunc kapt op desktop af; hier mag het omlopen */
+    overflow: visible;
+    text-overflow: clip;
   }
 
-  /* Action cells: altijd zichtbaar rechts */
-  table#tbl-voorraad tbody td.cel-acties {
-    display: flex !important;
-    justify-content: flex-end;
-    gap: 4px;
-    padding: 4px !important;
+  /* Regel 3 en 4: grootboek en rekening als bijschrift onder de naam. */
+  #tbl-bank tbody td:nth-child(3),
+  #tbl-bank tbody td:nth-child(4) {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding-top: 4px;
   }
+  #tbl-bank tbody td:nth-child(3) { grid-row: 3; }
+  #tbl-bank tbody td:nth-child(4) { grid-row: 4; }
 
-  /* Verwijder de ::before labels die op mobiel in de weg zitten */
-  table#tbl-voorraad td[data-label]::before {
-    content: none;
-  }
+  #tbl-bank tbody td:nth-child(3)::before { content: 'Grootboek: '; }
+  #tbl-bank tbody td:nth-child(4)::before { content: 'Rekening: '; }
 
-  /* Verwijder flex-layout per cell; we gebruiken grid */
-  table#tbl-voorraad td[data-label] {
-    display: block !important;
-    padding: 6px 4px !important;
-    border-top: none !important;
-    gap: 0 !important;
+  /* De lege staat is geen kaart. */
+  #tbl-bank tr[data-geen-sort] {
+    display: block;
+    background: none;
+    border: 0;
+    padding: 0;
   }
 }
