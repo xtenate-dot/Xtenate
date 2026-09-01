@@ -230,45 +230,179 @@
     padding: 0;
   }
 
-  /* Bank- en voorraadtabellen op telefoon: horizontaal scrollable met betere leesbaarheid */
-  #bank-body,
-  #covers-body {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    min-height: 100px;
+/* ========== EXTRA BREAKPOINT: TELEFOON (max-width: 480px) ========== */
+@media (max-width: 480px) {
+  /* TABLE WRAPPER: voorkomen dat parent horizontaal scrollt */
+  .table-wrap {
+    overflow: hidden;
+    width: 100%;
   }
 
-  table#tbl-bank,
-  table#tbl-voorraad {
-    min-width: 100%;
-    table-layout: auto;
+  /* BANK TABEL OP TELEFOON */
+  table#tbl-bank {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
   }
 
-  /* Zorg dat de tabel niet krimpt; laat hem schuiven */
-  table#tbl-bank td,
-  table#tbl-voorraad td {
-    white-space: nowrap;
-    padding: 10px 8px;
-    font-size: 13px;
-  }
-
-  table#tbl-bank th,
-  table#tbl-voorraad th {
-    white-space: nowrap;
-    padding: 8px 8px;
-    font-size: 12px;
-  }
-
-  /* Eerste kolom vast zodat je altijd ziet welk artikel/transactie het is */
-  table#tbl-bank td:first-child,
-  table#tbl-voorraad td:first-child,
-  table#tbl-bank th:first-child,
-  table#tbl-voorraad th:first-child {
+  /* Bank: sticky headers die bovenaan blijven */
+  table#tbl-bank thead {
     position: sticky;
-    left: 0;
+    top: 0;
     background: var(--bg-card);
-    z-index: 1;
-    min-width: 120px;
+    z-index: 20;
+    border-bottom: 2px solid var(--border-default);
+  }
+
+  table#tbl-bank thead tr {
+    display: grid;
+    grid-template-columns: 70px 1fr 80px;  /* Datum | Naam | Bedrag */
+  }
+
+  table#tbl-bank thead th {
+    padding: 8px 6px;
+    font-size: 11px;
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+    color: var(--text-secondary);
+  }
+
+  table#tbl-bank thead th:last-child {
+    text-align: right;
+  }
+
+  /* Bank: rijen in grid layout */
+  table#tbl-bank tbody tr {
+    display: grid;
+    grid-template-columns: 70px 1fr 80px;  /* EXACT dezelfde als header! */
+    border-bottom: 1px solid var(--border-default);
+    padding: 0;
+  }
+
+  table#tbl-bank tbody td {
+    padding: 8px 6px;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Datum links uitlijnen */
+  table#tbl-bank tbody td:nth-child(1) {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  /* Naam kan wrappen */
+  table#tbl-bank tbody td:nth-child(2) {
+    white-space: normal;
+    word-break: break-word;
+    font-weight: 500;
+  }
+
+  /* Bedrag rechts en groen/rood */
+  table#tbl-bank tbody td:nth-child(3) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  /* Verberg Grootboek en Rekening columns */
+  table#tbl-bank tbody td:nth-child(n+3) {
+    /* Toch zichtbaar: bedrag */
+  }
+  table#tbl-bank thead th:nth-child(n+3),
+  table#tbl-bank tbody td:nth-child(3) {
+    /* Keep Bedrag */
+  }
+
+  /* ============ VOORRAAD TABEL OP TELEFOON ============ */
+  table#tbl-voorraad {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  /* Voorraad: sticky headers */
+  table#tbl-voorraad thead {
+    position: sticky;
+    top: 0;
+    background: var(--bg-card);
+    z-index: 20;
+    border-bottom: 2px solid var(--border-default);
+  }
+
+  table#tbl-voorraad thead tr {
+    display: grid;
+    grid-template-columns: 30px 1fr 55px 60px 70px;
+    /* Checkbox | Artikel | Voorraad | Verkoopprijs | Verkoopwaarde */
+  }
+
+  /* Voorraad: rijen in grid */
+  table#tbl-voorraad tbody tr {
+    display: grid;
+    grid-template-columns: 30px 1fr 55px 60px 70px;
+    border-bottom: 1px solid var(--border-default);
+    padding: 0;
+  }
+
+  table#tbl-voorraad tbody td {
+    padding: 6px 4px;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Checkbox */
+  table#tbl-voorraad tbody td:nth-child(1) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Artikel-naam: kan wrappen */
+  table#tbl-voorraad tbody td:nth-child(2) {
+    white-space: normal;
+    word-break: break-word;
+    font-weight: 500;
+  }
+
+  /* Getallen: rechts */
+  table#tbl-voorraad tbody td:nth-child(n+3) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Verberg alle andere kolommen (Groep, Ingekocht, Verkocht, etc) */
+  table#tbl-voorraad tbody td[data-label="Groep"],
+  table#tbl-voorraad tbody td[data-label="Ingekocht"],
+  table#tbl-voorraad tbody td[data-label="Verkocht"],
+  table#tbl-voorraad tbody td[data-label*="Status"],
+  table#tbl-voorraad tbody td[data-label*="Zoek"],
+  table#tbl-voorraad tbody td.cel-acties {
+    display: none;
+  }
+
+  /* Action cells: altijd zichtbaar rechts */
+  table#tbl-voorraad tbody td.cel-acties {
+    display: flex !important;
+    justify-content: flex-end;
+    gap: 4px;
+    padding: 4px !important;
+  }
+
+  /* Verwijder de ::before labels die op mobiel in de weg zitten */
+  table#tbl-voorraad td[data-label]::before {
+    content: none;
+  }
+
+  /* Verwijder flex-layout per cell; we gebruiken grid */
+  table#tbl-voorraad td[data-label] {
+    display: block !important;
+    padding: 6px 4px !important;
+    border-top: none !important;
+    gap: 0 !important;
   }
 }

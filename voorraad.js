@@ -442,9 +442,9 @@ export function renderCovers() {
                        : `${fmt(ip)}${handmatigeIp ? '' : '<span class="muted" style="font-size:10px"> ~</span>'}`}</td>
           <td style="text-align:right" data-label="Waarde" data-v="${waarde ?? -1}">${waarde == null ? '<span class="muted">—</span>' : fmt(waarde)}</td>
           <td style="text-align:right" data-label="Verkoopprijs" data-v="${vk ?? -1}">${vk == null ? '<span class="muted">—</span>' : fmt(vk)}</td>
+          <td style="text-align:right" data-label="Verkoopwaarde" class="${verkoopwaarde ? 'pos' : ''}" data-v="${verkoopwaarde ?? -1}">${rechts}</td>
           <td style="text-align:right" data-label="Ingekocht" data-v="${stand.inkoop ?? -1}">${stand.inkoop || '—'}</td>
           <td style="text-align:right" data-label="Verkocht" data-v="${stand.verkocht ?? -1}">${stand.verkocht || '—'}</td>
-          <td style="text-align:right" data-label="Verkoopwaarde" class="${verkoopwaarde ? 'pos' : ''}" data-v="${verkoopwaarde ?? -1}">${rechts}</td>
           <td class="cel-status" data-v="${status(c, stand)}">${STATUS_BADGE[status(c, stand)]}</td>
           <td class="cel-zoek">${c.zoekterm
             ? `<a href="https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(c.zoekterm)}" target="_blank" rel="noopener" style="font-size:11px;white-space:nowrap">Zoek op AliExpress</a>`
