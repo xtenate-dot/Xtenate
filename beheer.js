@@ -7,6 +7,8 @@
 
 import { draaiControles } from './controle.js?v=20260902a';
 import { esc } from './helpers.js?v=20260902a';
+import { saveVoorraadInstellingen, standaardMinVoorraad } from './storage.js?v=20260902a';
+import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 
 const el = id => document.getElementById(id);
 
@@ -90,10 +92,54 @@ export function renderBeheer() {
         icoon: I.sync, actie: 'openVoorraadSyncModal()', nadruk: true
       })
     ]) +
+    voorraadInstellingenBlok() +
     groep('Voorzichtig', [
       tegel({
         titel: 'Data wissen', uitleg: 'Alles verwijderen uit deze browser — niet ongedaan te maken!',
         icoon: I.wissen, actie: 'openWisModal()', gevaarlijk: true
       })
     ]);
+}
+
+/**
+ * Instellingen die over de voorraad gaan. Nu alleen de standaarddrempel voor
+ * 'lage voorraad'. Die gold eerder als vaste 3 in de code; een artikel met een
+ * eigen minimum gebruikt nog steeds dat eigen getal, deze waarde is alleen de
+ * terugval voor artikelen zonder.
+ */
+function voorraadInstellingenBlok() {
+  const huidig = standaardMinVoorraad();
+  return `
+    <div class="beheer-groep">
+      <div class="beheer-groep-kop">Voorraad</div>
+      <div class="card" style="padding:var(--spacing-4)">
+        <label for="beheer-min-voorraad" style="display:block;font-weight:500;margin-bottom:4px">
+          Standaard minimumvoorraad
+        </label>
+        <div class="muted" style="font-size:12px;margin-bottom:10px">
+          Ligt er van een artikel minder dan dit aantal, dan geldt de voorraad als laag.
+          Artikelen met een eigen minimum houden dat; deze waarde geldt voor de rest.
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="number" id="beheer-min-voorraad" min="0" step="1" value="${huidig}"
+            style="width:90px" aria-label="Standaard minimumvoorraad">
+          <button class="btn btn-primary" onclick="bewaarMinVoorraad()">Opslaan</button>
+          <span id="beheer-min-melding" class="muted" style="font-size:12px"></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+export function bewaarMinVoorraad() {
+  const veld = el('beheer-min-voorraad');
+  const melding = el('beheer-min-melding');
+  const n = Number(veld?.value);
+  if (!Number.isFinite(n) || n < 0) {
+    if (melding) melding.textContent = 'Vul een getal van 0 of hoger in.';
+    return;
+  }
+  saveVoorraadInstellingen({ standaardMin: Math.round(n) });
+  if (melding) melding.textContent = `Opgeslagen: artikelen zonder eigen minimum gebruiken nu ${Math.round(n)}.`;
+  // De voorraadstatus hangt hiervan af, dus opnieuw tekenen.
+  hertekenHuidigePagina();
 }

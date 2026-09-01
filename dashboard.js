@@ -6,6 +6,7 @@ import {
   maandLabel, rekBadge, saldoDelta, typeBadge, weergaveNaam
 } from './helpers.js?v=20260902a';
 import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260902a';
+import { bankPrijzenNu, inkoopwaardeVan } from './voorraadwaarde.js?v=20260902a';
 import { maakSorteerbaar } from './tables.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 
@@ -70,6 +71,13 @@ function berekenVoorraad() {
   const inVoorraad = state.HNVI_LOTS.filter(l => l.status === 'voorraad');
   const lotenWaarde = inVoorraad.reduce((s, l) => s + (Number(l.inkoop) || 0), 0);
 
+  // De inkoopprijs komt uit dezelfde bron als de Voorraadpagina en de aangifte:
+  // het handmatige veld als dat er staat, anders afgeleid uit de bankboekingen
+  // op de inkooprekening. Eerder werd hier alleen naar `c.inkoopprijs` gekeken,
+  // waardoor Home een lagere voorraadwaarde toonde dan Voorraad.
+  const bankPrijzen = bankPrijzenNu();
+  const prijsJaar = jaarFilter || String(new Date().getFullYear());
+
   let coversWaarde = 0, coversStuks = 0, zonderPrijs = 0, verkochtStuks = 0, ingekochtStuks = 0;
   for (const c of state.COVERS) {
     let aantal, verkocht, ingekocht;
@@ -93,9 +101,8 @@ function berekenVoorraad() {
     verkochtStuks += verkocht;
     ingekochtStuks += ingekocht;
 
-    // De inkoopprijs is een eigenschap van het artikel, niet van het jaar.
-    const prijs = Number(c.inkoopprijs);
-    if (Number.isFinite(prijs) && prijs > 0) coversWaarde += aantal * prijs;
+    const waarde = inkoopwaardeVan(c, { voorraad: aantal }, bankPrijzen, prijsJaar);
+    if (waarde != null) coversWaarde += waarde;
     else if (aantal > 0) zonderPrijs++;
   }
 

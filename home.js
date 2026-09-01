@@ -11,7 +11,7 @@
 import { draaiControles } from './controle.js?v=20260902a';
 import { factuurSamenvatting } from './facturen.js?v=20260902a';
 import { esc, fmt } from './helpers.js?v=20260902a';
-import { STANDAARD_MIN_VOORRAAD, state } from './storage.js?v=20260902a';
+import { standaardMinVoorraad, state } from './storage.js?v=20260902a';
 
 const el = id => document.getElementById(id);
 
@@ -19,7 +19,7 @@ const el = id => document.getElementById(id);
 
 function voorraadStand() {
   const drempel = c => (c.minVoorraad != null && c.minVoorraad !== ''
-    ? Number(c.minVoorraad) : STANDAARD_MIN_VOORRAAD);
+    ? Number(c.minVoorraad) : standaardMinVoorraad());
   const artikelen = state.COVERS || [];
   const op = artikelen.filter(c => Number(c.voorraad) === 0).length;
   const bijna = artikelen.filter(c => Number(c.voorraad) > 0 && Number(c.voorraad) <= drempel(c)).length;

@@ -215,7 +215,7 @@
   #tbl-voorraad td.cel-zoek { padding: 4px 0 0; }
 
   /* Verkoopwaarde is waar je op deze pagina naar zoekt: wat er aan
-     verkoopprijs op de plank ligt. In een kaart met acht gelijkvormige
+     verkoopprijs op de plank ligt. In een kaart met tien gelijkvormige
      regels valt dat niet op, dus krijgt deze regel een scheidingslijn,
      een groter cijfer en een sprekender label. */
   #tbl-voorraad td[data-label="Verkoopwaarde"] {
@@ -229,17 +229,94 @@
     font-size: 12px;
     color: var(--text-primary);
   }
+  #tbl-voorraad td[data-label="Potentiële marge"] {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  #tbl-voorraad td[data-label="Potentiële marge"]::before {
+    color: var(--text-primary);
+  }
 
-  /* Voorraad en verkoopprijs zijn de getallen waar de verkoopwaarde uit
-     volgt; die blijven normaal leesbaar. De rest is naslag en mag rustiger. */
+  /* De kaart toont standaard alleen wat je zonder klikken wilt zien:
+     naam, voorraad, verkoopprijs, verkoopwaarde en marge. De rest is
+     naslag en zit achter "Meer details", anders wordt elke kaart een
+     lijst van tien regels waarin niets meer opvalt. */
+  #tbl-voorraad tr:not(.details-open) td[data-label="Groep"],
+  #tbl-voorraad tr:not(.details-open) td[data-label="Minimum"],
+  #tbl-voorraad tr:not(.details-open) td[data-label="Inkoopprijs"],
+  #tbl-voorraad tr:not(.details-open) td[data-label="Inkoopwaarde"],
+  #tbl-voorraad tr:not(.details-open) td[data-label="Ingekocht"],
+  #tbl-voorraad tr:not(.details-open) td[data-label="Verkocht"],
+  #tbl-voorraad tr:not(.details-open) td[data-label="Omzet"],
+  #tbl-voorraad tr:not(.details-open) td[data-label="Retour"],
+  #tbl-voorraad tr:not(.details-open) td.cel-zoek {
+    display: none;
+  }
+
   #tbl-voorraad td[data-label="Groep"],
+  #tbl-voorraad td[data-label="Minimum"],
   #tbl-voorraad td[data-label="Ingekocht"],
   #tbl-voorraad td[data-label="Verkocht"],
   #tbl-voorraad td[data-label="Inkoopprijs"],
-  #tbl-voorraad td[data-label="Waarde"] {
+  #tbl-voorraad td[data-label="Inkoopwaarde"],
+  #tbl-voorraad td[data-label="Omzet"],
+  #tbl-voorraad td[data-label="Retour"] {
     font-size: 12px;
     color: var(--text-secondary);
   }
+
+  .details-knop {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 7px 0 0;
+    border: 0;
+    border-top: 1px solid var(--border-default);
+    background: none;
+    color: var(--accent-primary);
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .details-knop::after { content: ' ▾'; }
+  tr.details-open .details-knop::after { content: ' ▴'; }
+
+  /* De totaalregel is op een telefoon een rij losse getallen zonder kop.
+     Als kaart met labels ernaast is hij wel te lezen. */
+  /* tfoot is van zichzelf geen blok; zonder display:block op de tfoot krimpt
+     de rij mee met zijn inhoud in plaats van de breedte van de kaarten erboven
+     aan te houden. */
+  #voorraad-totaal { display: block; width: auto; }
+  #voorraad-totaal tr {
+    display: block;
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-base);
+    margin-bottom: 12px;
+    padding: 12px 14px;
+  }
+  #voorraad-totaal td { display: none; }
+  #voorraad-totaal td[data-tot] {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 3px 0;
+    text-align: left !important;
+    font-size: 13px;
+  }
+  #voorraad-totaal td[data-tot]::before {
+    content: attr(data-tot);
+    color: var(--text-secondary);
+    font-weight: 400;
+    font-size: 12px;
+  }
+  #voorraad-totaal td[data-tot="Totaal"] {
+    display: block;
+    font-size: 15px;
+    padding-bottom: 6px;
+  }
+  #voorraad-totaal td[data-tot="Totaal"]::before { content: none; }
 
   #tbl-voorraad td.cel-acties {
     display: flex;
@@ -343,4 +420,11 @@
     border: 0;
     padding: 0;
   }
+}
+
+@media (max-width: 720px) {
+  /* Op mobiel is de tabel een kaart; daar bepaalt de knop "Meer details" per
+     kaart wat er zichtbaar is. Een tweede schakelaar voor kolommen zou daar
+     niets doen en alleen verwarren. */
+  .kol-schakelaar { display: none; }
 }

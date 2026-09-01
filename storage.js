@@ -156,7 +156,26 @@ export const GROEPEN_STANDAARD = [
   { id: 'overig', naam: 'Overig' }
 ];
 
-export const STANDAARD_MIN_VOORRAAD = 3;
+// De drempel waaronder de voorraad als 'laag' geldt, voor artikelen die geen
+// eigen minimum hebben. Een artikel met een ingevuld `minVoorraad` blijft dat
+// gebruiken; deze waarde geldt alleen als terugval. Instelbaar in Beheer.
+export const STANDAARD_MIN_VOORRAAD_FABRIEK = 3;
+
+export let VOORRAAD_INSTELLINGEN = load('xtenate_voorraad_instellingen', {
+  standaardMin: STANDAARD_MIN_VOORRAAD_FABRIEK
+});
+
+/** De geldende standaarddrempel. Lees dit, niet de fabriekswaarde. */
+export function standaardMinVoorraad() {
+  const n = Number(VOORRAAD_INSTELLINGEN?.standaardMin);
+  return Number.isFinite(n) && n >= 0 ? n : STANDAARD_MIN_VOORRAAD_FABRIEK;
+}
+
+export function saveVoorraadInstellingen(nieuwe) {
+  if (nieuwe) VOORRAAD_INSTELLINGEN = { ...VOORRAAD_INSTELLINGEN, ...nieuwe };
+  save('xtenate_voorraad_instellingen', VOORRAAD_INSTELLINGEN);
+  duwAppData('voorraad_instellingen', VOORRAAD_INSTELLINGEN);
+}
 
 // Productgroepen zijn zelf te beheren, dus ze staan in de opslag en niet vast
 // in de code. De vijf hierboven zijn alleen het vertrekpunt.

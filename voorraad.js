@@ -1,11 +1,17 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { GBNM, PRIJS_COVER, esc, fmt, gbCode } from './helpers.js?v=20260902a';
+import { GBNM, esc, fmt, gbCode } from './helpers.js?v=20260902a';
+import { REDENEN, legVast, logVan, verschilTekst, datumTekst } from './voorraadlog.js?v=20260902a';
 import {
-  STANDAARD_MIN_VOORRAAD, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
+  standaardMinVoorraad, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
 } from './storage.js?v=20260902a';
 import { maakSorteerbaar } from './tables.js?v=20260902a';
-import { inkoopprijzenUitBank, prijsPerStuk, factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260902a';
+import { factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260902a';
+import {
+  bankPrijzenNu, inkoopprijsVan as _inkoopprijsVan, verkoopprijsVan,
+  inkoopwaardeVan as _inkoopwaardeVan, verkoopwaardeVan as _verkoopwaardeVan,
+  margeVan as _margeVan, omzetVan as _omzetVan, totalenVan
+} from './voorraadwaarde.js?v=20260902a';
 import { saveCoverToSupabase, deleteFromSupabase, addToPendingQueue, syncAllesNaarSupabase } from './supabase-client-v2.js?v=20260902a';
 import { downloadModelPdf } from './pdf.js?v=20260902a';
 
@@ -33,13 +39,12 @@ let laatsteActie = null;
 // ------------------------------------------------------------------ rekenen
 
 /** Verkoopprijs; Funny Covers hebben een vaste standaardprijs. */
-function verkoopprijs(c) {
-  if (c.prijs != null && c.prijs !== '') return Number(c.prijs);
-  return c.categorie === 'covers' ? PRIJS_COVER : null;
-}
+// De verkoopprijs komt uit dezelfde module, zodat Home en Excel hem gelijk lezen.
+const verkoopprijs = verkoopprijsVan;
 
 function drempel(c) {
-  return c.minVoorraad != null && c.minVoorraad !== '' ? Number(c.minVoorraad) : STANDAARD_MIN_VOORRAAD;
+  // Eigen minimum van het artikel wint; anders de instelling uit Beheer.
+  return c.minVoorraad != null && c.minVoorraad !== '' ? Number(c.minVoorraad) : standaardMinVoorraad();
 }
 
 /**
@@ -73,48 +78,21 @@ function standVan(c) {
 
 
 /**
- * Inkoopprijzen die uit de bank af te leiden zijn: bedrag op de inkooprekening
- * gedeeld door het aantal ingekochte stuks. Wordt per render één keer berekend,
- * want het loopt over alle boekingen heen.
+ * De rekenregels staan in voorraadwaarde.js, zodat Home en de Excel-export
+ * dezelfde definities gebruiken. Hier staan alleen omhullers die het gekozen
+ * boekjaar en de bankprijzen van deze weergave meegeven; die twee zijn eigen
+ * aan deze pagina en horen niet in de gedeelde module.
  */
 let bankPrijzen = null;
-function ververBankPrijzen() {
-  try {
-    bankPrijzen = inkoopprijzenUitBank([...state.HIST_TX, ...state.TX], state.COVERS);
-  } catch (err) {
-    console.warn('Inkoopprijzen uit bank niet beschikbaar:', err);
-    bankPrijzen = null;
-  }
-}
+function ververBankPrijzen() { bankPrijzen = bankPrijzenNu(); }
+function prijsJaar() { return gekozenJaar === 'nu' ? HUIDIG_JAAR : gekozenJaar; }
 
-/**
- * De inkoopprijs per stuk die we voor dit artikel gebruiken. Staat er een
- * bedrag bij het artikel, dan wint dat. Zo niet, dan leiden we hem af uit de
- * bankboekingen op de inkooprekening. Levert null op als geen van beide kan.
- */
-function inkoopprijsVan(c) {
-  const handmatig = Number(c.inkoopprijs);
-  if (Number.isFinite(handmatig) && handmatig > 0) return handmatig;
-  if (!bankPrijzen) return null;
-  const jaar = gekozenJaar === 'nu' ? HUIDIG_JAAR : gekozenJaar;
-  const uitBank = Number(prijsPerStuk(c, bankPrijzen, jaar));
-  return Number.isFinite(uitBank) && uitBank > 0 ? uitBank : null;
-}
+function inkoopprijsVan(c) { return _inkoopprijsVan(c, bankPrijzen, prijsJaar()); }
+function waardeVan(c, stand) { return _inkoopwaardeVan(c, stand, bankPrijzen, prijsJaar()); }
+function verkoopwaardeVan(c, stand) { return _verkoopwaardeVan(c, stand); }
+function margeVan(c, stand) { return _margeVan(c, stand, bankPrijzen, prijsJaar()); }
+function omzetVan(c, stand) { return _omzetVan(c, stand); }
 
-function waardeVan(c, stand) {
-  if (stand.voorraad == null) return null;
-  const prijs = inkoopprijsVan(c);
-  if (prijs == null) return null;
-  return stand.voorraad * prijs;
-}
-
-/** Wat de voorraad zou opbrengen als alles tegen de verkoopprijs weggaat. */
-function verkoopwaardeVan(c, stand) {
-  if (stand.voorraad == null) return null;
-  const vk = verkoopprijs(c);
-  if (vk == null || !(vk > 0)) return null;
-  return stand.voorraad * vk;
-}
 
 function status(c, stand) {
   if (stand.voorraad == null) return 'onbekend';
@@ -133,19 +111,6 @@ function bekendeJaren() {
   return [...jaren].sort().reverse();
 }
 
-/** Voorraadwaarde van één jaar, over de artikelen van de open tab. */
-function waardeVanJaar(lijst, jaar) {
-  return lijst.reduce((som, c) => {
-    const eind = (c.jaren || {})[jaar]?.eind;
-    if (eind == null || c.inkoopprijs == null || c.inkoopprijs === '') return som;
-    return som + eind * Number(c.inkoopprijs);
-  }, 0);
-}
-
-/** Of er voor een jaar überhaupt iets is vastgelegd. */
-function jaarIsVastgelegd(lijst, jaar) {
-  return lijst.some(c => (c.jaren || {})[jaar]?.eind != null);
-}
 
 // -------------------------------------------------------------------- tabs
 
@@ -199,6 +164,42 @@ function vulGroepKeuzes() {
 
 // -------------------------------------------------------------- kerncijfers
 
+/**
+ * Toont in één regel hoeveel artikelen aandacht nodig hebben. Klikken zet het
+ * statusfilter, zodat de telling ook een ingang is en niet alleen een cijfer.
+ * De grens tussen laag en voldoende komt uit drempel(): eigen minimum van het
+ * artikel, anders de instelling uit Beheer.
+ */
+function renderStatusbalk(tel, totaal) {
+  const doel = el('voorraad-statusbalk');
+  if (!doel) return;
+  if (!totaal) { doel.innerHTML = ''; return; }
+  const huidig = el('f-covers-status') ? el('f-covers-status').value : '';
+  const knop = (sleutel, label, kleur) => {
+    const aan = huidig === sleutel;
+    return `<button type="button" class="status-tel${aan ? ' actief' : ''}"
+      onclick="filterVoorraadStatus('${sleutel}')"
+      aria-pressed="${aan}" title="Toon alleen deze artikelen">
+      <span class="status-stip" style="background:${kleur}"></span>
+      <strong>${tel[sleutel]}</strong> ${label}
+    </button>`;
+  };
+  doel.innerHTML =
+    knop('uit', 'uitverkocht', 'var(--semantic-danger)') +
+    knop('laag', 'lage voorraad', 'var(--semantic-warning)') +
+    knop('ok', 'voldoende', 'var(--semantic-success)') +
+    (tel.onbekend ? knop('onbekend', 'niet vastgelegd', 'var(--text-muted)') : '') +
+    (huidig ? `<button type="button" class="status-tel" onclick="filterVoorraadStatus('')">Toon alles</button>` : '');
+}
+
+/** Zet het statusfilter vanuit de telling; nogmaals klikken zet het uit. */
+export function filterVoorraadStatus(sleutel) {
+  const veld = el('f-covers-status');
+  if (!veld) return;
+  veld.value = veld.value === sleutel ? '' : sleutel;
+  renderCovers();
+}
+
 function renderKerncijfers(lijst) {
   const standen = lijst.map(c => ({ c, s: standVan(c) }));
   const vastgelegd = standen.filter(x => x.s.voorraad != null);
@@ -211,18 +212,27 @@ function renderKerncijfers(lijst) {
   const verkoopwaarde = metVk.reduce((s, x) => s + verkoopwaardeVan(x.c, x.s), 0);
   const zonderVk = standen.filter(x => x.s.voorraad > 0 && verkoopwaardeVan(x.c, x.s) === null).length;
 
+  // Marge telt alleen over artikelen waarvan beide prijzen bekend zijn; die
+  // regel zit in margeVan(). Optellen over de losse verkoop- en inkoopwaarden
+  // zou een verkoopwaarde zonder tegenhanger meenemen en de marge opblazen.
+  const metMarge = standen.filter(x => margeVan(x.c, x.s) !== null);
+  const marge = metMarge.reduce((s, x) => s + margeVan(x.c, x.s), 0);
+  const verkoopBeide = metMarge.reduce((s, x) => s + verkoopwaardeVan(x.c, x.s), 0);
+  const margePct = verkoopBeide > 0 ? Math.round(marge / verkoopBeide * 100) : null;
+
   const tabNaam = actieveTab === 'alle' ? 'alle groepen' : groepNaam(actieveTab);
 
+  // Voorraadstatus als telling. Eén doorloop over de standen levert alle vier
+  // de groepen; los filteren per status zou dezelfde lijst vier keer aflopen en
+  // kan uiteenlopen als de drempelregel ooit verandert.
+  const tel = { uit: 0, laag: 0, ok: 0, onbekend: 0 };
+  for (const x of standen) tel[status(x.c, x.s)]++;
+  renderStatusbalk(tel, lijst.length);
+
   if (gekozenJaar === 'nu') {
-    const laag = standen.filter(x => status(x.c, x.s) === 'laag').length;
-    const uit = standen.filter(x => status(x.c, x.s) === 'uit').length;
-    // Marge alleen over de artikelen waar we allebei de prijzen van kennen,
-    // anders vergelijk je een volledige verkoopwaarde met een halve inkoop.
-    const beide = standen.filter(x => waardeVan(x.c, x.s) !== null && verkoopwaardeVan(x.c, x.s) !== null);
-    const inkoopBeide = beide.reduce((s, x) => s + waardeVan(x.c, x.s), 0);
-    const verkoopBeide = beide.reduce((s, x) => s + verkoopwaardeVan(x.c, x.s), 0);
-    const marge = verkoopBeide - inkoopBeide;
-    const margePct = inkoopBeide > 0 ? Math.round(marge / verkoopBeide * 100) : null;
+    const laag = tel.laag;
+    const uit = tel.uit;
+    const beide = metMarge;
 
     el('voorraad-kpi').innerHTML = `
       <div class="kpi">
@@ -265,31 +275,35 @@ function renderKerncijfers(lijst) {
   }
 
   const verkocht = standen.reduce((s, x) => s + (x.s.verkocht || 0), 0);
-  const vorig = String(Number(gekozenJaar) - 1);
-  const vorigVast = jaarIsVastgelegd(lijst, vorig);
-  const mutatie = waarde - waardeVanJaar(lijst, vorig);
   el('voorraad-kpi').innerHTML = `
     <div class="kpi">
-      <div class="kpi-lbl">Voorraadwaarde 31-12-${gekozenJaar}</div>
+      <div class="kpi-lbl">Inkoopwaarde 31-12-${gekozenJaar}</div>
       <div class="kpi-val">${fmt(waarde)}</div>
       <div class="kpi-sub">${zonderPrijs > 0 ? `${zonderPrijs} artikel${zonderPrijs === 1 ? '' : 'en'} zonder inkoopprijs` : 'tegen inkoopprijs'}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Verkoopwaarde</div>
+      <div class="kpi-val pos">${fmt(verkoopwaarde)}</div>
+      <div class="kpi-sub">${zonderVk > 0
+        ? `${zonderVk} artikel${zonderVk === 1 ? '' : 'en'} zonder verkoopprijs`
+        : 'als alles verkocht wordt'}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Potentiële marge</div>
+      <div class="kpi-val ${marge >= 0 ? 'pos' : 'neg'}">${metMarge.length ? fmt(marge) : '—'}</div>
+      <div class="kpi-sub">${metMarge.length
+        ? `${margePct != null ? margePct + '% · ' : ''}over ${metMarge.length} artikel${metMarge.length === 1 ? '' : 'en'}`
+        : 'nog geen prijzen bekend'}</div>
     </div>
     <div class="kpi">
       <div class="kpi-lbl">Vastgelegd</div>
       <div class="kpi-val">${vastgelegd.length}<span class="muted" style="font-size:15px"> / ${lijst.length}</span></div>
       <div class="kpi-sub">${stuks} stuks in voorraad</div>
     </div>
-    <div class="kpi">
+    <div class="kpi kpi--secondary">
       <div class="kpi-lbl">Verkocht in ${gekozenJaar}</div>
       <div class="kpi-val">${verkocht}</div>
       <div class="kpi-sub">stuks</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-lbl">Mutatie t.o.v. ${vorig}</div>
-      <div class="kpi-val ${!vorigVast ? 'muted' : mutatie >= 0 ? 'pos' : 'neg'}">${vorigVast ? (mutatie >= 0 ? '+' : '–') + fmt(Math.abs(mutatie)) : '—'}</div>
-      <div class="kpi-sub">${vorigVast
-        ? (mutatie >= 0 ? 'voorraad gegroeid, drukt de winst' : 'voorraad geslonken, verhoogt de winst')
-        : `stand eind ${vorig} nog niet vastgelegd`}</div>
     </div>`;
 }
 
@@ -404,7 +418,9 @@ export function renderCovers() {
     el('voorraad-vastleg-knop').textContent = `Huidige voorraad vastleggen als eind ${gekozenJaar}`;
   }
   el('voorraad-kop-aantal').textContent = jaarModus ? `Eind ${gekozenJaar}` : 'Voorraad';
-  el('voorraad-kop-omzet').textContent = 'Verkoopwaarde';
+  // Omzet en retour horen bij het gekozen tijdvak; verkoopwaarde staat los
+  // van het jaar en heeft daarom een vaste kop.
+  el('voorraad-kop-omzet').textContent = jaarModus ? `Retour ${gekozenJaar}` : `Omzet ${HUIDIG_JAAR}`;
   // De kolommen Ingekocht en Verkocht slaan in jaarweergave op dat boekjaar.
   const kopIn = el('voorraad-kop-ingekocht'), kopVer = el('voorraad-kop-verkocht');
   if (kopIn) kopIn.textContent = jaarModus ? `Ingekocht ${gekozenJaar}` : 'Ingekocht';
@@ -428,36 +444,45 @@ export function renderCovers() {
         const vk = verkoopprijs(c);
         const ip = inkoopprijsVan(c);
         const handmatigeIp = Number(c.inkoopprijs) > 0;
-        const waarde = waardeVan(c, stand);
-        const verkoopwaarde = vk != null && stand.voorraad ? stand.voorraad * vk : null;
-        const rechts = verkoopwaarde != null ? fmt(verkoopwaarde) : '—';
+        // Alle vier de bedragen komen uit de gedeelde functies hierboven.
+        const inkoopwaarde = waardeVan(c, stand);
+        const verkoopwaarde = verkoopwaardeVan(c, stand);
+        const marge = margeVan(c, stand);
+        const omzet = jaarModus ? null : omzetVan(c, stand);
+        // De laatste kolom toont in jaarweergave het aantal retouren en in de
+        // actuele weergave de omzet; die twee horen bij hetzelfde tijdvak.
+        const rechts = jaarModus
+          ? (stand.retour || 0)
+          : (omzet != null ? fmt(omzet) : '—');
+        const g = v => v == null ? '<span class="muted">—</span>' : fmt(v);
         return `<tr>
           <td class="cel-kies" style="padding-left:16px;width:34px"><input type="checkbox" data-artikel-id="${esc(c.id)}"${selectie.has(String(c.id)) ? ' checked' : ''}
             onchange="wisselVoorraadSelectie('${esc(c.id)}', this)" aria-label="Selecteer ${esc(c.artikel)}"></td>
           <td class="cel-naam" style="font-weight:${stand.voorraad > 0 ? 500 : 400}">${esc(c.artikel)}</td>
-          ${toonGroep ? `<td class="muted" data-label="Groep">${esc(groepNaam(c.categorie))}</td>` : ''}
+          ${toonGroep ? `<td class="muted kol-detail" data-label="Groep">${esc(groepNaam(c.categorie))}</td>` : ''}
           <td style="text-align:right" data-label="Voorraad" data-v="${stand.voorraad ?? -1}">${stand.voorraad ?? '—'}</td>
+          <td style="text-align:right" data-label="Minimum" class="muted" data-v="${drempel(c)}">${drempel(c)}${c.minVoorraad == null || c.minVoorraad === '' ? '<span class="muted" style="font-size:10px"> std</span>' : ''}</td>
           <td style="text-align:right" data-label="Inkoopprijs" data-v="${ip ?? -1}"${!handmatigeIp && ip != null ? ' title="Afgeleid uit de bankboekingen op de inkooprekening"' : ''}>${
             ip == null ? '<span class="muted">—</span>'
                        : `${fmt(ip)}${handmatigeIp ? '' : '<span class="muted" style="font-size:10px"> ~</span>'}`}</td>
-          <td style="text-align:right" data-label="Waarde" data-v="${waarde ?? -1}">${waarde == null ? '<span class="muted">—</span>' : fmt(waarde)}</td>
-          <td style="text-align:right" data-label="Verkoopprijs" data-v="${vk ?? -1}">${vk == null ? '<span class="muted">—</span>' : fmt(vk)}</td>
-          <td style="text-align:right" data-label="Verkoopwaarde" class="${verkoopwaarde ? 'pos' : ''}" data-v="${verkoopwaarde ?? -1}">${rechts}</td>
-          <td style="text-align:right" data-label="Ingekocht" data-v="${stand.inkoop ?? -1}">${stand.inkoop || '—'}</td>
-          <td style="text-align:right" data-label="Verkocht" data-v="${stand.verkocht ?? -1}">${stand.verkocht || '—'}</td>
+          <td style="text-align:right" data-label="Verkoopprijs" data-v="${vk ?? -1}">${g(vk)}</td>
+          <td style="text-align:right" data-label="Inkoopwaarde" data-v="${inkoopwaarde ?? -1}">${g(inkoopwaarde)}</td>
+          <td style="text-align:right" data-label="Verkoopwaarde" class="${verkoopwaarde ? 'pos' : ''}" data-v="${verkoopwaarde ?? -1}">${g(verkoopwaarde)}</td>
+          <td style="text-align:right" data-label="Potentiële marge" class="${marge == null ? '' : marge >= 0 ? 'pos' : 'neg'}" data-v="${marge ?? -999999}">${g(marge)}</td>
+          <td style="text-align:right" class="kol-detail" data-label="Ingekocht" data-v="${stand.inkoop ?? -1}">${stand.inkoop || '—'}</td>
+          <td style="text-align:right" class="kol-detail" data-label="Verkocht" data-v="${stand.verkocht ?? -1}">${stand.verkocht || '—'}</td>
+          <td style="text-align:right" data-label="${jaarModus ? 'Retour' : 'Omzet'}" class="${!jaarModus && omzet ? 'pos' : ''}" data-v="${jaarModus ? (stand.retour || 0) : (omzet ?? 0)}">${rechts}</td>
           <td class="cel-status" data-v="${status(c, stand)}">${STATUS_BADGE[status(c, stand)]}</td>
-          <td class="cel-zoek">${c.zoekterm
+          <td class="cel-zoek kol-detail">${c.zoekterm
             ? `<a href="https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(c.zoekterm)}" target="_blank" rel="noopener" style="font-size:11px;white-space:nowrap">Zoek op AliExpress</a>`
             : ''}</td>
           <td class="cel-acties" style="padding-right:16px;white-space:nowrap">
+            <button type="button" class="details-knop" onclick="wisselVoorraadDetails(this)">Meer details</button>
             <span class="sell-link" onclick="openCoverEdit('${esc(c.id)}')">Bewerk</span>
-            <button class="icon-btn" onclick="verwijderArtikel('${esc(c.id)}')" title="Artikel verwijderen" aria-label="Verwijder ${esc(c.artikel)}" style="width:26px;height:26px">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-            </button>
           </td>
         </tr>`;
       }).join('')
-    : `<tr data-geen-sort="1"><td colspan="${toonGroep ? 13 : 12}"><div class="empty">
+    : `<tr data-geen-sort="1"><td colspan="${toonGroep ? 15 : 14}"><div class="empty">
         <div class="empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
         <div class="empty-title">${basis.length ? 'Geen artikelen binnen deze filters' : 'Nog geen artikelen in deze groep'}</div>
         <div class="empty-text">${basis.length
@@ -467,7 +492,83 @@ export function renderCovers() {
       </div></td></tr>`;
 
   renderBulkbalk();
+  renderTotaalregel(lijst, toonGroep, jaarModus);
   maakSorteerbaar(el('tbl-voorraad'));
+}
+
+/**
+ * De optelling onder de tabel. Loopt over dezelfde lijst als de rijen en
+ * gebruikt dezelfde functies, zodat het totaal per definitie klopt met wat
+ * erboven staat. Artikelen waarvan een prijs ontbreekt tellen niet mee in het
+ * betreffende bedrag; dat wordt eronder benoemd zodat een laag totaal niet
+ * voor een compleet totaal wordt aangezien.
+ */
+function renderTotaalregel(lijst, toonGroep, jaarModus) {
+  const voet = el('voorraad-totaal');
+  if (!voet) return;
+  if (!lijst.length) { voet.innerHTML = ''; return; }
+
+  const standen = lijst.map(c => ({ c, s: standVan(c) }));
+  const som = (fn) => standen.reduce((t, x) => {
+    const v = fn(x.c, x.s);
+    return v == null ? t : t + v;
+  }, 0);
+
+  const stuks = standen.reduce((t, x) => t + (x.s.voorraad ?? 0), 0);
+  const inkoopwaarde = som(waardeVan);
+  const verkoopwaarde = som(verkoopwaardeVan);
+  const marge = som(margeVan);
+  const ingekocht = standen.reduce((t, x) => t + (x.s.inkoop || 0), 0);
+  const verkocht = standen.reduce((t, x) => t + (x.s.verkocht || 0), 0);
+  const retour = standen.reduce((t, x) => t + (x.s.retour || 0), 0);
+  const omzet = jaarModus ? null : som(omzetVan);
+
+  const zonderIp = standen.filter(x => x.s.voorraad > 0 && waardeVan(x.c, x.s) == null).length;
+  const zonderVk = standen.filter(x => x.s.voorraad > 0 && verkoopwaardeVan(x.c, x.s) == null).length;
+  const noot = [
+    zonderIp ? `${zonderIp} zonder inkoopprijs` : '',
+    zonderVk ? `${zonderVk} zonder verkoopprijs` : ''
+  ].filter(Boolean).join(' · ');
+
+  // data-tot draagt het label mee; op desktop is het ongebruikt, op mobiel
+  // zet de stylesheet het via ::before voor de waarde.
+  const r = (label, inhoud, extra = '', klasse = '') =>
+    `<td data-tot="${label}" class="${klasse}" style="text-align:right;font-weight:600;${extra}">${inhoud}</td>`;
+
+  voet.innerHTML = `<tr class="voorraad-totaalrij">
+    <td></td>
+    <td data-tot="Totaal" style="font-weight:600">Totaal${noot ? `<div class="muted" style="font-weight:400;font-size:11px">${noot}</div>` : ''}</td>
+    ${toonGroep ? `<td class="muted kol-detail" style="font-size:11px">${lijst.length} artikelen</td>` : ''}
+    ${r('Stuks', stuks)}
+    <td></td>
+    <td></td>
+    <td></td>
+    ${r('Inkoopwaarde', fmt(inkoopwaarde))}
+    ${r('Verkoopwaarde', fmt(verkoopwaarde), 'color:var(--semantic-success)')}
+    ${r('Potentiële marge', fmt(marge), `color:var(--semantic-${marge >= 0 ? 'success' : 'danger'})`)}
+    ${r('Ingekocht', ingekocht, '', 'kol-detail')}
+    ${r('Verkocht', verkocht, '', 'kol-detail')}
+    ${r(jaarModus ? 'Retour' : 'Omzet', jaarModus ? retour : fmt(omzet))}
+    <td></td><td class="kol-detail"></td><td></td>
+  </tr>`;
+}
+
+/**
+ * Klapt de naslagregels van een voorraadkaart open of dicht. Alleen zichtbaar
+ * op smalle schermen; op desktop staat alles al naast elkaar in de tabel en is
+ * de knop verborgen. Werkt met een class op de rij, zodat de stylesheet
+ * bepaalt wat er verschijnt en er geen inline stijlen achterblijven.
+ */
+export function wisselDetailKolommen(vinkje) {
+  const tabel = document.getElementById('tbl-voorraad');
+  if (tabel) tabel.classList.toggle('toon-details', vinkje.checked);
+}
+
+export function wisselVoorraadDetails(knop) {
+  const rij = knop.closest('tr');
+  if (!rij) return;
+  const open = rij.classList.toggle('details-open');
+  knop.textContent = open ? 'Minder details' : 'Meer details';
 }
 
 // --------------------------------------------------------------- selecteren
@@ -1013,6 +1114,11 @@ export function openCoverModal() {
   el('cv-cat').value = actieveTab === 'alle' ? standaardGroep() : actieveTab;
   zetKeuzeStandaarden();
   if (el('cv-inkoopprijs-hint')) el('cv-inkoopprijs-hint').textContent = '';
+  // Een nieuw artikel heeft nog geen geschiedenis; het blok blijft dan weg.
+  vulRedenen();
+  if (el('cv-log-blok')) el('cv-log-blok').style.display = 'none';
+  if (el('cv-notitie')) el('cv-notitie').value = '';
+  if (el('cv-reden')) el('cv-reden').value = 'Inkoop';
   el('modal-cover').classList.add('open');
   el('cv-naam').focus();
 }
@@ -1046,8 +1152,8 @@ function bankPrijsUitleg({ handelsvoorraad, inkoopGb, jaren, inkoopprijs }) {
     };
   }
 
-  const prijs = Number(prijsPerStuk({ handelsvoorraad, inkoopGb: gb, jaren, inkoopprijs: null },
-    bankPrijzen, gekozenJaar === 'nu' ? HUIDIG_JAAR : gekozenJaar));
+  const prijs = Number(_inkoopprijsVan({ handelsvoorraad, inkoopGb: gb, jaren, inkoopprijs: null },
+    bankPrijzen, prijsJaar()));
   if (!(prijs > 0)) {
     return {
       kleur: 'var(--semantic-warning-bright)',
@@ -1088,12 +1194,17 @@ export function openCoverEdit(id) {
   el('cv-ink').value = c.inkoop;
   el('cv-vk').value = c.verkoop;
   el('cv-vrd').value = c.voorraad;
+  vulRedenen();
+  if (el('cv-notitie')) el('cv-notitie').value = '';
+  if (el('cv-reden')) el('cv-reden').value = 'Correctie';
+  toonVoorraadLog(c);
   el('cv-26').value = (c.jaren || {})[j]?.verkocht ?? (j === HUIDIG_JAAR ? c.omzet2026 ?? '' : '');
   el('cv-jaar-eind').value = (c.jaren || {})[j]?.eind ?? '';
   el('cv-zoek').value = c.zoekterm || '';
   el('cv-prijs').value = c.prijs ?? '';
   el('cv-inkoopprijs').value = c.inkoopprijs ?? '';
   el('cv-min').value = c.minVoorraad ?? '';
+  if (el('cv-min-hint')) el('cv-min-hint').textContent = `(standaard ${standaardMinVoorraad()})`;
   el('cv-handelsvoorraad').value = c.handelsvoorraad === false ? 'nee' : 'ja';
   el('cv-inkoop-gb').value = c.inkoopGb || '7000';
   if (el('cv-factor')) el('cv-factor').value = factorVan(c);
@@ -1137,6 +1248,48 @@ const getal = (id, decimalen) => {
   const n = decimalen ? parseFloat(ruw.replace(',', '.')) : parseInt(ruw, 10);
   return isNaN(n) ? null : n;
 };
+
+/**
+ * Toont de geschiedenis van dit artikel in het bewerkscherm. Puur lezen: de
+ * lijst laat zien waarom de voorraad veranderde en raakt de voorraad zelf niet
+ * aan. Wijkt de laatst gelogde stand af van wat er nu staat, dan is er een
+ * wijziging langs het logboek heen gegaan (meestal een import); dat wordt
+ * gemeld, maar niet gecorrigeerd — het artikel blijft leidend.
+ */
+function vulRedenen() {
+  const veld = el('cv-reden');
+  // De lijst komt uit voorraadlog.js, zodat de keuzes in het scherm en de
+  // waarden die worden vastgelegd niet uiteen kunnen lopen.
+  if (veld && !veld.options.length) {
+    veld.innerHTML = REDENEN.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+  }
+}
+
+function toonVoorraadLog(c) {
+  const blok = el('cv-log-blok'), doel = el('cv-log');
+  if (!blok || !doel) return;
+  const regels = logVan(c.id);
+  blok.style.display = '';
+  if (!regels.length) {
+    doel.innerHTML = '<div class="voorraad-log-leeg">Nog geen wijzigingen vastgelegd. ' +
+      'Vanaf nu wordt elke voorraadwijziging hier bijgehouden.</div>';
+    return;
+  }
+  const nu = Number(c.voorraad);
+  const laatste = regels[0];
+  const waarschuwing = laatste.naar !== nu
+    ? `<div class="voorraad-log-leeg">Let op: het logboek eindigt op ${laatste.naar} terwijl er nu ${nu} staat. ` +
+      `Er is een wijziging buiten dit scherm om gegaan, bijvoorbeeld via een import.</div>`
+    : '';
+  doel.innerHTML = waarschuwing + regels.slice(0, 40).map(r => `
+    <div class="voorraad-log-regel">
+      <span class="voorraad-log-datum">${esc(datumTekst(r.datum))}</span>
+      <span class="voorraad-log-stand">${r.van == null ? 'nieuw' : r.van} \u2192 ${r.naar}</span>
+      <span class="voorraad-log-delta ${r.naar > (r.van ?? 0) ? 'pos' : 'neg'}">${esc(verschilTekst(r))}</span>
+      <span class="voorraad-log-reden">${esc(r.reden)}${r.notitie
+        ? ` <span class="voorraad-log-notitie">\u00b7 ${esc(r.notitie)}</span>` : ''}</span>
+    </div>`).join('');
+}
 
 export async function saveCover() {
   const naam = el('cv-naam').value.trim();
@@ -1194,6 +1347,18 @@ export async function saveCover() {
   else state.COVERS.push(obj);
 
   saveCoversData();
+
+  // Pas ná het opslaan loggen: het logboek beschrijft wat er is gebeurd en
+  // stuurt niets aan. Bij een nieuw artikel is `van` null, dat is de start.
+  legVast({
+    artikelId: obj.id,
+    artikel: obj.artikel,
+    van: bestaand ? (bestaand.voorraad ?? null) : null,
+    naar: obj.voorraad,
+    reden: el('cv-reden') ? el('cv-reden').value : 'Correctie',
+    notitie: el('cv-notitie') ? el('cv-notitie').value.trim() : '',
+    bron: 'handmatig'
+  });
   
   // Naar Supabase sturen
   try {
