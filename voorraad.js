@@ -404,7 +404,7 @@ export function renderCovers() {
     el('voorraad-vastleg-knop').textContent = `Huidige voorraad vastleggen als eind ${gekozenJaar}`;
   }
   el('voorraad-kop-aantal').textContent = jaarModus ? `Eind ${gekozenJaar}` : 'Voorraad';
-  el('voorraad-kop-omzet').textContent = jaarModus ? `Retour ${gekozenJaar}` : 'Omzet 2026';
+  el('voorraad-kop-omzet').textContent = 'Verkoopwaarde';
   // De kolommen Ingekocht en Verkocht slaan in jaarweergave op dat boekjaar.
   const kopIn = el('voorraad-kop-ingekocht'), kopVer = el('voorraad-kop-verkocht');
   if (kopIn) kopIn.textContent = jaarModus ? `Ingekocht ${gekozenJaar}` : 'Ingekocht';
@@ -429,8 +429,8 @@ export function renderCovers() {
         const ip = inkoopprijsVan(c);
         const handmatigeIp = Number(c.inkoopprijs) > 0;
         const waarde = waardeVan(c, stand);
-        const omzet = !jaarModus && vk != null ? stand.verkocht * vk : null;
-        const rechts = jaarModus ? (stand.retour || 0) : (omzet ? fmt(omzet) : '—');
+        const verkoopwaarde = vk != null && stand.voorraad ? stand.voorraad * vk : null;
+        const rechts = verkoopwaarde != null ? fmt(verkoopwaarde) : '—';
         return `<tr>
           <td class="cel-kies" style="padding-left:16px;width:34px"><input type="checkbox" data-artikel-id="${esc(c.id)}"${selectie.has(String(c.id)) ? ' checked' : ''}
             onchange="wisselVoorraadSelectie('${esc(c.id)}', this)" aria-label="Selecteer ${esc(c.artikel)}"></td>
@@ -444,7 +444,7 @@ export function renderCovers() {
           <td style="text-align:right" data-label="Verkoopprijs" data-v="${vk ?? -1}">${vk == null ? '<span class="muted">—</span>' : fmt(vk)}</td>
           <td style="text-align:right" data-label="Ingekocht" data-v="${stand.inkoop ?? -1}">${stand.inkoop || '—'}</td>
           <td style="text-align:right" data-label="Verkocht" data-v="${stand.verkocht ?? -1}">${stand.verkocht || '—'}</td>
-          <td style="text-align:right" data-label="${jaarModus ? 'Retour' : 'Omzet'}" class="${!jaarModus && omzet ? 'pos' : ''}" data-v="${jaarModus ? (stand.retour || 0) : (omzet ?? 0)}">${rechts}</td>
+          <td style="text-align:right" data-label="Verkoopwaarde" class="${verkoopwaarde ? 'pos' : ''}" data-v="${verkoopwaarde ?? -1}">${rechts}</td>
           <td class="cel-status" data-v="${status(c, stand)}">${STATUS_BADGE[status(c, stand)]}</td>
           <td class="cel-zoek">${c.zoekterm
             ? `<a href="https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(c.zoekterm)}" target="_blank" rel="noopener" style="font-size:11px;white-space:nowrap">Zoek op AliExpress</a>`
