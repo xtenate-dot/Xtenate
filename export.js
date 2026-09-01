@@ -8,6 +8,7 @@
 
 import { GBNM, REKNM, isInkomst, maandLabel } from './helpers.js?v=20260902a';
 import { HOME_TOTALS, MAAND_SALDOS, groepNaam, state } from './storage.js?v=20260902a';
+import { bankPrijzenNu, inkoopwaardeVan } from './voorraadwaarde.js?v=20260902a';
 
 const CREDITKAART = '1030';
 
@@ -95,8 +96,15 @@ function voorraadBlad() {
     ['Artikel', 'Groep', 'Voorraad', 'Inkoopprijs', 'Verkoopprijs', 'Voorraadwaarde', 'Meldgrens',
      'Ingekocht', 'Verkocht', '', '', '', '', '', '', 'Verkopen 2026']
   ];
+  // Zelfde definitie als de Voorraadpagina en de aangifte: handmatige prijs
+  // als die er staat, anders afgeleid uit de bankboekingen. Hier stond eerder
+  // een eigen berekening die alleen naar het handmatige veld keek, waardoor de
+  // export een lagere voorraadwaarde gaf dan de app zelf toonde.
+  const bankPrijzen = bankPrijzenNu();
+  const prijsJaar = String(new Date().getFullYear());
   state.COVERS.forEach(c => {
-    const waarde = c.inkoopprijs != null && c.inkoopprijs !== '' ? c.voorraad * Number(c.inkoopprijs) : '';
+    const berekend = inkoopwaardeVan(c, { voorraad: Number(c.voorraad) || 0 }, bankPrijzen, prijsJaar);
+    const waarde = berekend == null ? '' : berekend;
     rijen.push([
       c.artikel,
       groepNaam(c.categorie),

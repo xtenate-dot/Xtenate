@@ -1340,3 +1340,73 @@ body.nav-collapsed .nav-section-btn { pointer-events: none; }
   color: var(--semantic-danger-bright); font-weight: 500;
   border-color: var(--semantic-danger-line); background: var(--semantic-danger-soft);
 }
+
+/* De knop "Meer details" hoort bij de kaartweergave op smalle schermen. Op
+   desktop staat elke waarde al in een eigen kolom, dus daar is hij overbodig;
+   responsive.css toont hem binnen de mobiele mediaquery. */
+.details-knop { display: none; }
+
+/* Met vijftien kolommen knijpt de voorraadtabel de artikelnaam samen tot een
+   kolom van een paar tekens breed. Een ondergrens houdt de naam leesbaar; de
+   tabel schuift dan liever horizontaal binnen .table-wrap dan dat elke naam
+   over vier regels breekt. */
+#tbl-voorraad td.cel-naam { min-width: 150px; }
+#tbl-voorraad td.cel-zoek { white-space: nowrap; }
+
+/* Naslagkolommen van de voorraadtabel: Groep, Ingekocht, Verkocht en de
+   zoeklink. Standaard verborgen zodat de tabel binnen het scherm past en de
+   Bewerk-knop zichtbaar blijft; de schakelaar "Meer kolommen" zet ze aan.
+   Kop en cellen worden samen verborgen, anders schuiven de kolommen scheef.
+   Alleen op brede schermen: onder 720px is de tabel een kaart en regelt
+   responsive.css per kaart wat er zichtbaar is. */
+@media (min-width: 721px) {
+  #tbl-voorraad:not(.toon-details) .kol-detail { display: none; }
+}
+
+.kol-schakelaar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.kol-schakelaar input { margin: 0; }
+
+/* Voorraadstatus in één regel: hoeveel artikelen uitverkocht zijn, laag staan
+   of voldoende hebben. Elke telling is tegelijk een filterknop. */
+.statusbalk { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--spacing-3); }
+.status-tel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.status-tel strong { color: var(--text-primary); font-size: 13px; }
+.status-tel:hover { border-color: var(--purple-veil-26); }
+.status-tel.actief { border-color: var(--accent-primary); color: var(--text-primary); }
+.status-stip { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+
+/* Voorraadgeschiedenis in het bewerkscherm. Alleen historie: deze lijst
+   berekent niets en is nooit de bron van de voorraad. */
+.voorraad-log { max-height: 190px; overflow-y: auto; font-size: 12px; }
+.voorraad-log-regel {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-default);
+}
+.voorraad-log-regel:last-child { border-bottom: 0; }
+.voorraad-log-datum { color: var(--text-secondary); flex: 0 0 78px; }
+.voorraad-log-stand { font-variant-numeric: tabular-nums; flex: 0 0 76px; }
+.voorraad-log-delta { font-weight: 600; flex: 0 0 34px; text-align: right; }
+.voorraad-log-reden { color: var(--text-primary); }
+.voorraad-log-notitie { color: var(--text-secondary); }
+.voorraad-log-leeg { color: var(--text-secondary); padding: 6px 0; }

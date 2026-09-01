@@ -567,9 +567,14 @@
     </select>
     <button class="btn btn-primary btn-ml" onclick="openImportModalVoorraad()" title="Import Excel 2022-2026">📥 Import</button>
     <button class="btn btn-ml" onclick="openVerdeling()" title="Verdeel het bankbedrag van de inkooprekening over je artikelen">Inkoopverdeling</button>
+    <label class="kol-schakelaar btn btn-ml" title="Toont Groep, Ingekocht, Verkocht en de zoeklink">
+      <input type="checkbox" id="voorraad-toon-detail" onchange="wisselDetailKolommen(this)"> Meer kolommen
+    </label>
     <button class="btn btn-ml" onclick="exporteerVoorraadPdf()" title="Druk de zichtbare lijst af als pdf">PDF</button>
     <button class="btn btn-primary btn-ml" onclick="openCoverModal()">+ Artikel toevoegen</button>
   </div>
+
+  <div id="voorraad-statusbalk" class="statusbalk"></div>
 
   <div class="meldbar" id="voorraad-jaarbalk" style="display:none">
     <span id="voorraad-jaar-tekst"></span>
@@ -596,19 +601,23 @@
       <thead><tr>
         <th style="width:34px;padding-left:16px"><input type="checkbox" id="voorraad-check-all" onchange="selecteerAlleVoorraad(this)" aria-label="Alles selecteren"></th>
         <th data-sort="tekst">Artikel</th>
-        <th style="width:120px" id="voorraad-cat-kop" data-sort="tekst">Groep</th>
-        <th style="width:88px;text-align:right" data-sort="getal" id="voorraad-kop-aantal">Voorraad</th>
-        <th style="width:96px;text-align:right" data-sort="getal" title="Inkoopprijs per stuk. Een ~ betekent: afgeleid uit de bank.">Inkoopprijs</th>
-        <th style="width:96px;text-align:right" data-sort="getal" title="Voorraad x inkoopprijs">Waarde</th>
-        <th style="width:96px;text-align:right" data-sort="getal" title="Verkoopprijs per stuk">Verkoopprijs</th>
-        <th style="width:110px;text-align:right" data-sort="getal" id="voorraad-kop-omzet" title="Aantal in voorraad × verkoopprijs">Verkoopwaarde</th>
-        <th style="width:110px;text-align:right" data-sort="getal" id="voorraad-kop-ingekocht" title="Aantal ingekochte stuks">Ingekocht</th>
-        <th style="width:110px;text-align:right" data-sort="getal" id="voorraad-kop-verkocht" title="Aantal verkochte stuks">Verkocht</th>
-        <th style="width:104px" data-sort="tekst">Status</th>
-        <th style="width:126px"></th>
-        <th style="width:96px;padding-right:16px"></th>
+        <th class="kol-detail" style="width:110px" id="voorraad-cat-kop" data-sort="tekst">Groep</th>
+        <th style="width:80px;text-align:right" data-sort="getal" id="voorraad-kop-aantal">Voorraad</th>
+        <th style="width:78px;text-align:right" data-sort="getal" title="Onder dit aantal geldt de voorraad als laag">Minimum</th>
+        <th style="width:92px;text-align:right" data-sort="getal" title="Inkoopprijs per stuk. Een ~ betekent: afgeleid uit de bank.">Inkoopprijs</th>
+        <th style="width:92px;text-align:right" data-sort="getal" title="Verkoopprijs per stuk">Verkoopprijs</th>
+        <th style="width:100px;text-align:right" data-sort="getal" title="Voorraad x inkoopprijs: wat er ligt heeft gekost">Inkoopwaarde</th>
+        <th style="width:104px;text-align:right" data-sort="getal" title="Voorraad x verkoopprijs: wat er ligt kan opbrengen">Verkoopwaarde</th>
+        <th style="width:96px;text-align:right" data-sort="getal" title="Verkoopwaarde min inkoopwaarde. Alleen als beide prijzen bekend zijn.">Pot. marge</th>
+        <th class="kol-detail" style="width:88px;text-align:right" data-sort="getal" id="voorraad-kop-ingekocht" title="Aantal ingekochte stuks">Ingekocht</th>
+        <th class="kol-detail" style="width:88px;text-align:right" data-sort="getal" id="voorraad-kop-verkocht" title="Aantal verkochte stuks">Verkocht</th>
+        <th style="width:96px;text-align:right" data-sort="getal" id="voorraad-kop-omzet" title="Verkocht x verkoopprijs: wat er werkelijk is verkocht">Omzet</th>
+        <th style="width:96px" data-sort="tekst">Status</th>
+        <th class="kol-detail" style="width:104px"></th>
+        <th style="width:86px;padding-right:16px"></th>
       </tr></thead>
       <tbody id="covers-body"></tbody>
+      <tfoot id="voorraad-totaal"></tfoot>
     </table></div>
   </div>
 </div>
@@ -952,7 +961,19 @@
       <select id="cv-cat" aria-label="Productgroep"></select>
     </div>
     <div class="form-group"><label>Huidige voorraad</label><input type="number" id="cv-vrd" placeholder="0" min="0"></div>
-    <div class="form-group"><label>Melden onder <span style="color:var(--text-muted)">(standaard 3)</span></label><input type="number" id="cv-min" placeholder="3" min="0"></div>
+    <div class="form-group"><label>Melden onder <span style="color:var(--text-muted)" id="cv-min-hint">(standaard 3)</span></label><input type="number" id="cv-min" placeholder="3" min="0"></div>
+    <div class="form-group">
+      <label>Reden van de voorraadwijziging</label>
+      <select id="cv-reden" aria-label="Reden van de voorraadwijziging"></select>
+    </div>
+    <div class="form-group">
+      <label>Toelichting <span style="color:var(--text-muted)">(optioneel)</span></label>
+      <input type="text" id="cv-notitie" placeholder="bijv. voorraad geteld" maxlength="300">
+    </div>
+    <div class="form-group" id="cv-log-blok" style="grid-column:1/-1;display:none">
+      <label>Voorraadgeschiedenis</label>
+      <div id="cv-log" class="voorraad-log"></div>
+    </div>
     <div class="form-group">
       <label>Telt mee als handelsvoorraad</label>
       <select id="cv-handelsvoorraad" aria-label="Handelsvoorraad">

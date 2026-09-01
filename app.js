@@ -8,7 +8,7 @@ import { startAutosync, syncNu } from './autosync.js?v=20260902a';
 import { wisselJaar, renderHome } from './dashboard.js?v=20260902a';
 import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking, deleteTx } from './bank.js?v=20260902a';
 import { renderFacturen, kiesFactuurTab } from './facturen-ui.js?v=20260902a';
-import { renderBeheer } from './beheer.js?v=20260902a';
+import { renderBeheer, bewaarMinVoorraad } from './beheer.js?v=20260902a';
 import { renderPortaal } from './home.js?v=20260902a';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260902a';
 import { renderBelasting, openExtraKosten, openPercentages, openInkomenssoort, controlereBelasting, openControleDialog, kopieerAangifte, downloadAangifte, downloadAangiftePdf } from './belasting.js?v=20260902a';
@@ -20,6 +20,7 @@ import {
 } from './controle.js?v=20260902a';
 import {
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
+  wisselVoorraadDetails, wisselDetailKolommen, filterVoorraadStatus,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie, zetHandelsvoorraadSelectie,
   openVerdeling, sluitVerdeling, herstelVerdeling, wijzigFactor, bewaarVerdeling,
   openVoorraadSyncModal, sluitVoorraadSyncModal, startVoorraadSync,
@@ -78,6 +79,7 @@ Object.assign(window, {
   renderControle, klapControleUit, toonAlleControleRegels,
   verbergControleMelding, zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen,
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
+  wisselVoorraadDetails, wisselDetailKolommen, filterVoorraadStatus, bewaarMinVoorraad,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie, zetHandelsvoorraadSelectie,
   openVerdeling, sluitVerdeling, herstelVerdeling, wijzigFactor, bewaarVerdeling,
   openVoorraadSyncModal, sluitVoorraadSyncModal, startVoorraadSync,
