@@ -122,7 +122,10 @@ function berekenVoorraad() {
 const KPI_ICONEN = {
   omzet:    '<path d="M3 17l6-6 4 4 8-8"/><path d="M21 7h-5v5"/>',
   kosten:   '<path d="M3 7l6 6 4-4 8 8"/><path d="M21 17h-5v-5"/>',
-  winst:    '<path d="M12 2v20"/><path d="M17 6H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',
+  // Euroteken: boog van de C met de twee dwarsstrepen. Stond hier eerder als
+  // dollarteken, terwijl de administratie in euro's is. Alleen het icoon; de
+  // bedragen liepen al via fmt() en zijn niet aangepast.
+  winst:    '<path d="M18 6.5A7 7 0 0 0 8 12a7 7 0 0 0 10 5.5"/><path d="M4 10.5h9"/><path d="M4 14h9"/>',
   bank:     '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/>',
   prive:    '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>',
   voorraad: '<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>',
@@ -303,7 +306,10 @@ export function renderHome() {
   const reservering = Math.max(0, Math.round(winst * 0.30));
 
   const bronMerk = uitExcel
-    ? '<span class="badge badge-green" title="Overgenomen uit de Per Periode-totalen van je Excel-import">Excel</span>'
+    // Herkomstlabel, geen oordeel: deze badge zegt waar de cijfers vandaan
+    // komen, niet dat er iets goed is gegaan. Groen zou hier "correct" of
+    // "voltooid" suggereren, dus paars als neutrale identiteitskleur.
+    ? '<span class="badge badge-purple" title="Overgenomen uit de Per Periode-totalen van je Excel-import">Excel</span>'
     : '';
 
   const sub = document.getElementById('overzicht-sub');

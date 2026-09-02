@@ -1,6 +1,6 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
-import { charts, dc , palette } from './charts.js?v=20260902a';
+import { charts, dc, kleurVoorGb } from './charts.js?v=20260902a';
 import { GBNM, ddmm, fmt, gbCode, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260902a';
 import { downloadModelPdf } from './pdf.js?v=20260902a';
 import { state } from './storage.js?v=20260902a';
@@ -640,7 +640,9 @@ export function renderBelasting() {
     belTX.filter(t=>isInkomst(t)&&t.gb==='8020').reduce((s,t)=>s+t.bedrag,0),
   ];
   const omzLabels = ['Xtenate (8000)','Bol.com covers (8010)','Helmetstore (8020)'];
-  const colors = palette().slice(0, 3);
+  // Vaste kleur per kanaal, niet op volgorde: Xtenate blijft cyaan, Bol.com
+  // roze en Helmetstore limoen, ook als de bedragen van plaats wisselen.
+  const colors = ['8000', '8010', '8020'].map(kleurVoorGb);
   dc('c-bel');
   charts['c-bel'] = new Chart(document.getElementById('c-bel'), {type:'doughnut',data:{labels:omzLabels,datasets:[{data:omzData,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
   document.getElementById('bel-legend').innerHTML = omzLabels.map((n,i)=>`<span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:${colors[i]}"></span>${n} ${fmt(omzData[i])}</span>`).join('');
@@ -663,7 +665,8 @@ export function renderBelasting() {
       .filter(r => r.bedrag > 0)
       .sort((a, b) => b.bedrag - a.bedrag);
 
-    const kleuren = palette();
+    // De rijen zijn gesorteerd op bedrag; de kleur mag daar niet van afhangen,
+    // anders verspringt een kostenpost van kleur zodra hij stijgt of daalt.
     dc(canvasId);
     const vak = document.getElementById(canvasId);
     const legenda = document.getElementById(legendaId);
@@ -678,13 +681,13 @@ export function renderBelasting() {
       type: 'doughnut',
       data: {
         labels: rijen.map(r => `${GBNM[r.gb] || r.gb} (${r.gb})`),
-        datasets: [{ data: rijen.map(r => r.bedrag), backgroundColor: rijen.map((_, i) => kleuren[i % kleuren.length]), borderWidth: 0 }]
+        datasets: [{ data: rijen.map(r => r.bedrag), backgroundColor: rijen.map(r => kleurVoorGb(r.gb)), borderWidth: 0 }]
       },
       options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { display: false } } }
     });
 
-    legenda.innerHTML = rijen.map((r, i) =>
-      `<span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:${kleuren[i % kleuren.length]}"></span>${GBNM[r.gb] || r.gb} (${r.gb}) ${fmt(r.bedrag)}</span>`
+    legenda.innerHTML = rijen.map(r =>
+      `<span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:${kleurVoorGb(r.gb)}"></span>${GBNM[r.gb] || r.gb} (${r.gb}) ${fmt(r.bedrag)}</span>`
     ).join('');
   };
 

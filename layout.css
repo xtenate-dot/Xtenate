@@ -34,7 +34,7 @@ body.nav-collapsed .sidebar { width: var(--sidebar-width-collapsed); }
   color: var(--accent-contrast);
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; font-weight: 700; letter-spacing: -0.5px;
-  box-shadow: 0 0 20px rgba(139,92,246,0.28), inset 0 1px 0 rgba(255,255,255,0.14);
+  box-shadow: var(--glow-logo), var(--inner-shine);
 }
 .brand-text { min-width: 0; }
 .brand-name {
@@ -90,11 +90,10 @@ body.nav-collapsed .nav-section::after {
   color: var(--text-primary);
   font-weight: 500;
   background: linear-gradient(90deg,
-              rgba(124,58,237,0.26) 0%,
-              rgba(124,58,237,0.12) 62%,
-              rgba(124,58,237,0.05) 100%);
-  box-shadow: var(--shadow-purple-active),
-              inset 0 1px 0 rgba(196,181,253,0.10);
+              var(--purple-veil-26) 0%,
+              var(--purple-veil-12) 62%,
+              var(--purple-veil-05) 100%);
+  box-shadow: var(--shadow-purple-active), var(--card-topline-accent);
 }
 .nav-item.active::before {
   content: '';
@@ -104,7 +103,7 @@ body.nav-collapsed .nav-section::after {
   width: 3px; height: 18px;
   border-radius: 0 3px 3px 0;
   background: var(--purple-400);
-  box-shadow: 0 0 10px rgba(139,92,246,0.75);
+  box-shadow: var(--glow-indicator);
 }
 .nav-item.active svg { opacity: 1; color: var(--purple-300); }
 .nav-item.active:hover { color: var(--text-primary); }
