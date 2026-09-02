@@ -463,6 +463,107 @@ function boekingRecord(boeking, isHistoric, userId) {
   };
 }
 
+/**
+ * Verwijdert de opgegeven jaren uit Supabase, als voorbereiding op het lokaal
+ * wissen van diezelfde jaren. Wordt aangeroepen door `doWis()` in modals.js,
+ * v\u00f3\u00f3rdat er ook maar iets lokaal wordt aangeraakt.
+ *
+ * Volgorde is bewust vast: eerst boekingen, dan pas voorraadartikelen. Stopt
+ * de eerste stap met een fout, dan is er nergens iets veranderd \u2014 noch lokaal,
+ * noch in de cloud. Stopt de tweede stap met een fout, dan zijn de boekingen
+ * al weg maar de voorraadartikelen nog niet; dat wordt teruggegeven zodat de
+ * aanroeper dat expliciet kan melden in plaats van door te gaan alsof alles
+ * gelukt is. In beide gevallen blijft de lokale staat op dit punt nog
+ * volledig ongewijzigd \u2014 dat wissen gebeurt pas na een `ok: true` hiervandaan.
+ *
+ * Scope, per stap:
+ *   boekingen          altijd .eq('user_id', userId)
+ *                      + .is('archief_jaar', null)      als '2026' in jaren zit
+ *                      + .in('archief_jaar', overigen)  voor de andere jaren
+ *   voorraadartikelen  alleen als '2026' in jaren zit \u2014 deze tabel heeft geen
+ *                      jaarveld, dus "2026 wissen" wist hier het hele artikel
+ *                      inclusief zijn geschiedenis over alle jaren, niet alleen
+ *                      dit boekjaar. Dat moet de aanroeper aan de gebruiker
+ *                      melden v\u00f3\u00f3r de bevestiging, niet hierna.
+ *   hnvi_loten         nooit. Deze functie kent geen enkel pad daarheen.
+ *
+ * @param {string[]} jaren  bijv. ['2026', '2025']
+ * @returns {{
+ *   ok: boolean,
+ *   fout: string|null,
+ *   stap: 'boekingen'|'voorraad'|null,
+ *   boekingenVerwijderd: number,
+ *   voorraadVerwijderd: number|null
+ * }}
+ */
+export async function wisJarenInSupabase(jaren) {
+  const leeg = { ok: false, fout: null, stap: null, boekingenVerwijderd: 0, voorraadVerwijderd: null };
+
+  if (!Array.isArray(jaren) || jaren.length === 0) {
+    return { ...leeg, fout: 'Geen jaar opgegeven.' };
+  }
+  if (!heeftClient()) {
+    return { ...leeg, fout: 'Geen verbinding met Supabase. Er is niets gewist.' };
+  }
+
+  const sb = await getClient();
+  const session = await sb.auth.getSession();
+  const userId = session?.data?.session?.user?.id;
+  if (!userId) {
+    return { ...leeg, fout: 'Niet ingelogd bij Supabase. Er is niets gewist.' };
+  }
+
+  const wisHuidig = jaren.includes('2026');
+  const historischeJaren = jaren
+    .filter(j => j !== '2026')
+    .map(j => parseInt(j, 10))
+    .filter(Number.isFinite);
+
+  // \u2500\u2500 Stap 1: boekingen \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  let boekingenVerwijderd = 0;
+  try {
+    if (wisHuidig) {
+      const { data, error } = await sb.from('boekingen').delete()
+        .eq('user_id', userId)
+        .is('archief_jaar', null)
+        .select('id');
+      if (error) return { ...leeg, fout: error.message, stap: 'boekingen' };
+      boekingenVerwijderd += data ? data.length : 0;
+    }
+    if (historischeJaren.length) {
+      const { data, error } = await sb.from('boekingen').delete()
+        .eq('user_id', userId)
+        .in('archief_jaar', historischeJaren)
+        .select('id');
+      if (error) return { ...leeg, fout: error.message, stap: 'boekingen', boekingenVerwijderd };
+      boekingenVerwijderd += data ? data.length : 0;
+    }
+  } catch (err) {
+    return { ...leeg, fout: err.message, stap: 'boekingen', boekingenVerwijderd };
+  }
+
+  // \u2500\u2500 Stap 2: voorraadartikelen, alleen als 2026 is gewist \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  let voorraadVerwijderd = null;
+  if (wisHuidig) {
+    try {
+      const { data, error } = await sb.from('voorraadartikelen').delete()
+        .eq('user_id', userId)
+        .select('id');
+      if (error) {
+        // Boekingen zijn op dit punt al \u00e9cht weg in Supabase. Dat melden we
+        // expliciet mee, zodat de aanroeper dit niet als "niets gebeurd" kan
+        // interpreteren en de gebruiker een duidelijke vervolgstap krijgt.
+        return { ...leeg, fout: error.message, stap: 'voorraad', boekingenVerwijderd, voorraadVerwijderd: 0 };
+      }
+      voorraadVerwijderd = data ? data.length : 0;
+    } catch (err) {
+      return { ...leeg, fout: err.message, stap: 'voorraad', boekingenVerwijderd, voorraadVerwijderd: 0 };
+    }
+  }
+
+  return { ok: true, fout: null, stap: null, boekingenVerwijderd, voorraadVerwijderd };
+}
+
 /** Bouwt het databaserecord voor een HNVI-lot. */
 function hnviRecord(lot, userId) {
   return {

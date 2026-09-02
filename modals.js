@@ -12,7 +12,7 @@ const REKENINGEN = new Set(Object.keys(REKNM));
 // wegschrijven van de boekingen en vóór het toepassen van de jaartotalen.
 const OMZET_GB = ['8000', '8010', '8020'];
 import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state, voegJaarcijfersToe } from './storage.js?v=20260902a';
-import { addToPendingQueue, deleteFromSupabase, vervangBoekingenInSupabase } from './supabase-client-v2.js?v=20260902a';
+import { addToPendingQueue, deleteFromSupabase, vervangBoekingenInSupabase, wisJarenInSupabase } from './supabase-client-v2.js?v=20260902a';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
 // met een kolom "Totaal" voor het hele boekjaar. Dit is de brontabel van de boekhouding zelf,
@@ -784,22 +784,59 @@ export function openWisModal() {
   document.getElementById('modal-wis').classList.add('open');
 }
 
-export function doWis() {
+export async function doWis() {
+  const status = document.getElementById('wis-status');
+  const knop = document.getElementById('wis-bevestig');
+
+  const jaren = ['2026','2025','2024','2023','2022'].filter(j => {
+    const el = document.getElementById('wis-' + j);
+    return el && el.checked;
+  });
+
+  if (jaren.length === 0) {
+    status.textContent = 'Selecteer minimaal één jaar.';
+    return;
+  }
+
+  const wistVoorraad = jaren.includes('2026');
+  const waarschuwing = wistVoorraad
+    ? '\n\nLet op: 2026 aanvinken verwijdert ook al je voorraadartikelen volledig, ' +
+      'inclusief hun geschiedenis over alle jaren — niet alleen dit boekjaar. ' +
+      'Voorraadartikelen kennen geen jaargrens.'
+    : '';
+  if (!window.confirm(
+    'Weet je zeker dat je data van ' + jaren.join(', ') + ' wilt wissen? ' +
+    'Dit kan niet ongedaan gemaakt worden.' + waarschuwing
+  )) {
+    return;
+  }
+
+  // Vergrendel de knop: een tweede klik terwijl dit nog loopt zou een tweede
+  // wis-actie tegelijk starten, met alle race conditions van dien.
+  if (knop) { knop.disabled = true; knop.textContent = 'Bezig met wissen…'; }
+  status.textContent = 'Bezig: eerst de cloud, dan pas lokaal…';
+
   try {
-    const jaren = ['2026','2025','2024','2023','2022'].filter(j => {
-      const el = document.getElementById('wis-' + j);
-      return el && el.checked;
-    });
+    // Eerst de cloud. Lukt dit niet volledig, dan raken we hieronder niets
+    // lokaal aan — de administratie blijft dan exact zoals hij was, ook al
+    // is er in de cloud misschien al wel iets weg (zie de melding hieronder
+    // voor dat specifieke geval).
+    const cloud = await wisJarenInSupabase(jaren);
 
-    if (jaren.length === 0) {
-      document.getElementById('wis-status').textContent = 'Selecteer minimaal één jaar.';
+    if (!cloud.ok) {
+      if (cloud.stap === 'voorraad') {
+        status.textContent =
+          `Boekingen zijn verwijderd uit de cloud (${cloud.boekingenVerwijderd}×), ` +
+          `voorraad niet: ${cloud.fout}. Er is lokaal niets gewist. ` +
+          `Probeer het wissen opnieuw om ook de voorraad te verwijderen.`;
+      } else {
+        status.textContent = `Niets gewist: ${cloud.fout}`;
+      }
+      window.alert(status.textContent);
       return;
     }
 
-    if (!window.confirm('Weet je zeker dat je data van ' + jaren.join(', ') + ' wilt wissen? Dit kan niet ongedaan gemaakt worden.')) {
-      return;
-    }
-
+    // Nu pas lokaal — de cloud is op dit punt bevestigd leeg voor deze jaren.
     let wisLog = [];
 
     jaren.forEach(j => { delete HOME_TOTALS[j]; });
@@ -810,7 +847,7 @@ export function doWis() {
       state.COVERS = [];
       state.nxtTx = 200; state.nxtCover = 100;
       saveTxData(); saveCoversData();
-      wisLog.push('2026 gewist (HNVI/Xtenate-loten blijven bewaard)');
+      wisLog.push(`2026 gewist (${cloud.boekingenVerwijderd} boekingen, ${cloud.voorraadVerwijderd} artikelen — HNVI/Xtenate-loten blijven bewaard)`);
     }
 
     const histJaren = jaren.filter(j => j !== '2026');
@@ -826,10 +863,18 @@ export function doWis() {
 
     document.getElementById('modal-wis').classList.remove('open');
     renderHome();
-    window.alert('Klaar! ' + wisLog.join(' / ') + '. Je kunt nu opnieuw importeren.');
+    window.alert('Klaar! ' + wisLog.join(' / ') + ' — lokaal en in de cloud. Je kunt nu opnieuw importeren.');
   } catch (err) {
-    document.getElementById('wis-status').textContent = 'Fout: ' + err.message;
+    // Een onverwachte fout ná de cloud-stap maar vóór het lokale wissen kan in
+    // theorie voorkomen (bijv. een fout in save()); ook dan geldt: als we hier
+    // zijn, is een deel van de lokale stappen misschien al gezet en een deel
+    // niet. Dat is dezelfde grens die in het ontwerp is benoemd voor stap 9
+    // (pagina sluiten tijdens het wissen) — de eerstvolgende keer laden trekt
+    // dit recht vanuit de nu al lege cloud.
+    status.textContent = 'Fout: ' + err.message;
     window.alert('Er ging iets mis: ' + err.message);
+  } finally {
+    if (knop) { knop.disabled = false; knop.textContent = 'Wis geselecteerd'; }
   }
 }
 
