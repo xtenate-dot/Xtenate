@@ -14,8 +14,70 @@ export function cssVar(naam) {
 }
 
 /** Het vaste grafiekpalet, in volgorde. */
+/**
+ * Het losse palet, voor grafieken waar geen vaste categorie aan hangt: reeksen
+ * die per maand of per periode lopen en waar de volgorde de betekenis draagt.
+ * Voor grootboeken en kanalen niet gebruiken — die horen kleurVoorGb() te
+ * gebruiken, anders verspringt een categorie van kleur zodra de rangorde
+ * verandert.
+ */
 export function palette() {
   return ['--chart-color-1','--chart-color-2','--chart-color-3','--chart-color-4','--chart-color-5','--chart-color-6'].map(cssVar);
+}
+
+/**
+ * Vaste kleur per grootboek. Een categorie houdt zo dezelfde kleur in elke
+ * grafiek, ongeacht positie of bedrag. Eerder werd de kleur toegekend op index
+ * na sortering op bedrag, waardoor bankkosten de ene maand paars konden zijn en
+ * de volgende amber, en waardoor dezelfde index in twee grafieken iets anders
+ * betekende.
+ *
+ * De indeling volgt de grootboekfamilies, met binnen elke familie duidelijk
+ * verschillende kleuren. Omzetkanalen staan bewust ver uit elkaar: dat zijn de
+ * drie die je het vaakst naast elkaar ziet.
+ */
+export const KLEUR_PER_GB = {
+  // Omzet per kanaal
+  '8000': '--cat-1',    // Xtenate        cyaan
+  '8010': '--cat-2',    // Bol.com        roze
+  '8020': '--cat-3',    // Helmetstore    limoen
+
+  // Inkoop
+  '7000': '--cat-4',    // AliExpress     lila
+  '7010': '--cat-5',    // HNVI           hemelblauw
+  '7020': '--cat-6',    // MijnMagie      koraal
+  '7100': '--cat-7',    // Verzendartikelen turkoois
+  '7350': '--cat-8',    // Uitbestede diensten magenta
+  '7900': '--cat-9',    // Transportkosten indigo
+
+  // Bedrijfskosten
+  '4230': '--cat-10',   // Kantoorbenodigdheden abrikoos
+  '4235': '--cat-11',   // Kleine aanschaf inv. leisteen
+  '4290': '--cat-12',   // Overige zakelijke aank. mint
+  '4350': '--cat-13',   // Bankkosten      lichtlila
+  '4410': '--cat-14',   // Huur/huisvesting lichtblauw
+  '4640': '--cat-15',   // Reiskosten      lichtlimoen
+  '4760': '--cat-16',   // Abonnement      lichtgrijs
+  '4810': '--cat-17',   // Reclame         lichtmagenta
+  '4815': '--cat-18',   // Website         ijsblauw
+  '4895': '--cat-19',   // Overige verkoopkosten periwinkel
+
+  // Balansposten
+  '600':  '--cat-20',   // Privé storting  lavendel
+  '601':  '--cat-11',   // Privé opname    leisteen
+  '1520': '--cat-19',   // Vorderingen overig
+  '2000': '--cat-16',   // Schulden overig
+  '2080': '--cat-18'    // Bankposten in transit
+};
+
+/**
+ * De kleur van een grootboek. Onbekende rekeningen krijgen de terugvalkleur:
+ * bewust neutraal grijsblauw, zodat een nieuwe rekening opvalt als nog niet
+ * ingedeeld in plaats van dat hij de kleur van een bestaande categorie leent.
+ */
+export function kleurVoorGb(gb) {
+  const token = KLEUR_PER_GB[String(gb ?? '').trim()];
+  return cssVar(token || '--cat-fallback');
 }
 
 /** Zet een hexkleur om naar rgba met de gevraagde doorzichtigheid. */

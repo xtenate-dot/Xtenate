@@ -153,7 +153,7 @@ export function renderHNVI() {
           ? `${fmt(i.verkoop)}${i.verkoopDatum?`<div style="font-size:10px;color:var(--text-secondary)">${ddmm(i.verkoopDatum)}</div>`:''}`
           : '—'}</td>
       <td style="text-align:right" data-v="${w||0}">${w!=null&&i.verkoop>0?`<span class="${w>=0?'pos':'neg'}">${w>=0?'+':''}${fmt(w)}</span><div style="font-size:10px;color:var(--text-secondary)">${pct}%</div>`:'—'}</td>
-      <td data-v="${esc(i.status)}">${i.status==='verkocht'?'<span class="badge badge-green">verkocht</span>':'<span class="badge badge-gray">op voorraad</span>'}</td>
+      <td data-v="${esc(i.status)}">${i.status==='verkocht'?'<span class="badge badge-purple">verkocht</span>':'<span class="badge badge-gray">op voorraad</span>'}</td>
       <td style="white-space:nowrap">
         <span class="sell-link" onclick="openHNVISell('${esc(i.id)}')">${i.status==='voorraad'?'Verkoop':'Wijzig'}</span>
         ${i.status==='verkocht'?`<span class="sell-link" style="color:var(--text-secondary)" onclick="wisHNVIVerkoop('${esc(i.id)}')">Wis</span>`:''}

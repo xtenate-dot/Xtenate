@@ -147,6 +147,40 @@
   --chart-color-4: #60A5FA;        /* blauw */
   --chart-color-5: #FBBF24;        /* amber */
   --chart-color-6: #6E7495;        /* grijs */
+
+  /* ---- Categoriekleuren -------------------------------------------------
+     Aparte reeks voor grootboeken en kanalen in grafieken. Bewust gescheiden
+     van de semantische kleuren: groen, rood, amber en blauw houden hun
+     betekenis (goed, fout, let op, informatie) en worden hier niet gebruikt in
+     hun verzadigde vorm. Deze kleuren dragen geen oordeel, alleen identiteit.
+
+     Een grootboek houdt altijd dezelfde kleur, waar het ook in een grafiek
+     staat. De toewijzing staat in charts.js (KLEUR_PER_GB); hier staan alleen
+     de kleuren zelf, zodat lichte modus ze kan overschrijven. */
+  --cat-1:  #2FCCDA;   /* cyaan */
+  --cat-2:  #D73CD2;   /* magenta */
+  --cat-3:  #92C133;   /* olijf */
+  --cat-4:  #D84FA6;   /* fuchsia */
+  --cat-5:  #99A6B8;   /* leisteen */
+  --cat-6:  #A35C6E;   /* wijnroze */
+  --cat-7:  #AF58DA;   /* violet */
+  --cat-8:  #81C87E;   /* saliegroen */
+  --cat-9:  #9AD0DF;   /* ijsblauw */
+  --cat-10: #7C8E98;   /* staalgrijs */
+  --cat-11: #BAA9C6;   /* lavendelgrijs */
+  --cat-12: #8678B0;   /* gedempt indigo */
+  --cat-13: #E4AAC5;   /* lichtroze */
+  --cat-14: #DC9EE5;   /* lichtviolet */
+  --cat-15: #C5C7D3;   /* lichtgrijs */
+  --cat-16: #A59483;   /* zand */
+  --cat-17: #4D9D5B;   /* dennengroen */
+  --cat-18: #4F9287;   /* diepteal */
+  --cat-19: #DC89CB;   /* orchidee */
+  --cat-20: #CDE052;   /* geelgroen */
+  /* Voor grootboeken die nog geen eigen kleur hebben. Bewust neutraal, zodat
+     een nieuwe rekening opvalt als 'nog niet ingedeeld' in plaats van dat hij
+     de kleur van een bestaande categorie leent. */
+  --cat-fallback: #6E7495;
   --chart-background: #101629;
   --chart-grid: rgba(255,255,255,0.05);
   --chart-axis: #6E7495;
@@ -161,6 +195,29 @@
   --light-chart-color-4: #2563EB;
   --light-chart-color-5: #D97706;
   --light-chart-color-6: #9CA3AF;
+
+  /* Lichte modus: dezelfde tinten, dieper zodat ze op wit leesbaar blijven. */
+  --light-cat-1: #0C828D;
+  --light-cat-2: #8A0F86;
+  --light-cat-3: #5F8415;
+  --light-cat-4: #9A1369;
+  --light-cat-5: #49658D;
+  --light-cat-6: #6D2C3C;
+  --light-cat-7: #7414A3;
+  --light-cat-8: #339D2F;
+  --light-cat-9: #2BAFD4;
+  --light-cat-10: #395360;
+  --light-cat-11: #8151A4;
+  --light-cat-12: #453479;
+  --light-cat-13: #D73C85;
+  --light-cat-14: #C52CDD;
+  --light-cat-15: #6F7AAE;
+  --light-cat-16: #71573D;
+  --light-cat-17: #287134;
+  --light-cat-18: #2B6E63;
+  --light-cat-19: #C526A5;
+  --light-cat-20: #94A90F;
+  --light-cat-fallback: #9CA3AF;
   --light-chart-background: #FFFFFF;
   --light-chart-grid: #EEF0F3;
   --light-chart-axis: #9CA3AF;
@@ -178,6 +235,13 @@
   --shadow-purple: 0 0 25px rgba(124,58,237,0.08);
   --shadow-purple-active: 0 0 20px rgba(139,92,246,0.15);
   --shadow-purple-focus: 0 0 0 3px rgba(139,92,246,0.22);
+  /* Gloed rond het logo en rond de actieve navigatie-indicator. Stonden als
+     losse rgba in layout.css en veranderden daardoor niet mee met de lichte
+     modus. */
+  --glow-logo: 0 0 20px rgba(139,92,246,0.28);
+  --glow-indicator: 0 0 10px rgba(139,92,246,0.75);
+  /* Lichte binnenrand op donkere vlakken; tilt het vlak van de achtergrond. */
+  --inner-shine: inset 0 1px 0 rgba(255,255,255,0.14);
   --glow-purple-soft: 0 6px 22px -6px rgba(124,58,237,0.28);
   --glow-purple-strong: 0 8px 28px -6px rgba(124,58,237,0.42);
 
@@ -310,6 +374,27 @@
   --chart-color-4: var(--light-chart-color-4);
   --chart-color-5: var(--light-chart-color-5);
   --chart-color-6: var(--light-chart-color-6);
+  --cat-1: var(--light-cat-1);
+  --cat-2: var(--light-cat-2);
+  --cat-3: var(--light-cat-3);
+  --cat-4: var(--light-cat-4);
+  --cat-5: var(--light-cat-5);
+  --cat-6: var(--light-cat-6);
+  --cat-7: var(--light-cat-7);
+  --cat-8: var(--light-cat-8);
+  --cat-9: var(--light-cat-9);
+  --cat-10: var(--light-cat-10);
+  --cat-11: var(--light-cat-11);
+  --cat-12: var(--light-cat-12);
+  --cat-13: var(--light-cat-13);
+  --cat-14: var(--light-cat-14);
+  --cat-15: var(--light-cat-15);
+  --cat-16: var(--light-cat-16);
+  --cat-17: var(--light-cat-17);
+  --cat-18: var(--light-cat-18);
+  --cat-19: var(--light-cat-19);
+  --cat-20: var(--light-cat-20);
+  --cat-fallback: var(--light-cat-fallback);
   --chart-background: var(--light-chart-background);
   --chart-grid: var(--light-chart-grid);
   --chart-axis: var(--light-chart-axis);
@@ -323,6 +408,9 @@
   --shadow-purple-active: var(--light-shadow-purple-active);
   --shadow-card-raised: 0 10px 28px -6px rgba(16,24,40,0.14);
   --shadow-purple-focus: 0 0 0 3px rgba(124,58,237,0.18);
+  --glow-logo: 0 0 18px rgba(124,58,237,0.22);
+  --glow-indicator: 0 0 8px rgba(124,58,237,0.45);
+  --inner-shine: inset 0 1px 0 rgba(255,255,255,0.55);
   --glow-purple-soft: 0 6px 18px -6px rgba(124,58,237,0.20);
   --glow-purple-strong: 0 8px 22px -6px rgba(124,58,237,0.28);
   --card-topline: inset 0 1px 0 rgba(255,255,255,0.9);

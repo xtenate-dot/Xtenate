@@ -50,7 +50,7 @@
   background: var(--purple-veil-12);
   border: 1px solid var(--purple-veil-18);
   color: var(--purple-300);
-  box-shadow: inset 0 1px 0 rgba(196,181,253,0.10);
+  box-shadow: var(--card-topline-accent);
 }
 .kpi-icoon svg { width: 14px; height: 14px; }
 /* Paars is de standaard. Betekeniskleuren blijven beschikbaar en worden
