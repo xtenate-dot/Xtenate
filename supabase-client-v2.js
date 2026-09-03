@@ -57,7 +57,7 @@ export function clearPendingQueueItem(key) {
   savePendingQueue();
 }
 
-export function addToPendingQueue(boeking, operation, isHistoric = false) {
+export function addToPendingQueue(boeking, operation, isHistoric = false, soortHint = null) {
   // De sleutel bevat geen tijdstip meer. Bewerk je hetzelfde artikel drie keer
   // achter elkaar, dan stonden er eerst drie regels in de wachtrij die alle
   // drie verstuurd werden — de eerste twee met verouderde gegevens. Nu
@@ -100,7 +100,16 @@ export function addToPendingQueue(boeking, operation, isHistoric = false) {
   pendingQueue[key] = {
     id: boeking.id,
     operation: operation,
-    soort: operation === 'hnvi' ? 'hnvi' : operation === 'cover' ? 'cover' : 'auto',
+    // 'delete' zegt op zichzelf niet uit welke tabel — die operatie wordt
+    // voor boekingen, voorraad én HNVI gebruikt. Vroeger viel dat terug op
+    // 'auto', dat tabellen op volgorde probeert en de eerste zonder
+    // foutmelding als "gelukt" beschouwde — ook als die tabel gewoon niets
+    // te verwijderen had. Voor boekingen betekende dat: nooit bij de tabel
+    // `boekingen` aankomen. Een aanroeper die weet om welk soort record het
+    // gaat, geeft dat nu expliciet mee via soortHint; alleen aanroepers die
+    // dat niet doen vallen nog terug op 'auto' (nu zelf ook gerepareerd, zie
+    // deleteFromSupabase).
+    soort: soortHint || (operation === 'hnvi' ? 'hnvi' : operation === 'cover' ? 'cover' : 'auto'),
     isHistoric: isHistoric,
     status: 'pending',
     timestamp: Date.now(),
@@ -1192,33 +1201,46 @@ export async function deleteFromSupabase(id, type = 'auto') {
       try {
         if (table === 'boekingen') {
           // Soft delete for boekingen
-          const { error } = await sb
+          //
+          // BELANGRIJK: .select('id') erbij, en pas geslaagd verklaren als er
+          // ook echt een rij is geraakt. Een DELETE/UPDATE die niets vindt
+          // geeft in Postgres GEEN foutmelding — zonder deze telling zou de
+          // 'auto'-val hieronder de eerste tabel (voorraadartikelen) altijd
+          // als "gelukt" beschouwen, ook als er nul rijen bij hoorden, en
+          // nooit meer bij `boekingen` uitkomen. Dat was precies de fout:
+          // een boeking-verwijdering werd lokaal wel doorgevoerd en als
+          // gelukt gemeld, maar de rij in Supabase bleef gewoon bestaan —
+          // zichtbaar pas bij de volgende keer laden, wanneer hij terugkwam.
+          const { data, error } = await sb
             .from(table)
             .update({ deleted_at: new Date().toISOString() })
             .eq('legacy_id', String(id))
-            .eq('user_id', userId);
-          if (!error) {
+            .eq('user_id', userId)
+            .select('id');
+          if (!error && data && data.length > 0) {
             console.log(`✅ Deleted from ${table}: ${id}`);
             // Refresh UI na verwijdering van ander apparaat
             setTimeout(() => window.hertekenHuidigePagina?.(), 300);
             return true;
           }
-          console.warn(`⚠️  ${table} delete error:`, error?.message || error);
+          if (error) console.warn(`⚠️  ${table} delete error:`, error?.message || error);
           lastError = error;
         } else {
           // Hard delete for voorraadartikelen and hnvi_loten (use legacy_id)
-          const { error } = await sb
+          // Zelfde correctie: alleen geslaagd als er echt een rij weg is.
+          const { data, error } = await sb
             .from(table)
             .delete()
             .eq('legacy_id', String(id))
-            .eq('user_id', userId);
-          if (!error) {
+            .eq('user_id', userId)
+            .select('id');
+          if (!error && data && data.length > 0) {
             console.log(`✅ Deleted from ${table}: ${id}`);
             // Refresh UI na verwijdering van ander apparaat
             setTimeout(() => window.hertekenHuidigePagina?.(), 300);
             return true;
           }
-          console.warn(`⚠️  ${table} delete error:`, error?.message || error);
+          if (error) console.warn(`⚠️  ${table} delete error:`, error?.message || error);
           lastError = error;
         }
       } catch (err) {

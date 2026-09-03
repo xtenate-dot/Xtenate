@@ -931,10 +931,10 @@ export async function verwijderArtikel(id) {
   // Naar Supabase sturen
   try {
     const ok = await deleteFromSupabase(c.id, 'cover');
-    if (!ok) addToPendingQueue(c, 'delete', false);
+    if (!ok) addToPendingQueue(c, 'delete', false, 'cover');
   } catch (err) {
     console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
-    addToPendingQueue(c, 'delete', false);
+    addToPendingQueue(c, 'delete', false, 'cover');
   }
   
   renderCovers();
@@ -954,10 +954,10 @@ export async function verwijderVoorraadSelectie() {
   for (const artikel of weg) {
     try {
       const ok = await deleteFromSupabase(artikel.id, 'cover');
-      if (!ok) addToPendingQueue(artikel, 'delete', false);
+      if (!ok) addToPendingQueue(artikel, 'delete', false, 'cover');
     } catch (err) {
       console.warn('Supabase niet bereikbaar voor artikel, in wachtrij gezet:', err);
-      addToPendingQueue(artikel, 'delete', false);
+      addToPendingQueue(artikel, 'delete', false, 'cover');
     }
   }
   
