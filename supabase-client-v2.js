@@ -496,6 +496,101 @@ function boekingRecord(boeking, isHistoric, userId) {
  *   voorraadVerwijderd: number|null
  * }}
  */
+/**
+ * Niet-destructieve preview van wat `wisJarenInSupabase()` zou verwijderen.
+ * Gebruikt exact dezelfde selectiecriteria \u2014 dezelfde tabellen, dezelfde
+ * user_id-scope, dezelfde archief_jaar-filters \u2014 maar telt in plaats van
+ * te verwijderen: elke aanroep is `.select(..., { count: 'exact', head: true })`,
+ * nooit `.delete()`. Er wordt hier niets aangeraakt, ook niet gelezen als
+ * volledige rij \u2014 `head: true` haalt geen data op, alleen het aantal.
+ *
+ * Bedoeld als controlestap v\u00f3\u00f3r een echte wis-actie: klopt de sessie, de
+ * tabellen, de kolomnamen en de aantallen, dan is de kans klein dat de
+ * daadwerkelijke DELETE nog een verrassing oplevert die hier niet al zichtbaar
+ * was. Dat is een aanwijzing, geen garantie \u2014 RLS-policies kunnen SELECT en
+ * DELETE verschillend toestaan.
+ *
+ * Historische jaren worden \u00e9\u00e9n voor \u00e9\u00e9n geteld (niet met \u00e9\u00e9n gecombineerde
+ * .in()), zodat een onverwacht laag of hoog aantal in \u00e9\u00e9n specifiek jaar
+ * opvalt in plaats van te verdwijnen in een totaal.
+ *
+ * @param {string[]} jaren
+ * @returns {{
+ *   ok: boolean,
+ *   fout: string|null,
+ *   jaren: string[],
+ *   huidig: { boekingen: number }|null,
+ *   historisch: Record<string, number>,
+ *   voorraad: number|null,
+ *   hnviMeegenomen: false
+ * }}
+ */
+export async function previewWisJaren(jaren) {
+  const leeg = {
+    ok: false, fout: null, jaren: Array.isArray(jaren) ? jaren : [],
+    huidig: null, historisch: {}, voorraad: null, hnviMeegenomen: false
+  };
+
+  if (!Array.isArray(jaren) || jaren.length === 0) {
+    return { ...leeg, fout: 'Geen jaar opgegeven.' };
+  }
+  if (!heeftClient()) {
+    return { ...leeg, fout: 'Geen verbinding met Supabase.' };
+  }
+
+  const sb = await getClient();
+  const session = await sb.auth.getSession();
+  const userId = session?.data?.session?.user?.id;
+  if (!userId) {
+    return { ...leeg, fout: 'Niet ingelogd bij Supabase.' };
+  }
+
+  const wisHuidig = jaren.includes('2026');
+  const historischeJaren = jaren
+    .filter(j => j !== '2026')
+    .map(j => parseInt(j, 10))
+    .filter(Number.isFinite);
+
+  let huidig = null;
+  let historisch = {};
+  let voorraad = null;
+
+  try {
+    if (wisHuidig) {
+      const { count, error } = await sb.from('boekingen')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .is('archief_jaar', null);
+      if (error) return { ...leeg, fout: `boekingen (2026): ${error.message}` };
+      huidig = { boekingen: count ?? 0 };
+    }
+
+    for (const jaartal of historischeJaren) {
+      const { count, error } = await sb.from('boekingen')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('archief_jaar', jaartal);
+      if (error) return { ...leeg, fout: `boekingen (${jaartal}): ${error.message}`, huidig, historisch };
+      historisch[String(jaartal)] = count ?? 0;
+    }
+
+    if (wisHuidig) {
+      const { count, error } = await sb.from('voorraadartikelen')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      if (error) return { ...leeg, fout: `voorraadartikelen: ${error.message}`, huidig, historisch };
+      voorraad = count ?? 0;
+    }
+  } catch (err) {
+    return { ...leeg, fout: err.message, huidig, historisch, voorraad };
+  }
+
+  // hnvi_loten komt in deze functie nergens voor \u2014 geen query, geen telling.
+  // hnviMeegenomen staat daarom altijd op false; dat is de bevestiging zelf,
+  // niet een uitkomst die nog zou kunnen omslaan.
+  return { ok: true, fout: null, jaren, huidig, historisch, voorraad, hnviMeegenomen: false };
+}
+
 export async function wisJarenInSupabase(jaren) {
   const leeg = { ok: false, fout: null, stap: null, boekingenVerwijderd: 0, voorraadVerwijderd: null };
 

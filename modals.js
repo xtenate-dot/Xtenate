@@ -12,7 +12,7 @@ const REKENINGEN = new Set(Object.keys(REKNM));
 // wegschrijven van de boekingen en vóór het toepassen van de jaartotalen.
 const OMZET_GB = ['8000', '8010', '8020'];
 import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state, voegJaarcijfersToe } from './storage.js?v=20260902a';
-import { addToPendingQueue, deleteFromSupabase, vervangBoekingenInSupabase, wisJarenInSupabase } from './supabase-client-v2.js?v=20260902a';
+import { addToPendingQueue, deleteFromSupabase, previewWisJaren, vervangBoekingenInSupabase, wisJarenInSupabase } from './supabase-client-v2.js?v=20260902a';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
 // met een kolom "Totaal" voor het hele boekjaar. Dit is de brontabel van de boekhouding zelf,
@@ -782,6 +782,63 @@ export function herstelHistorischeData() {
 export function openWisModal() {
   document.getElementById('wis-status').textContent = '';
   document.getElementById('modal-wis').classList.add('open');
+}
+
+/**
+ * Telt wat een wis-actie zou raken, zonder iets te verwijderen. Leest dezelfde
+ * checkboxes als `doWis()`, roept `previewWisJaren()` aan (alleen SELECT/count)
+ * en toont het resultaat in het venster. Bedoeld om vóór een echte wis-actie
+ * te controleren of sessie, tabellen en aantallen kloppen.
+ */
+export async function toonWisPreview() {
+  // gebruikt _esc(), gedefinieerd verderop in dit bestand
+  const status = document.getElementById('wis-status');
+  const uit = document.getElementById('wis-preview');
+  const knop = document.getElementById('wis-preview-knop');
+
+  const jaren = ['2026','2025','2024','2023','2022'].filter(j => {
+    const el = document.getElementById('wis-' + j);
+    return el && el.checked;
+  });
+  if (jaren.length === 0) {
+    status.textContent = 'Selecteer minimaal één jaar.';
+    uit.innerHTML = '';
+    return;
+  }
+
+  if (knop) { knop.disabled = true; knop.textContent = 'Bezig met tellen…'; }
+  status.textContent = '';
+  uit.innerHTML = '';
+
+  try {
+    const r = await previewWisJaren(jaren);
+    if (!r.ok) {
+      uit.innerHTML = `<span class="neg">Preview mislukt: ${_esc(r.fout)}</span>`;
+      return;
+    }
+
+    const regels = [];
+    if (r.huidig) {
+      regels.push(`2026 — boekingen: <strong>${r.huidig.boekingen}</strong>`);
+    }
+    for (const [jaar, aantal] of Object.entries(r.historisch)) {
+      regels.push(`${jaar} — boekingen: <strong>${aantal}</strong>`);
+    }
+    if (r.voorraad != null) {
+      regels.push(`Voorraadartikelen (alle jaren, want geen jaarveld): <strong>${r.voorraad}</strong>`);
+    }
+    regels.push('hnvi_loten: <strong>niet meegenomen</strong> — deze telling en de wis-actie raken die tabel nooit.');
+
+    uit.innerHTML =
+      `<div style="padding:8px 10px;border:1px solid var(--border-default);border-radius:var(--radius-sm);background:var(--bg-card)">` +
+      `<div class="muted" style="margin-bottom:4px">Dit zou er geraakt worden bij het wissen van ${_esc(jaren.join(', '))} — er is nog niets verwijderd:</div>` +
+      regels.map(r => `<div>${r}</div>`).join('') +
+      `</div>`;
+  } catch (err) {
+    uit.innerHTML = `<span class="neg">Preview mislukt: ${_esc(err.message)}</span>`;
+  } finally {
+    if (knop) { knop.disabled = false; knop.textContent = 'Preview (alleen tellen)'; }
+  }
 }
 
 export async function doWis() {

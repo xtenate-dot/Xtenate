@@ -1071,8 +1071,10 @@
     </label>
   </div>
   <div id="wis-status" style="font-size:12px;color:var(--text-secondary);margin-bottom:.5rem"></div>
+  <div id="wis-preview" style="font-size:12px;margin-bottom:.5rem"></div>
   <div class="modal-actions">
     <button class="btn" onclick="document.getElementById('modal-wis').classList.remove('open')">Annuleren</button>
+    <button class="btn" id="wis-preview-knop" onclick="toonWisPreview()">Preview (alleen tellen)</button>
     <button class="btn btn-primary" id="wis-bevestig" style="background:var(--semantic-danger-bright);border-color:var(--semantic-danger-bright)" onclick="doWis()">Wis geselecteerd</button>
   </div>
   <hr style="margin:1rem 0;border-color:var(--border-default)">
