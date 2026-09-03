@@ -34,7 +34,7 @@ import {
   importHNVIFactuur, bevestigHNVIImport, exporteerHnviPdf
 } from './hnvi.js?v=20260902a';
 import {
-  importExcel, openWisModal, doWis, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
+  importExcel, openWisModal, doWis, toonWisPreview, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
   openApiKeyModal, saveApiKey, bevestigImport, annuleerImport
 } from './modals.js?v=20260902a';
 import { initUiVoorkeuren, wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu } from './theme.js?v=20260902a';
@@ -90,7 +90,7 @@ Object.assign(window, {
   renderHNVI, berekenHNVIInkoop, openHNVIModal, openHNVISell, closeHNVIModal, saveHNVI,
   wisHNVIVerkoop, verwijderHNVIItem, toggleAllHNVI, updateHNVIDeleteBtn, verwijderGeselecteerdeHNVI,
   importHNVIFactuur, bevestigHNVIImport, exporteerHnviPdf,
-  importExcel, openWisModal, doWis, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
+  importExcel, openWisModal, doWis, toonWisPreview, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
   openApiKeyModal, saveApiKey,
   openExportModal, sluitExportModal, toonExportSamenvatting, doeExport,
   openZelftestModal, sluitZelftestModal, startZelftest,
