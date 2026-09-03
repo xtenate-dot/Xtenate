@@ -11,7 +11,7 @@
  * Fase 3A Implementation
  */
 
-import { getClient, heeftClient } from './supabase.js?v=20260902a';
+import { getClient, heeftClient, leesbareFout } from './supabase.js?v=20260902a';
 
 // ===== NOODREM =====
 export function syncIsAangezet() {
@@ -525,6 +525,72 @@ function boekingRecord(boeking, isHistoric, userId) {
  *   hnviMeegenomen: false
  * }}
  */
+/**
+ * GEDEELDE, NIET-DESTRUCTIEVE SELECTIE-OPBOUW voor het wissen van jaren.
+ *
+ * Dit blok bepaalt \u00e9\u00e9nmalig wat "2026" en "een historisch jaar" betekenen
+ * voor boekingen en voorraadartikelen, en past die criteria toe op een
+ * Supabase-querybuilder. `previewWisJaren()` (alleen tellen) en
+ * `wisJarenInSupabase()` (echt verwijderen) roepen deze twee functies allebei
+ * aan \u2014 ze bouwen zelf geen WHERE-voorwaarde meer op. Daardoor kunnen de twee
+ * niet meer uit elkaar lopen: wijzig je hier een filter, dan verandert hij
+ * voor preview \u00e9n DELETE tegelijk, in plaats van dat iemand de ene plek
+ * aanpast en de andere vergeet.
+ *
+ * Deze functies roepen zelf nooit `.delete()` of `.select()` aan \u2014 dat blijft
+ * de verantwoordelijkheid van de aanroeper, die daarmee bepaalt of het om een
+ * telling of een verwijdering gaat. `filterBoekingen()`/`filterVoorraad()`
+ * passen uitsluitend `.eq()`/`.is()`/`.in()` toe.
+ */
+
+/**
+ * Wat "2026" en "de historische jaren" betekenen voor een gegeven selectie.
+ * De enige plek die deze vertaalslag maakt.
+ */
+function bepaalWisSelectie(jaren) {
+  const lijst = Array.isArray(jaren) ? jaren : [];
+  return {
+    wisHuidig: lijst.includes('2026'),
+    historischeJaren: lijst
+      .filter(j => j !== '2026')
+      .map(j => parseInt(j, 10))
+      .filter(Number.isFinite)
+  };
+}
+
+/**
+ * Past user_id- en archief_jaar-filters toe op een querybuilder voor de
+ * tabel 'boekingen'. `criterium` is precies \u00e9\u00e9n van:
+ *   { archiefJaar: null }        \u2014 2026 (huidig): archief_jaar IS NULL
+ *   { archiefJaar: 2025 }        \u2014 \u00e9\u00e9n historisch jaar exact
+ *   { archiefJaarIn: [2025, 2024] } \u2014 meerdere historische jaren in \u00e9\u00e9n keer
+ * Geen enkel ander pad naar archief_jaar bestaat in deze functie \u2014 dat is
+ * bewust, zodat "wat telt als 2026" en "wat telt als historisch" niet per
+ * aanroeper opnieuw kunnen worden verzonnen.
+ */
+function filterBoekingen(builder, userId, criterium) {
+  let q = builder.eq('user_id', userId);
+  if (Object.prototype.hasOwnProperty.call(criterium, 'archiefJaar')) {
+    q = criterium.archiefJaar === null
+      ? q.is('archief_jaar', null)
+      : q.eq('archief_jaar', criterium.archiefJaar);
+  } else if (Object.prototype.hasOwnProperty.call(criterium, 'archiefJaarIn')) {
+    q = q.in('archief_jaar', criterium.archiefJaarIn);
+  }
+  return q;
+}
+
+/**
+ * Past het user_id-filter toe voor 'voorraadartikelen'. Deze tabel heeft geen
+ * jaarveld \u2014 vandaar dat hier, in tegenstelling tot `filterBoekingen()`, geen
+ * archief_jaar-criterium bestaat. Wordt door de aanroeper alleen ingezet als
+ * 2026 is geselecteerd; deze functie bepaalt dat zelf niet, om \u00e9\u00e9n plek te
+ * houden (`bepaalWisSelectie`) die vaststelt wanneer 2026 is gekozen.
+ */
+function filterVoorraad(builder, userId) {
+  return builder.eq('user_id', userId);
+}
+
 export async function previewWisJaren(jaren) {
   const leeg = {
     ok: false, fout: null, jaren: Array.isArray(jaren) ? jaren : [],
@@ -545,11 +611,8 @@ export async function previewWisJaren(jaren) {
     return { ...leeg, fout: 'Niet ingelogd bij Supabase.' };
   }
 
-  const wisHuidig = jaren.includes('2026');
-  const historischeJaren = jaren
-    .filter(j => j !== '2026')
-    .map(j => parseInt(j, 10))
-    .filter(Number.isFinite);
+  // Zelfde vertaalslag als de DELETE gebruikt, uit dezelfde functie.
+  const { wisHuidig, historischeJaren } = bepaalWisSelectie(jaren);
 
   let huidig = null;
   let historisch = {};
@@ -557,27 +620,27 @@ export async function previewWisJaren(jaren) {
 
   try {
     if (wisHuidig) {
-      const { count, error } = await sb.from('boekingen')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .is('archief_jaar', null);
+      const basis = sb.from('boekingen').select('id', { count: 'exact', head: true });
+      const { count, error } = await filterBoekingen(basis, userId, { archiefJaar: null });
       if (error) return { ...leeg, fout: `boekingen (2026): ${error.message}` };
       huidig = { boekingen: count ?? 0 };
     }
 
+    // Per jaar apart geteld voor de uitsplitsing, elk via dezelfde
+    // filterBoekingen() die de DELETE ook gebruikt (daar in \u00e9\u00e9n gecombineerde
+    // .in()-aanroep in plaats van een lus, maar met identieke criteria \u2014 de
+    // som van deze losse tellingen is exact wat die ene gecombineerde query
+    // raakt).
     for (const jaartal of historischeJaren) {
-      const { count, error } = await sb.from('boekingen')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('archief_jaar', jaartal);
+      const basis = sb.from('boekingen').select('id', { count: 'exact', head: true });
+      const { count, error } = await filterBoekingen(basis, userId, { archiefJaar: jaartal });
       if (error) return { ...leeg, fout: `boekingen (${jaartal}): ${error.message}`, huidig, historisch };
       historisch[String(jaartal)] = count ?? 0;
     }
 
     if (wisHuidig) {
-      const { count, error } = await sb.from('voorraadartikelen')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId);
+      const basis = sb.from('voorraadartikelen').select('id', { count: 'exact', head: true });
+      const { count, error } = await filterVoorraad(basis, userId);
       if (error) return { ...leeg, fout: `voorraadartikelen: ${error.message}`, huidig, historisch };
       voorraad = count ?? 0;
     }
@@ -608,28 +671,21 @@ export async function wisJarenInSupabase(jaren) {
     return { ...leeg, fout: 'Niet ingelogd bij Supabase. Er is niets gewist.' };
   }
 
-  const wisHuidig = jaren.includes('2026');
-  const historischeJaren = jaren
-    .filter(j => j !== '2026')
-    .map(j => parseInt(j, 10))
-    .filter(Number.isFinite);
+  // Zelfde vertaalslag als de preview gebruikt, uit dezelfde functie.
+  const { wisHuidig, historischeJaren } = bepaalWisSelectie(jaren);
 
   // \u2500\u2500 Stap 1: boekingen \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   let boekingenVerwijderd = 0;
   try {
     if (wisHuidig) {
-      const { data, error } = await sb.from('boekingen').delete()
-        .eq('user_id', userId)
-        .is('archief_jaar', null)
-        .select('id');
+      const basis = sb.from('boekingen').delete();
+      const { data, error } = await filterBoekingen(basis, userId, { archiefJaar: null }).select('id');
       if (error) return { ...leeg, fout: error.message, stap: 'boekingen' };
       boekingenVerwijderd += data ? data.length : 0;
     }
     if (historischeJaren.length) {
-      const { data, error } = await sb.from('boekingen').delete()
-        .eq('user_id', userId)
-        .in('archief_jaar', historischeJaren)
-        .select('id');
+      const basis = sb.from('boekingen').delete();
+      const { data, error } = await filterBoekingen(basis, userId, { archiefJaarIn: historischeJaren }).select('id');
       if (error) return { ...leeg, fout: error.message, stap: 'boekingen', boekingenVerwijderd };
       boekingenVerwijderd += data ? data.length : 0;
     }
@@ -641,9 +697,8 @@ export async function wisJarenInSupabase(jaren) {
   let voorraadVerwijderd = null;
   if (wisHuidig) {
     try {
-      const { data, error } = await sb.from('voorraadartikelen').delete()
-        .eq('user_id', userId)
-        .select('id');
+      const basis = sb.from('voorraadartikelen').delete();
+      const { data, error } = await filterVoorraad(basis, userId).select('id');
       if (error) {
         // Boekingen zijn op dit punt al \u00e9cht weg in Supabase. Dat melden we
         // expliciet mee, zodat de aanroeper dit niet als "niets gebeurd" kan
@@ -744,6 +799,55 @@ async function stuurInBlokken(sb, tabel, records, userId, onVoortgang, label) {
  * voorraadartikelen en HNVI-loten. Bedoeld om een nieuw apparaat in te richten
  * of om na een import alles gelijk te trekken.
  */
+/**
+ * Vervangt de volledige voorraad van de ingelogde gebruiker atomisch, via de
+ * database-functie `vervang_voorraad`. Dit vervangt voor voorraad specifiek
+ * het oude `stuurInBlokken()`-pad: die deed per blok van 100 een aparte
+ * delete-op-legacy_id plus insert, en ging bij een mislukt blok gewoon door
+ * met de volgende — waardoor de cloudvoorraad na een fout een onvoorspelbare
+ * mix van oud, nieuw en ontbrekend kon worden. `vervang_voorraad` draait als
+ * één databasetransactie: bij een fout, waar dan ook, blijft de oude voorraad
+ * volledig intact, bevestigd met echte tests tegen de aangemaakte functie.
+ *
+ * De teruggegeven vorm is bewust gelijk aan wat `stuurInBlokken()` altijd al
+ * opleverde — `{ ok, mislukt }`, hier aangevuld met `verwijderd` en `fout` —
+ * zodat `startVoorraadSync()` ongewijzigd kan blijven: die leest alleen
+ * `r.ok` en `r.mislukt`.
+ *
+ * user_id wordt hier NIET meegegeven aan de database-functie; die bepaalt
+ * dat zelf via auth.uid(). `coverRecord(c, null)` levert verder exact dezelfde
+ * velden als voorheen; het overbodige user_id-veld in die payload wordt door
+ * de kolomlijst van `vervang_voorraad` domweg genegeerd.
+ */
+export async function vervangVoorraadInSupabase(covers) {
+  const leeg = { ok: 0, mislukt: 0, verwijderd: 0, fout: null };
+
+  if (!heeftClient()) return { ...leeg, mislukt: covers.length, fout: 'Geen verbinding met Supabase.' };
+
+  const sb = await getClient();
+  const session = await sb.auth.getSession();
+  if (!session?.data?.session?.user?.id) {
+    return { ...leeg, mislukt: covers.length, fout: 'Niet ingelogd bij Supabase.' };
+  }
+
+  try {
+    const payload = covers.map(c => coverRecord(c, null));
+    const { data, error } = await sb.rpc('vervang_voorraad', { p_artikelen: payload });
+
+    if (error) {
+      console.error('❌ vervang_voorraad mislukt:', error.message);
+      return { ...leeg, mislukt: covers.length, fout: leesbareFout(error) };
+    }
+
+    const rij = Array.isArray(data) ? data[0] : data;
+    console.log(`☁️  Voorraad vervangen: ${rij.verwijderd} oude rijen weg, ${rij.ingevoegd} nieuwe geplaatst.`);
+    return { ok: rij.ingevoegd, mislukt: 0, verwijderd: rij.verwijderd, fout: null };
+  } catch (err) {
+    console.error('❌ vervang_voorraad mislukt:', err.message);
+    return { ...leeg, mislukt: covers.length, fout: leesbareFout(err) };
+  }
+}
+
 export async function syncAllesNaarSupabase(data, keuze, onVoortgang) {
   if (!heeftClient()) return { fout: 'Geen verbinding met Supabase.' };
 
@@ -763,8 +867,11 @@ export async function syncAllesNaarSupabase(data, keuze, onVoortgang) {
   }
 
   if (keuze.voorraad) {
-    const records = (data.COVERS || []).map(c => coverRecord(c, userId));
-    uitkomst.voorraad = await stuurInBlokken(sb, 'voorraadartikelen', records, userId, onVoortgang, 'Voorraad');
+    // Was: stuurInBlokken(sb, 'voorraadartikelen', ...) — per blok van 100,
+    // ging door na een mislukt blok. Nu: één atomische databasetransactie
+    // via vervang_voorraad(), die bij een fout de oude voorraad ongewijzigd
+    // laat in plaats van een gedeeltelijk vervangen set achter te laten.
+    uitkomst.voorraad = await vervangVoorraadInSupabase(data.COVERS || []);
   }
 
   if (keuze.hnvi) {
@@ -793,12 +900,14 @@ export async function syncAllesNaarSupabase(data, keuze, onVoortgang) {
  * @returns {Object} { ok, mislukt, verwijderd, fout? }
  */
 export async function vervangBoekingenInSupabase(boekingen, { isHistoric = false, jaren = [] } = {}) {
-  if (!heeftClient()) return { fout: 'Geen verbinding met Supabase.', ok: 0, mislukt: 0, verwijderd: 0 };
+  const leeg = { ok: 0, mislukt: 0, verwijderd: 0, fout: null };
+
+  if (!heeftClient()) return { ...leeg, fout: 'Geen verbinding met Supabase.' };
 
   const sb = await getClient();
   const session = await sb.auth.getSession();
   const userId = session?.data?.session?.user?.id;
-  if (!userId) return { fout: 'Niet ingelogd bij Supabase.', ok: 0, mislukt: 0, verwijderd: 0 };
+  if (!userId) return { ...leeg, fout: 'Niet ingelogd bij Supabase.' };
 
   // 1. Oude regels van deze jaren weghalen.
   //    Bewust een harde delete, net als `stuurInBlokken` bij de bulk-sync.
@@ -812,39 +921,61 @@ export async function vervangBoekingenInSupabase(boekingen, { isHistoric = false
     let q = sb.from('boekingen').delete().eq('user_id', userId);
     if (isHistoric) {
       const jaartallen = jaren.map(j => parseInt(j, 10)).filter(Number.isFinite);
-      if (!jaartallen.length) return { fout: 'Geen geldig jaartal opgegeven.', ok: 0, mislukt: 0, verwijderd: 0 };
+      if (!jaartallen.length) return { ...leeg, fout: 'Geen geldig jaartal opgegeven.' };
       q = q.in('archief_jaar', jaartallen);
     } else {
       q = q.is('archief_jaar', null);
     }
     const { data, error } = await q.select('id');
-    if (error) return { fout: error.message, ok: 0, mislukt: 0, verwijderd: 0 };
+    if (error) return { ...leeg, fout: error.message };
     verwijderd = data ? data.length : 0;
   } catch (err) {
-    return { fout: err.message, ok: 0, mislukt: 0, verwijderd: 0 };
+    return { ...leeg, fout: err.message };
   }
 
-  // 2. Nieuwe set invoegen, in blokken.
+  // 2. Nieuwe set invoegen, in blokken. Stopt bij het eerste mislukte blok in
+  //    plaats van door te gaan: eerder werd een mislukking alleen opgeteld in
+  //    `mislukt`, zonder dat de aanroeper daar iets van te zien kreeg (het
+  //    resultaat had dan geen `fout`-veld, en werd dus als geslaagd
+  //    behandeld). Zeker weten welke boekingen er nog ontbreken vraagt om
+  //    precies te stoppen waar het misging, in plaats van blindelings verder
+  //    te schrijven met een deels lege of deels dubbele uitkomst.
+  //
+  //    Op dit punt is de DELETE al onomkeerbaar uitgevoerd: `verwijderd` blijft
+  //    daarom altijd in het resultaat staan, ook bij een mislukte insert, zodat
+  //    de aanroeper weet dat de oude data al weg is en er niet zomaar van kan
+  //    uitgaan dat de vorige set nog intact is.
   const records = boekingen
     .map(b => boekingRecord(b, isHistoric, userId))
     .filter(r => r.datum && Number.isFinite(r.bedrag));
 
   const BLOK = 100;
-  let ok = 0, mislukt = 0;
+  let ok = 0;
   for (let i = 0; i < records.length; i += BLOK) {
     const blok = records.slice(i, i + BLOK);
     try {
       const { error } = await sb.from('boekingen').insert(blok);
-      if (error) { mislukt += blok.length; console.error(`❌ Import blok ${i}:`, error.message); }
-      else ok += blok.length;
+      if (error) {
+        console.error(`\u274c Import blok ${i}:`, error.message);
+        return {
+          ok, mislukt: blok.length, verwijderd,
+          fout: `Blok ${Math.floor(i / BLOK) + 1}: ${error.message} ` +
+                `(${ok} van ${records.length} boekingen wel geplaatst, de rest niet meer geprobeerd)`
+        };
+      }
+      ok += blok.length;
     } catch (err) {
-      mislukt += blok.length;
-      console.error(`❌ Import blok ${i}:`, err.message);
+      console.error(`\u274c Import blok ${i}:`, err.message);
+      return {
+        ok, mislukt: blok.length, verwijderd,
+        fout: `Blok ${Math.floor(i / BLOK) + 1}: ${err.message} ` +
+              `(${ok} van ${records.length} boekingen wel geplaatst, de rest niet meer geprobeerd)`
+      };
     }
   }
 
-  console.log(`☁️  Supabase bijgewerkt: ${verwijderd} oude regels weg, ${ok} nieuwe geplaatst${mislukt ? `, ${mislukt} mislukt` : ''}.`);
-  return { ok, mislukt, verwijderd };
+  console.log(`\u2601\ufe0f  Supabase bijgewerkt: ${verwijderd} oude regels weg, ${ok} nieuwe geplaatst.`);
+  return { ok, mislukt: 0, verwijderd, fout: null };
 }
 
 /**

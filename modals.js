@@ -558,7 +558,7 @@ function toonImportPreview() {
      </table>
      <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
        <button class="btn" onclick="annuleerImport()">Annuleren</button>
-       <button class="btn btn-primary" onclick="bevestigImport()">Importeren en opslaan</button>
+       <button class="btn btn-primary" id="import-bevestig-knop" onclick="bevestigImport()">Importeren en opslaan</button>
      </div>`;
   document.getElementById('import-actions').style.display = 'none';
 }
@@ -570,30 +570,40 @@ export function annuleerImport() {
 
 /** Past de gelezen import toe. Dit is de enige plek die daarbij schrijft. */
 /**
- * Waarschuwt zichtbaar als de import wel lokaal is opgeslagen maar niet in de
- * database. Dat verschil is anders onzichtbaar: de cijfers kloppen op het
- * scherm en zijn na een refresh weer weg, zonder dat er iets misging in beeld.
+ * Toont een duidelijke melding als de cloud-synchronisatie tijdens het
+ * importeren mislukt (geheel of gedeeltelijk). De lokale gegevens in deze
+ * sessie zijn op dit moment altijd al bijgewerkt \u2014 dat gebeurt v\u00f3\u00f3r de
+ * cloud-stap \u2014 dus die worden hier niet teruggedraaid; de melding maakt
+ * alleen duidelijk dat de cloud nog niet overeenkomt met wat je nu ziet.
  */
-function meldSyncProbleem(reden) {
-  const body = document.getElementById('import-body');
-  if (!body) return;
-  const waarschuwing = document.createElement('div');
-  waarschuwing.style.cssText =
-    'margin-top:12px;padding:12px 14px;border-radius:10px;' +
-    'background:var(--semantic-warning-bg, rgba(245,158,11,0.12));' +
-    'border:1px solid var(--semantic-warning, #F59E0B);font-size:13px';
-  waarschuwing.innerHTML =
-    '<strong>Let op: alleen lokaal opgeslagen.</strong><br>' +
-    'De boekingen staan wel in deze sessie, maar konden niet naar de database ' +
-    'worden geschreven. Na het verversen van de pagina zie je de oude gegevens ' +
-    'terug. Reden: ' + _esc(String(reden || 'onbekend'));
-  body.appendChild(waarschuwing);
+function toonImportCloudFout(fout) {
+  document.getElementById('import-title').textContent = 'Import gedeeltelijk gelukt';
+  document.getElementById('import-body').innerHTML =
+    `<div class="alert alert-error" style="margin-bottom:12px">
+       <strong>Niet volledig naar de cloud geschreven.</strong><br>
+       De lokale gegevens in deze sessie zijn wel bijgewerkt en hieronder al zichtbaar,
+       maar konden niet (volledig) worden opgeslagen in Supabase.<br><br>
+       Reden: ${_esc(fout)}
+     </div>
+     <div class="muted">Probeer de import opnieuw, of controleer je verbinding voordat je verdergaat.
+     Na het verversen van de pagina op een ander apparaat kan dit verschil zichtbaar worden.</div>`;
+  document.getElementById('import-actions').style.display = 'flex';
+  renderHome();
 }
 
-export function bevestigImport() {
+export async function bevestigImport() {
   const p = wachtendeImport;
   if (!p) return;
   wachtendeImport = null;
+
+  // Vergrendelen, synchroon, v\u00f3\u00f3r er ook maar iets async gebeurt. De regel
+  // hierboven (`wachtendeImport = null`) voorkomt op zichzelf al een dubbele
+  // uitvoering \u2014 een tweede klik heeft dan niets meer om te doen \u2014 maar zonder
+  // dit bleef de knop nog even aanklikbaar ogen terwijl er al niets meer
+  // gebeurde. Dit maakt dat ook zichtbaar, net als bij doWis().
+  const bevestigKnop = document.getElementById('import-bevestig-knop');
+  if (bevestigKnop) { bevestigKnop.disabled = true; bevestigKnop.textContent = 'Bezig...'; }
+
   try {
       const is2026 = p.gevondenJaren.includes('2026');
       const jaarLabel = p.gevondenJaren.join(', ') || 'onbekend jaar';
@@ -639,17 +649,21 @@ export function bevestigImport() {
         // haalt de app ze uit Supabase, dus na een refresh kwam de oude set
         // terug en leek de import niet gewerkt te hebben. Het jaar wordt nu in
         // de database vervangen door wat er zojuist is ingelezen.
-        vervangBoekingenInSupabase(state.TX, { isHistoric: false })
-          .then(r => {
-            if (r.fout) {
-              console.warn('⚠️  Boekingen niet naar Supabase geschreven:', r.fout);
-              meldSyncProbleem(r.fout);
-            }
-          })
-          .catch(err => {
-            console.warn('⚠️  Boekingen niet naar Supabase geschreven:', err.message);
-            meldSyncProbleem(err.message);
-          });
+        //
+        // Dit wordt nu afgewacht in plaats van los weggevuurd: "Import
+        // geslaagd" mag pas verschijnen als de cloud dat ook echt heeft
+        // bevestigd, niet al zodra de lokale kant klaar is.
+        document.getElementById('import-title').textContent = 'Bezig met opslaan...';
+        document.getElementById('import-body').innerHTML =
+          `<div class="muted">De boekingen van 2026 worden naar de cloud geschreven, dit kan even duren…</div>`;
+        document.getElementById('import-actions').style.display = 'none';
+
+        const rHuidig = await vervangBoekingenInSupabase(state.TX, { isHistoric: false });
+        if (rHuidig.fout) {
+          console.warn('⚠️  Boekingen niet (volledig) naar Supabase geschreven:', rHuidig.fout);
+          toonImportCloudFout(rHuidig.fout);
+          return;
+        }
       } else {
         // Sla op als historische data: vervang alleen de jaren die in dit bestand voorkomen
         // Alleen jaren vervangen waarvoor het bestand ook werkelijk boekingen
@@ -681,17 +695,19 @@ export function bevestigImport() {
         // archiefjaren blijven staan.
         const nieuwVoorDezeJaren = state.HIST_TX.filter(
           t => jarenMetRegels.some(j => t.datum.startsWith(j)));
-        vervangBoekingenInSupabase(nieuwVoorDezeJaren, { isHistoric: true, jaren: jarenMetRegels })
-          .then(r => {
-            if (r.fout) {
-              console.warn('⚠️  Boekingen niet naar Supabase geschreven:', r.fout);
-              meldSyncProbleem(r.fout);
-            }
-          })
-          .catch(err => {
-            console.warn('⚠️  Boekingen niet naar Supabase geschreven:', err.message);
-            meldSyncProbleem(err.message);
-          });
+
+        document.getElementById('import-title').textContent = 'Bezig met opslaan...';
+        document.getElementById('import-body').innerHTML =
+          `<div class="muted">De boekingen van ${_esc(jarenMetRegels.join(', '))} worden naar de cloud geschreven, dit kan even duren…</div>`;
+        document.getElementById('import-actions').style.display = 'none';
+
+        const rHistorisch = await vervangBoekingenInSupabase(
+          nieuwVoorDezeJaren, { isHistoric: true, jaren: jarenMetRegels });
+        if (rHistorisch.fout) {
+          console.warn('⚠️  Boekingen niet (volledig) naar Supabase geschreven:', rHistorisch.fout);
+          toonImportCloudFout(rHistorisch.fout);
+          return;
+        }
       }
 
       // Jaartotalen uit "Per Periode" (indien aanwezig) — leidend voor de Home-cijfers.
