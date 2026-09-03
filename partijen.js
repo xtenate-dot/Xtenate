@@ -255,11 +255,11 @@ async function verwijderBoeking(boeking, o) {
   }
 
   try {
-    const ok = await deleteFromSupabase(boeking.id);
-    if (!ok) addToPendingQueue(boeking, 'delete', hist);
+    const ok = await deleteFromSupabase(boeking.id, 'boeking');
+    if (!ok) addToPendingQueue(boeking, 'delete', hist, 'boeking');
   } catch (err) {
     console.warn('Supabase niet bereikbaar, in wachtrij gezet:', err);
-    addToPendingQueue(boeking, 'delete', hist);
+    addToPendingQueue(boeking, 'delete', hist, 'boeking');
   }
 
   sluitHuidige?.();

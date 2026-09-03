@@ -303,11 +303,11 @@ export async function verwijderHNVIItem(key) {
     console.log(`deleteFromSupabase returned:`, ok);
     if (!ok) {
       console.log(`Delete failed, adding to pending queue`);
-      addToPendingQueue(teVerwijderen, 'delete', false);
+      addToPendingQueue(teVerwijderen, 'delete', false, 'hnvi');
     }
   } catch (err) {
     console.error('Exception in verwijderHNVIItem:', err);
-    addToPendingQueue(teVerwijderen, 'delete', false);
+    addToPendingQueue(teVerwijderen, 'delete', false, 'hnvi');
   }
   
   renderHNVI();
@@ -363,11 +363,11 @@ export async function verwijderGeselecteerdeHNVI() {
       const ok = await deleteFromSupabase(lot.id, 'hnvi');
       if (!ok) {
         console.warn(`Delete van lot ${lot.id} faalde, in wachtrij`);
-        addToPendingQueue(lot, 'delete', false);
+        addToPendingQueue(lot, 'delete', false, 'hnvi');
       }
     } catch (err) {
       console.error(`Exception deleting lot ${lot.id}:`, err);
-      addToPendingQueue(lot, 'delete', false);
+      addToPendingQueue(lot, 'delete', false, 'hnvi');
     }
   }
   

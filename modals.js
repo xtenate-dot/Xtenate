@@ -622,7 +622,7 @@ export async function bevestigImport() {
 
         for (const sleutel of verdwenen) {
           deleteFromSupabase(sleutel, 'hnvi').catch(() => {
-            addToPendingQueue({ id: sleutel }, 'delete', false);
+            addToPendingQueue({ id: sleutel }, 'delete', false, 'hnvi');
           });
         }
         if (verdwenen.length) {

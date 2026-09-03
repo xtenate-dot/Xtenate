@@ -230,7 +230,7 @@ export function deleteTx() {
   }
 
   // Fase 3A: Add to pending queue for Supabase soft delete
-  addToPendingQueue({ id: state.editTxId }, 'delete', historisch);
+  addToPendingQueue({ id: state.editTxId }, 'delete', historisch, 'boeking');
   
   // Fase 3A: Try Supabase sync (async, non-blocking)
   if (isSupabaseReady()) {
