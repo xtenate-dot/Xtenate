@@ -12,7 +12,7 @@
 
 import { backupBestand } from './opslagdiagnose.js?v=20260902a';
 import { bouwMeldingen } from './gegevenscontrole.js?v=20260902a';
-import { state } from './storage.js?v=20260902a';
+import { state, CONTROLE_INSTELLINGEN } from './storage.js?v=20260902a';
 
 export const STAP = {
   BACKUP: 1, PREVIEW: 2, BEVESTIGING: 3, UITVOEREN: 4, CONTROLE: 5
@@ -188,8 +188,14 @@ export async function stapControle(preview, uitkomst) {
   const typeOk = types.filter(x => perId.get(x.recordId) && perId.get(x.recordId).type === x.naar).length;
   zet('De twee privé-soorten staan goed', typeOk === types.length, `${typeOk} van ${types.length}`);
 
+  // Referentie komt uit CONTROLE_INSTELLINGEN (Beheer); staat die nog leeg,
+  // dan slaat deze controle over in plaats van een verschil tegen 0 te tonen.
+  const referentiePriveSt2022 = CONTROLE_INSTELLINGEN?.jaartotaal2022PriveSt;
   const st = Number(ht['2022']?.priveSt);
-  zet('2022 priveSt is € 1.000,00', Math.abs(st - 1000.00) < 0.005, '€ ' + (isNaN(st) ? '—' : st.toFixed(2)));
+  if (referentiePriveSt2022 != null) {
+    zet(`2022 priveSt is € ${referentiePriveSt2022.toFixed(2).replace('.', ',')}`,
+      Math.abs(st - referentiePriveSt2022) < 0.005, '€ ' + (isNaN(st) ? '—' : st.toFixed(2)));
+  }
   const op = Number(ht['2022']?.priveOp);
   zet('2022 priveOp is nog € 250,00', Math.abs(op - 250) < 0.005, '€ ' + (isNaN(op) ? '—' : op.toFixed(2)));
 

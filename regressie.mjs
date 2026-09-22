@@ -28,6 +28,9 @@ const hist=DEF.map((t,i)=>{const u={...t,datum:sh(t.datum,-1),id:'h'+t.datum.sli
   return u;});
 localStorage.setItem('xtenate_hist_tx_override',JSON.stringify(hist));
 localStorage.setItem('xtenate_home_totals_override',JSON.stringify({'2022':{priveOp:250,priveSt:1000.00}}));
+// De referentie komt nu uit een instelling (Beheer) in plaats van de code;
+// een andere waarde dan hierboven, zodat de afwijking gevonden blijft worden.
+localStorage.setItem('xtenate_controle_instellingen',JSON.stringify({jaartotaal2022PriveSt:2000.00}));
 localStorage.setItem('xtenate_tx',JSON.stringify([]));
 const U=await laad('uitvoeren.js?v=20260812c');
 const p=await U.stapPreview();

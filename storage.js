@@ -44,6 +44,7 @@ function appDataWaarde(sleutel) {
   if (sleutel === 'groepen') return state.GROEPEN;
   if (sleutel === 'facturen') return { lijst: state.FACTUREN, volgende: state.nxtFactuur };
   if (sleutel === 'factuur_instellingen') return FACTUUR_INSTELLINGEN;
+  if (sleutel === 'controle_instellingen') return CONTROLE_INSTELLINGEN;
   if (sleutel === 'tellers') return { tx: state.nxtTx, cover: state.nxtCover, hnvi: state.nxtHnvi };
   return undefined;
 }
@@ -287,6 +288,21 @@ export function saveFactuurInstellingen(nieuwe) {
   duwAppData('factuur_instellingen', FACTUUR_INSTELLINGEN);
 }
 
+// ─── CONTROLE (referentiewaarden voor Gegevenscontrole/Uitvoeren/Herstel) ──
+// Sommige controles vergelijken de administratie met een getal dat alleen jij
+// kunt bevestigen — bijvoorbeeld een jaartotaal dat je zelf hebt nagerekend
+// tegen het Per Periode-tabblad. Zulke getallen stonden eerder vast in de
+// code; nu staan ze hier, leeg totdat jij ze in Beheer invult. Staat een
+// waarde nog op null, dan slaat de bijbehorende controle die stap gewoon over
+// in plaats van een verschil te melden tegen 0.
+export let CONTROLE_INSTELLINGEN = load('xtenate_controle_instellingen', {});
+
+export function saveControleInstellingen(nieuwe) {
+  if (nieuwe) CONTROLE_INSTELLINGEN = { ...CONTROLE_INSTELLINGEN, ...nieuwe };
+  save('xtenate_controle_instellingen', CONTROLE_INSTELLINGEN);
+  duwAppData('controle_instellingen', CONTROLE_INSTELLINGEN);
+}
+
 // ─── STATE INITIALISATIE (identiek aan origineel) ──────────────────────────
 // Het jaar stond hier vast op '2025'. Dat is een dode waarde zodra het
 // kalenderjaar verder loopt: bij elke refresh viel de app terug op een jaar
@@ -384,6 +400,9 @@ export async function loadDataHybrid() {
         }
         if (extra.factuur_instellingen) {
           FACTUUR_INSTELLINGEN = { ...FACTUUR_INSTELLINGEN, ...extra.factuur_instellingen };
+        }
+        if (extra.controle_instellingen) {
+          CONTROLE_INSTELLINGEN = { ...CONTROLE_INSTELLINGEN, ...extra.controle_instellingen };
         }
         // Tellers: het hoogste getal wint, zodat twee apparaten nooit
         // hetzelfde id uitdelen aan verschillende dingen.

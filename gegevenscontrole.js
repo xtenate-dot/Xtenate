@@ -32,7 +32,7 @@
 // Verwijderen zit hier bewust niet in. Moet een record ooit weg, dan is dat een
 // aparte handeling met een eigen bevestiging.
 
-import { HIST_TX_DEFAULT, HOME_TOTALS_DEFAULT, state } from './storage.js?v=20260902a';
+import { HIST_TX_DEFAULT, HOME_TOTALS_DEFAULT, CONTROLE_INSTELLINGEN, state } from './storage.js?v=20260902a';
 
 export const ACTIES = { CORRIGEREN: 'corrigeren', VERBERGEN: 'verbergen', NEGEREN: 'negeren' };
 
@@ -230,25 +230,29 @@ export async function bouwMeldingen() {
   }
 
   // --- 3. jaartotaal 2022 privé-storting ------------------------------------
+  // De referentiewaarde komt uit CONTROLE_INSTELLINGEN (Beheer), niet meer uit
+  // de code: alleen jij weet welk bedrag het Per Periode-tabblad geeft. Is die
+  // instelling nog leeg, dan slaat deze controle gewoon over.
+  const referentiePriveSt2022 = CONTROLE_INSTELLINGEN?.jaartotaal2022PriveSt;
   const ht = (() => { try { return JSON.parse(localStorage.getItem('xtenate_home_totals_override') || 'null'); } catch { return null; } })();
   const st22 = ht && ht['2022'] ? Number(ht['2022'].priveSt) : null;
-  if (st22 !== null && Math.abs(st22 - 1000.00) > 0.005) {
+  if (referentiePriveSt2022 != null && st22 !== null && Math.abs(st22 - referentiePriveSt2022) > 0.005) {
     await voegToe({
       id: 'jaartotaal::2022::priveSt',
       categorie: 'bewezen',
       titel: 'Jaartotaal 2022 privé-storting wijkt af van de bron',
       sleutel: 'xtenate_home_totals_override',
       aantalRecords: 1,
-      reden: 'Het Per Periode-tabblad geeft voor grootboek 600 in 2022 een totaal van € 1.000,00, '
-        + 'opgebouwd uit de periodes 4, 5, 6, 8, 9, 12 en 14. Door jou nagerekend en bevestigd.',
+      reden: `Het Per Periode-tabblad geeft voor grootboek 600 in 2022 een totaal van ${geld(referentiePriveSt2022)}, `
+        + 'opgebouwd uit de periodes 4, 5, 6, 8, 9, 12 en 14. Door jou nagerekend en bevestigd, ingesteld in Beheer.',
       huidigeWaarde: geld(st22),
-      nieuweWaarde: geld(1000.00),
-      detail: `Verschil ${geld(1000.00 - st22)}. Alleen dit ene veld verandert; `
+      nieuweWaarde: geld(referentiePriveSt2022),
+      detail: `Verschil ${geld(referentiePriveSt2022 - st22)}. Alleen dit ene veld verandert; `
         + 'omzet, kosten en privé-opname van 2022 blijven staan.',
       recordIds: ['2022.priveSt'],
       mutaties: [{
         sleutel: 'xtenate_home_totals_override', pad: ['2022', 'priveSt'],
-        veld: 'priveSt', van: st22, naar: 1000.00
+        veld: 'priveSt', van: st22, naar: referentiePriveSt2022
       }],
       correctieBewezen: true,
       vingerBron: JSON.stringify(ht['2022'])

@@ -7,7 +7,7 @@
 
 import { draaiControles } from './controle.js?v=20260902a';
 import { esc } from './helpers.js?v=20260902a';
-import { saveVoorraadInstellingen, standaardMinVoorraad } from './storage.js?v=20260902a';
+import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN } from './storage.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 
 const el = id => document.getElementById(id);
@@ -93,6 +93,7 @@ export function renderBeheer() {
       })
     ]) +
     voorraadInstellingenBlok() +
+    controleInstellingenBlok() +
     groep('Voorzichtig', [
       tegel({
         titel: 'Data wissen', uitleg: 'Alles verwijderen uit deze browser — niet ongedaan te maken!',
@@ -141,5 +142,51 @@ export function bewaarMinVoorraad() {
   saveVoorraadInstellingen({ standaardMin: Math.round(n) });
   if (melding) melding.textContent = `Opgeslagen: artikelen zonder eigen minimum gebruiken nu ${Math.round(n)}.`;
   // De voorraadstatus hangt hiervan af, dus opnieuw tekenen.
+  hertekenHuidigePagina();
+}
+
+/**
+ * Referentiewaarden die Gegevenscontrole, Uitvoeren en Herstel gebruiken om de
+ * administratie tegen te controleren. Zulke getallen kan alleen jij bevestigen
+ * — ze stonden eerder vast in de code, nu vul je ze hier eenmalig in. Leeg
+ * laten mag: de bijbehorende controle slaat dan gewoon over.
+ */
+function controleInstellingenBlok() {
+  const huidig = CONTROLE_INSTELLINGEN?.jaartotaal2022PriveSt;
+  return `
+    <div class="beheer-groep">
+      <div class="beheer-groep-kop">Gegevenscontrole</div>
+      <div class="card" style="padding:var(--spacing-4)">
+        <label for="beheer-referentie-privest-2022" style="display:block;font-weight:500;margin-bottom:4px">
+          Jaartotaal 2022 — privé-storting
+        </label>
+        <div class="muted" style="font-size:12px;margin-bottom:10px">
+          Het bedrag uit het Per Periode-tabblad waar de Gegevenscontrole het jaartotaal van 2022
+          tegen vergelijkt. Vul dit eenmalig in, na eigen natelling. Leeg laten zet de controle uit.
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="number" id="beheer-referentie-privest-2022" step="0.01" placeholder="€ 0,00"
+            value="${huidig != null ? huidig : ''}"
+            style="width:140px" aria-label="Jaartotaal 2022 privé-storting">
+          <button class="btn btn-primary" onclick="bewaarReferentiePriveSt2022()">Opslaan</button>
+          <span id="beheer-referentie-melding" class="muted" style="font-size:12px"></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+export function bewaarReferentiePriveSt2022() {
+  const veld = el('beheer-referentie-privest-2022');
+  const melding = el('beheer-referentie-melding');
+  const ruw = (veld?.value ?? '').trim();
+  const n = ruw === '' ? null : Number(ruw);
+  if (n !== null && !Number.isFinite(n)) {
+    if (melding) melding.textContent = 'Vul een getal in, of laat leeg om de controle uit te zetten.';
+    return;
+  }
+  saveControleInstellingen({ jaartotaal2022PriveSt: n });
+  if (melding) melding.textContent = n === null
+    ? 'Opgeslagen: deze controle staat nu uit.'
+    : `Opgeslagen: de controle vergelijkt nu tegen € ${n.toFixed(2).replace('.', ',')}.`;
   hertekenHuidigePagina();
 }

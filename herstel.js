@@ -20,7 +20,7 @@
 //    horen. Corrigeer je de uitgave wel en de storting niet, dan vallen de
 //    paren uit elkaar en schuiven Internet en Reiskosten over de jaargrens.
 
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, MAAND_SALDOS_DEFAULT, state }
+import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, MAAND_SALDOS_DEFAULT, CONTROLE_INSTELLINGEN, state }
   from './storage.js?v=20260902a';
 
 const HISTORISCHE_JAREN = ['2022', '2023', '2024', '2025'];
@@ -315,9 +315,16 @@ function bouwControles(jaren, nieuweHistorie, nuHuidig, totaalNa) {
   const somOp = op22.reduce((s, t) => s + Number(t.bedrag), 0);
   zet('2022 privé-opnames volgens de boekingen: € 250,00',
     Math.abs(somOp - 250) < 0.01, '€ ' + somOp.toFixed(2));
-  zet('2022 privé-stortingen volgens het jaartotaal: € 1.000,00',
-    Math.abs((HOME_TOTALS_DEFAULT['2022']?.priveSt ?? 0) - 1000.00) < 0.01,
-    '€ ' + Number(HOME_TOTALS_DEFAULT['2022']?.priveSt ?? 0).toFixed(2));
+  // Referentie komt uit CONTROLE_INSTELLINGEN (Beheer). Vergeleken wordt met
+  // HOME_TOTALS (de huidige, live stand) — HOME_TOTALS_DEFAULT bevat sinds de
+  // opschoning geen jaartotalen meer om tegen te vergelijken. Staat de
+  // instelling nog leeg, dan slaat deze controle over.
+  const referentiePriveSt2022 = CONTROLE_INSTELLINGEN?.jaartotaal2022PriveSt;
+  if (referentiePriveSt2022 != null) {
+    zet(`2022 privé-stortingen volgens het jaartotaal: € ${referentiePriveSt2022.toFixed(2).replace('.', ',')}`,
+      Math.abs((HOME_TOTALS['2022']?.priveSt ?? 0) - referentiePriveSt2022) < 0.01,
+      '€ ' + Number(HOME_TOTALS['2022']?.priveSt ?? 0).toFixed(2));
+  }
   zet('2022 privé-stortingen volgens de 13 boekingen', null, '€ ' + somSt.toFixed(2));
 
   // Elke privé-storting van 2022 moet op dezelfde dag staan als de uitgave

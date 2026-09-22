@@ -24,6 +24,9 @@ const bron=fs.readFileSync(bestand('storage.js'),'utf8');
 const DEF=JSON.parse(bron.match(/export const HIST_TX_DEFAULT = (\[[\s\S]*?\]);\n/)[1]);
 localStorage.setItem('xtenate_hist_tx_override',JSON.stringify(DEF.map((t,i)=>({...t,id:'h'+t.datum.slice(0,4)+'_'+(500+i)}))));
 localStorage.setItem('xtenate_home_totals_override',JSON.stringify({'2022':{priveOp:250,priveSt:1000.00}}));
+// De referentie komt nu uit een instelling (Beheer) in plaats van de code;
+// zonder deze regel zou de jaartotaal-controle altijd overslaan.
+localStorage.setItem('xtenate_controle_instellingen',JSON.stringify({jaartotaal2022PriveSt:1000.00}));
 localStorage.setItem('xtenate_tx',JSON.stringify([]));
 const snapshot=JSON.stringify({...localStorage});
 
