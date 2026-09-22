@@ -95,10 +95,10 @@ Twee dingen vallen op in de huidige indeling:
 
 ```js
 {
-  id: 29,                    // number voor TX, string "h2025_52" voor HIST_TX
+  id: 1,                     // number voor TX, string "h2025_52" voor HIST_TX
   datum: "2026-01-30",       // ISO, altijd YYYY-MM-DD
-  bedrag: 218.00,            // altijd positief; richting zit in `type`
-  naam: "Voorbeeld BV",   // tegenpartij, soms een IBAN
+  bedrag: 100.00,            // altijd positief; richting zit in `type`
+  naam: "Voorbeeld BV",      // tegenpartij, soms een IBAN
   omschr: "",                // vrije toelichting
   rek: "1010",               // 1009/1010/1020/1030/1090
   gb: "601",                 // grootboekcode

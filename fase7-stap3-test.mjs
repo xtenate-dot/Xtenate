@@ -177,10 +177,10 @@ ok('facturen-tegel toont te ontvangen en te betalen',
   cijfers.fac.regels.join(' · '));
 ok('boekhouding-tegel toont het aantal boekingen',
   cijfers.boek.regels.some(r => r.includes(String(cijfers.aantalTX))), cijfers.boek.regels.join(' · '));
-ok('boekingen ongewijzigd: 161 en 473',
-  cijfers.aantalTX === 161 && cijfers.aantalHist === 473,
+ok('boekingen ongewijzigd: 0 en 0 (dataset is opgeschoond)',
+  cijfers.aantalTX === 0 && cijfers.aantalHist === 0,
   `${cijfers.aantalTX} / ${cijfers.aantalHist}`);
-ok('voorraad-tegel toont 21 artikelen', cijfers.vrd.regels.some(r => /21 artikelen/.test(r)),
+ok('voorraad-tegel toont 0 artikelen (dataset is opgeschoond)', cijfers.vrd.regels.some(r => /0 artikelen/.test(r)),
   cijfers.vrd.regels.join(' · '));
 await page.close();
 

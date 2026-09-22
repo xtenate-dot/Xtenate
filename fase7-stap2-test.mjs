@@ -23,10 +23,10 @@ const { state } = S;
 
 // ──────────────────────────────────────── bestaande data ongemoeid
 kop('1. Bestaande data blijft volledig ongemoeid');
-ok('TX telt 161 boekingen', state.TX.length === 161, String(state.TX.length));
-ok('HIST_TX telt 473 boekingen', state.HIST_TX.length === 473, String(state.HIST_TX.length));
-ok('samen 634', state.TX.length + state.HIST_TX.length === 634);
-ok('COVERS telt 21 artikelen', state.COVERS.length === 21, String(state.COVERS.length));
+ok('TX telt 0 boekingen (dataset is opgeschoond)', state.TX.length === 0, String(state.TX.length));
+ok('HIST_TX telt 0 boekingen (dataset is opgeschoond)', state.HIST_TX.length === 0, String(state.HIST_TX.length));
+ok('samen 0', state.TX.length + state.HIST_TX.length === 0);
+ok('COVERS telt 0 artikelen (dataset is opgeschoond)', state.COVERS.length === 0, String(state.COVERS.length));
 ok('FACTUREN begint leeg', Array.isArray(state.FACTUREN) && state.FACTUREN.length === 0,
   String(state.FACTUREN.length));
 ok('nxtFactuur begint op 1', state.nxtFactuur === 1, String(state.nxtFactuur));
@@ -156,8 +156,8 @@ ok('verwijderde factuur staat niet in de opslag',
 
 // ──────────────────────────────────────── geen bestaande sleutel geraakt
 kop('8. Geen bestaande opslagsleutel aangeraakt');
-ok('TX nog steeds 161', state.TX.length === 161, String(state.TX.length));
-ok('HIST_TX nog steeds 473', state.HIST_TX.length === 473, String(state.HIST_TX.length));
+ok('TX nog steeds 0 (dataset is opgeschoond)', state.TX.length === 0, String(state.TX.length));
+ok('HIST_TX nog steeds 0 (dataset is opgeschoond)', state.HIST_TX.length === 0, String(state.HIST_TX.length));
 ok('geen hist-override weggeschreven',
   localStorage.getItem('xtenate_hist_tx_override') === null,
   String(localStorage.getItem('xtenate_hist_tx_override')));

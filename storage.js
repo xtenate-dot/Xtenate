@@ -94,46 +94,6 @@ const TX_INIT = [];
 
 const COVERS_INIT = [];
 
-export function load(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
-
-export function save(key, val) {
-  try {
-    localStorage.setItem(key, JSON.stringify(val));
-  } catch (e) {
-    if (e.name === 'QuotaExceededError') {
-      console.error(`Opslag is vol: kan niet meer opslaan. (${e.message})`);
-      showStorageError('Opslagruimte vol', 'De browser kan niet meer opslaan. Verwijder oude data of maak ruimte vrij.');
-    } else {
-      console.error(`Fout bij opslaan: ${e.message}`, e);
-      showStorageError('Opslagfout', 'Er is een fout opgetreden bij het opslaan. Herlaad de pagina en probeer opnieuw.');
-    }
-  }
-}
-
-function showStorageError(titel, boodschap) {
-  if (typeof window !== 'undefined' && window.alert) {
-    alert(`⚠️ ${titel}\n\n${boodschap}`);
-  }
-}
-
-/** Diepe kopie, zodat werkgegevens en standaardwaarden nooit hetzelfde object zijn. */
-export const kopie = v => JSON.parse(JSON.stringify(v));
-
-state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
-
-state.COVERS = load('xtenate_covers', JSON.parse(JSON.stringify(COVERS_INIT)));
-
-// Voorraadartikelen van vóór de categorie-indeling aanvullen. Alles wat er al
-// stond is een Funny Cover; inkoopprijs en minimumvoorraad blijven leeg tot ze
-// zijn ingevuld, zodat de app niet met verzonnen waarden gaat rekenen.
-export const GROEPEN_STANDAARD = [
-  { id: 'covers', naam: 'Funny Covers' },
-  { id: 'hoezen', naam: 'Hoezen' },
-  { id: 'pophouders', naam: 'Pop Houders' },
-  { id: 'accessoires', naam: 'Accessoires' },
-  { id: 'overig', naam: 'Overig' }
-];
-
 // De drempel waaronder de voorraad als 'laag' geldt, voor artikelen die geen
 // eigen minimum hebben. Een artikel met een ingevuld `minVoorraad` blijft dat
 // gebruiken; deze waarde geldt alleen als terugval. Instelbaar in Beheer.
