@@ -26,6 +26,14 @@ export function syncIsAangezet() {
 export const pendingQueue = {};
 const QUEUE_STORAGE_KEY = 'xtenate_pending_queue_v2';
 
+// Onthoudt, per legacy_id, de laatste foutmelding van een mislukte
+// save/delete-poging — puur informatief voor de wachtrijweergave in Beheer.
+// Bewust géén wijziging van wat de save/delete-functies zelf teruggeven
+// (nog steeds gewoon true/false): tien andere plekken in de app controleren
+// dat resultaat rechtstreeks (bijv. `if (await saveCoverToSupabase(...))`),
+// en die moeten onveranderd blijven werken.
+const laatsteFoutPerId = {};
+
 export function savePendingQueue() {
   try {
     localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(pendingQueue));
@@ -371,13 +379,16 @@ export async function saveToSupabase(boeking, isHistoric) {
     
     if (error) {
       console.error(`❌ Supabase save failed (${boeking.id}):`, error);
+      laatsteFoutPerId[boeking.id] = error.message;
       return false;
     }
-    
+
     console.log(`✅ Synced to Supabase: ${boeking.id}`);
+    delete laatsteFoutPerId[boeking.id];
     return true;
   } catch (err) {
     console.error('Error in saveToSupabase:', err);
+    laatsteFoutPerId[boeking.id] = err.message;
     return false;
   }
 }
@@ -1057,13 +1068,16 @@ export async function saveHnviToSupabase(lot) {
     
     if (error) {
       console.error(`❌ HNVI save failed (${lot.id}):`, error);
+      laatsteFoutPerId[lot.id] = error.message;
       return false;
     }
-    
+
     console.log(`✅ HNVI synced to Supabase: ${lot.id}`);
+    delete laatsteFoutPerId[lot.id];
     return true;
   } catch (err) {
     console.error('Error in saveHnviToSupabase:', err);
+    laatsteFoutPerId[lot.id] = err.message;
     return false;
   }
 }
@@ -1155,13 +1169,16 @@ export async function saveCoverToSupabase(cover) {
     
     if (error) {
       console.error(`❌ Cover save failed (${cover.id}):`, error);
+      laatsteFoutPerId[cover.id] = error.message;
       return false;
     }
-    
+
     console.log(`✅ Cover synced to Supabase: ${cover.id}`);
+    delete laatsteFoutPerId[cover.id];
     return true;
   } catch (err) {
     console.error('Error in saveCoverToSupabase:', err);
+    laatsteFoutPerId[cover.id] = err.message;
     return false;
   }
 }
@@ -1226,6 +1243,7 @@ export async function deleteFromSupabase(id, type = 'auto') {
             .select('id');
           if (!error && data && data.length > 0) {
             console.log(`✅ Deleted from ${table}: ${id}`);
+            delete laatsteFoutPerId[id];
             // Refresh UI na verwijdering van ander apparaat
             setTimeout(() => window.hertekenHuidigePagina?.(), 300);
             return true;
@@ -1243,6 +1261,7 @@ export async function deleteFromSupabase(id, type = 'auto') {
             .select('id');
           if (!error && data && data.length > 0) {
             console.log(`✅ Deleted from ${table}: ${id}`);
+            delete laatsteFoutPerId[id];
             // Refresh UI na verwijdering van ander apparaat
             setTimeout(() => window.hertekenHuidigePagina?.(), 300);
             return true;
@@ -1258,10 +1277,12 @@ export async function deleteFromSupabase(id, type = 'auto') {
     }
     
     console.error(`❌ Delete failed for ${id}:`, lastError);
+    laatsteFoutPerId[id] = lastError?.message || String(lastError || 'onbekende fout');
     return false;
-    
+
   } catch (err) {
     console.error(`❌ Supabase delete error (${id}):`, err);
+    laatsteFoutPerId[id] = err.message;
     return false;
   }
 }
@@ -1315,11 +1336,13 @@ export async function syncPendingQueue() {
         synced++;
       } else {
         pending.status = 'pending';
+        pending.laatsteFout = laatsteFoutPerId[pending.id] || 'onbekende fout';
         failed++;
       }
     } catch (err) {
       console.warn(`❌ Failed to sync ${key}:`, err);
       pending.status = 'pending';
+      pending.laatsteFout = err.message || String(err);
       failed++;
     }
   }

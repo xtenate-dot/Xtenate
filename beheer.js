@@ -9,6 +9,8 @@ import { draaiControles } from './controle.js?v=20260902a';
 import { esc } from './helpers.js?v=20260902a';
 import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN } from './storage.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
+import { getPendingItems } from './supabase-client-v2.js?v=20260902a';
+import { syncNu } from './autosync.js?v=20260902a';
 
 const el = id => document.getElementById(id);
 
@@ -92,6 +94,7 @@ export function renderBeheer() {
         icoon: I.sync, actie: 'openVoorraadSyncModal()', nadruk: true
       })
     ]) +
+    synchronisatieBlok() +
     voorraadInstellingenBlok() +
     controleInstellingenBlok() +
     groep('Voorzichtig', [
@@ -189,4 +192,46 @@ export function bewaarReferentiePriveSt2022() {
     ? 'Opgeslagen: deze controle staat nu uit.'
     : `Opgeslagen: de controle vergelijkt nu tegen € ${n.toFixed(2).replace('.', ',')}.`;
   hertekenHuidigePagina();
+}
+
+/**
+ * Eén duidelijke plek voor de synchronisatiestatus, in plaats van alleen een
+ * aantal in de topbalk of op de Bank-pagina. Toont per vastgelopen item
+ * (5 mislukte pogingen) om welke boeking/welk artikel het gaat en wat de
+ * laatste foutmelding was — die twee bestonden eerder niet; ze komen uit
+ * addToPendingQueue() (welk item) en de nieuwe laatsteFoutPerId-registratie
+ * in supabase-client-v2.js (welke fout).
+ */
+function synchronisatieBlok() {
+  const items = getPendingItems();
+  const vastgelopen = items.filter(p => p.attempts >= (p.maxAttempts || 5));
+
+  const regels = vastgelopen.map(p => {
+    const omschrijving = p.data?.naam || p.data?.artikel || `#${p.id}`;
+    return `
+      <div style="padding:8px 0;border-top:1px solid var(--border)">
+        <div style="font-weight:500">${esc(String(omschrijving))}</div>
+        <div class="muted" style="font-size:12px">
+          ${p.attempts} van ${p.maxAttempts || 5} pogingen · ${esc(p.laatsteFout || 'geen foutmelding bekend')}
+        </div>
+      </div>`;
+  }).join('');
+
+  const inhoud = vastgelopen.length
+    ? `<div class="alert alert-error" style="margin-bottom:4px">${vastgelopen.length} wijziging(en) vastgelopen na 5 pogingen</div>${regels}
+       <button class="btn btn-primary" style="margin-top:12px" onclick="herprobeerSynchronisatie()">Opnieuw proberen</button>`
+    : `<div class="muted" style="font-size:13px">
+         Niets vastgelopen.${items.length ? ` ${items.length} wijziging(en) worden nog verwerkt.` : ' Alles is gesynchroniseerd.'}
+       </div>`;
+
+  return `
+    <div class="beheer-groep">
+      <div class="beheer-groep-kop">Synchronisatie</div>
+      <div class="card" style="padding:var(--spacing-4)">${inhoud}</div>
+    </div>`;
+}
+
+export async function herprobeerSynchronisatie() {
+  await syncNu();
+  renderBeheer();
 }
