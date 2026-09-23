@@ -81,7 +81,8 @@ export function addToPendingQueue(boeking, operation, isHistoric = false, soortH
           omschr: boeking.omschr,
           type: boeking.type,
           rek: boeking.rek,
-          gb: boeking.gb
+          gb: boeking.gb,
+          bron: boeking.bron
         }
       : { ...boeking };
   }
@@ -299,7 +300,11 @@ export async function loadBoekingenFromSupabase() {
         rek: b.rek,
         gb: b.gb
       };
-      
+      // Alleen de waarde die er lokaal toe doet meenemen; alle andere
+      // waarden ('excel', 'migratie', 'sync') betekenen lokaal simpelweg
+      // "niet handmatig", dus daar zetten we lokaal niets voor.
+      if (b.bron === 'handmatig') record.bron = 'handmatig';
+
       if (b.archief_jaar === null) {
         TX.push(record);
       } else {
@@ -350,6 +355,7 @@ export async function saveToSupabase(boeking, isHistoric) {
       archief_jaar: isHistoric ? parseInt(boeking.datum.substring(0, 4)) : null,
       btw_bedrag: 0,
       btw_percentage: 0,
+      bron: boeking.bron === 'handmatig' ? 'handmatig' : 'excel',
       updated_at: new Date().toISOString()
     };
     
@@ -468,6 +474,7 @@ function boekingRecord(boeking, isHistoric, userId) {
     archief_jaar: isHistoric ? parseInt(String(boeking.datum).substring(0, 4)) : null,
     btw_bedrag: 0,
     btw_percentage: 0,
+    bron: boeking.bron === 'handmatig' ? 'handmatig' : 'excel',
     updated_at: new Date().toISOString()
   };
 }

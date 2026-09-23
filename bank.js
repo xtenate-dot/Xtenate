@@ -287,13 +287,17 @@ export function saveTx() {
   };
 
   let isHistoric = false;
-  
+
   if (state.editTxId != null) {
     // Een historische boeking hoort in HIST_TX te blijven staan, anders zou hij
     // naar 2026 verhuizen en uit de jaaroverzichten van dat jaar verdwijnen.
     const bestaand = vindTx(state.editTxId);
     isHistoric = bestaand && bestaand.historisch;
-    
+
+    // Een handmatig aangemaakte boeking blijft ook na bewerken handmatig,
+    // anders verliest hij zijn bescherming tegen een latere Excel-import.
+    if (bestaand && bestaand.tx.bron === 'handmatig') tx.bron = 'handmatig';
+
     if (isHistoric) {
       state.HIST_TX = state.HIST_TX.map(t => (String(t.id) === String(state.editTxId) ? tx : t));
       saveHistTxData();
@@ -306,9 +310,12 @@ export function saveTx() {
     addToPendingQueue(tx, 'update', isHistoric);
     
   } else {
+    // Een gloednieuwe boeking is per definitie handmatig aangemaakt. Dat
+    // label beschermt hem later tegen een Excel-import die dit jaar vervangt.
+    tx.bron = 'handmatig';
     state.TX.push(tx);
     saveTxData();
-    
+
     // Fase 3A: Add to pending queue for Supabase sync
     addToPendingQueue(tx, 'create', false);
   }

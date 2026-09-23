@@ -633,8 +633,13 @@ export async function bevestigImport() {
       }
 
       if (is2026) {
-        // Sla op als huidige (2026) data
-        state.TX = p.newTx;
+        // Sla op als huidige (2026) data. Handmatig aangemaakte boekingen die
+        // niet in het geïmporteerde bestand voorkomen, blijven staan — anders
+        // verdwijnt een handmatige toevoeging zodra je later een Excel-bestand
+        // voor hetzelfde jaar importeert.
+        const teBehouden = state.TX.filter(t =>
+          t.bron === 'handmatig' && !p.newTx.some(nt => String(nt.id) === String(t.id)));
+        state.TX = [...p.newTx, ...teBehouden];
         state.nxtTx = p.tid;
         if (p.newCovers.length > 0) { state.COVERS = normaliseerVoorraad(p.newCovers, state.COVERS); state.nxtCover = 300; }
         Object.keys(MAAND_SALDOS).filter(m=>m.startsWith('2026')).forEach(m=>delete MAAND_SALDOS[m]);
@@ -671,7 +676,11 @@ export async function bevestigImport() {
         // 2023 leeg zonder dat er iets voor terugkwam.
         const jarenMetRegels = [...new Set(p.newTx.map(t => t.datum.slice(0,4)))];
         const legeJaren = p.gevondenJaren.filter(j => !jarenMetRegels.includes(j));
-        state.HIST_TX = state.HIST_TX.filter(t => !jarenMetRegels.some(j => t.datum.startsWith(j)));
+        // Handmatig aangemaakte/bewerkte boekingen in een geraakt jaar blijven
+        // staan, ook al komen ze niet in dit bestand voor — zelfde reden als
+        // bij het lopende jaar hierboven.
+        state.HIST_TX = state.HIST_TX.filter(t =>
+          !jarenMetRegels.some(j => t.datum.startsWith(j)) || t.bron === 'handmatig');
         state.HIST_TX = [...state.HIST_TX, ...p.newTx.map(t => ({...t, id: 'h' + jaarLabel.replace(/, /g,'_') + '_' + t.id}))];
         jarenMetRegels.forEach(j => {
           Object.keys(MAAND_SALDOS).filter(m=>m.startsWith(j)).forEach(m=>delete MAAND_SALDOS[m]);
