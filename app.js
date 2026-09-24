@@ -35,7 +35,7 @@ import {
   importHNVIFactuur, bevestigHNVIImport, exporteerHnviPdf
 } from './hnvi.js?v=20260902a';
 import {
-  importExcel, openWisModal, doWis, toonWisPreview, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
+  importExcel, openWisModal, doWis, toonWisPreview, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
   openApiKeyModal, saveApiKey, bevestigImport, annuleerImport
 } from './modals.js?v=20260902a';
 import { initUiVoorkeuren, wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu } from './theme.js?v=20260902a';
@@ -43,11 +43,6 @@ import { wisselNavGroep, initNavGroepen } from './navgroepen.js?v=20260902a';
 import { initZoek, focusZoek, sluitZoek } from './search.js?v=20260902a';
 import { openExportModal, sluitExportModal, toonExportSamenvatting, doeExport } from './excel-ui.js?v=20260902a';
 import { openZelftestModal, sluitZelftestModal, startZelftest } from './zelftest-ui.js?v=20260902a';
-import {
-  openMigratieModal, sluitMigratieModal, maakReservekopie, naarDryRun,
-  terugNaarVoorbereiden, startDryRun, kopieerDryRun, toonDiagnose,
-  naarHerstel, kopieerHerstelPreview
-} from './migratie-ui.js?v=20260902a';
 import {
   openOpslagDiagnose, sluitOpslagDiagnose, voerOpslagDiagnoseUit, kopieerOpslagDiagnose,
   maakOpslagSnapshot, toonOverrides, toonNegeerlijst, downloadBackup, downloadNegeerBestanden
@@ -92,13 +87,10 @@ Object.assign(window, {
   renderHNVI, berekenHNVIInkoop, openHNVIModal, openHNVISell, closeHNVIModal, saveHNVI,
   wisHNVIVerkoop, verwijderHNVIItem, toggleAllHNVI, updateHNVIDeleteBtn, verwijderGeselecteerdeHNVI,
   importHNVIFactuur, bevestigHNVIImport, exporteerHnviPdf,
-  importExcel, openWisModal, doWis, toonWisPreview, herstelHistorischeData, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
+  importExcel, openWisModal, doWis, toonWisPreview, openSyncModal, saveSyncUrl, syncUpload, syncDownload,
   openApiKeyModal, saveApiKey,
   openExportModal, sluitExportModal, toonExportSamenvatting, doeExport,
   openZelftestModal, sluitZelftestModal, startZelftest,
-  openMigratieModal, sluitMigratieModal, maakReservekopie, naarDryRun,
-  terugNaarVoorbereiden, startDryRun, kopieerDryRun, toonDiagnose,
-  naarHerstel, kopieerHerstelPreview,
   openGegevenscontrole, sluitGegevenscontrole, herlaadGegevenscontrole,
   kiesGc, annuleerGc, bevestigGc, maakKeuzeOngedaan,
   exporteerGcMeldingen, controleerGcSchrijfacties,

@@ -740,18 +740,6 @@
 </div>
 </div>
 
-<!-- MODAL: MIGRATIE NAAR SUPABASE -->
-<div class="modal-overlay" id="modal-migratie">
-<div class="modal" style="width:720px">
-  <h3>Migratie naar Supabase</h3>
-  <div class="mig-fasen" id="mig-fasen"></div>
-  <div id="mig-inhoud"></div>
-  <div style="text-align:right;margin-top:var(--spacing-3)">
-    <button class="btn btn-ghost btn-sm" onclick="sluitMigratieModal()">Venster sluiten</button>
-  </div>
-</div>
-</div>
-
 <!-- MODAL: HERSTEL UITVOEREN -->
 <div class="modal-overlay" id="modal-uitvoeren">
 <div class="modal" style="width:880px">
@@ -1111,11 +1099,6 @@
     <button class="btn" onclick="document.getElementById('modal-wis').classList.remove('open')">Annuleren</button>
     <button class="btn" id="wis-preview-knop" onclick="toonWisPreview()">Preview (alleen tellen)</button>
     <button class="btn btn-primary" id="wis-bevestig" style="background:var(--semantic-danger-bright);border-color:var(--semantic-danger-bright)" onclick="doWis()">Wis geselecteerd</button>
-  </div>
-  <hr style="margin:1rem 0;border-color:var(--border-default)">
-  <p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:.5rem">Staan de historische jaren (2022-2025) er raar uit, bijvoorbeeld verkeerde privé-opnames/stortingen? Dan staat er waarschijnlijk een verouderde kopie in je browseropslag. Herstel ze naar de standaardwaarden uit de app:</p>
-  <div class="modal-actions">
-    <button class="btn" onclick="herstelHistorischeData()">Herstel historische data (2022-2025) naar standaard</button>
   </div>
 </div>
 </div>
