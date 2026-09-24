@@ -12,6 +12,7 @@
 
 import { isInkomst, isUitgave, fmt } from './helpers.js?v=20260902a';
 import { state, BTW_INSTELLINGEN } from './storage.js?v=20260902a';
+import { downloadModelPdf } from './pdf.js?v=20260902a';
 
 const el = id => document.getElementById(id);
 
@@ -160,4 +161,64 @@ export function wisselBtwKwartaal() {
   const kiezer = el('btw-kwartaal');
   gekozenKwartaal = kiezer?.value || kwartaalNu();
   renderBtw();
+}
+
+/**
+ * Het pdf-model voor het gekozen kwartaal — bouwt rechtstreeks voort op
+ * btwRelevant(), isOvergangskwartaal() en totalenVan() hierboven, dezelfde
+ * functies die renderBtw() ook gebruikt. Geen eigen, evenwijdige berekening:
+ * wat hier in de pdf komt, komt uit exact dezelfde optelsom als het scherm
+ * op dit moment toont. Voor het overgangskwartaal krijgt de pdf dezelfde
+ * twee-aparte-blokken-indeling als het scherm, nooit één gemengd totaal.
+ */
+export function btwModel(kwartaal = gekozenKwartaal || kwartaalNu()) {
+  const boekingenInKwartaal = alleBoekingen()
+    .filter(t => kwartaalVan(t.datum) === kwartaal && btwRelevant(t));
+
+  const voetTekst = `Opgesteld met de Xtenate-administratie op ${new Date().toLocaleDateString('nl-NL')}. ` +
+    'Indicatief overzicht, geen vervanging van een echte BTW-aangifte. Internationale verkopen en ' +
+    'verlegde BTW zijn hier niet in meegenomen. Raadpleeg een belastingadviseur voordat je aangifte doet.';
+
+  if (isOvergangskwartaal(kwartaal)) {
+    const vanaf = BTW_INSTELLINGEN.btwPlichtigVanaf;
+    const voor = boekingenInKwartaal.filter(t => t.datum < vanaf);
+    const na = boekingenInKwartaal.filter(t => t.datum >= vanaf);
+    const t = totalenVan(na);
+    return {
+      titel: 'BTW-overzicht (indicatief)',
+      ondertitel: `${kwartaalLabel(kwartaal)} — overgangskwartaal`,
+      blokken: [
+        { type: 'kop', tekst: `Vóór ${vanaf} — buiten de BTW-plicht` },
+        { type: 'tekst', tekst: `${voor.length} boeking(en). Geen BTW van toepassing, ongeacht wat er verder op deze boekingen staat.` },
+
+        { type: 'kop', tekst: `Vanaf ${vanaf} — onder de BTW-plicht` },
+        { type: 'regel', label: 'Af te dragen (verkopen)', bedrag: t.afTeDragen },
+        { type: 'regel', label: 'Voorbelasting (inkopen/kosten)', bedrag: t.voorbelasting, aftrek: true },
+        { type: 'regel', label: 'Saldo', bedrag: t.saldo, totaal: true },
+        { type: 'tekst', tekst: `${saldoTekst(t.saldo)} ${na.length} boeking(en) meegeteld.` },
+
+        { type: 'voet', tekst: voetTekst }
+      ]
+    };
+  }
+
+  const t = totalenVan(boekingenInKwartaal);
+  return {
+    titel: 'BTW-overzicht (indicatief)',
+    ondertitel: kwartaalLabel(kwartaal),
+    blokken: [
+      { type: 'kop', tekst: 'Totalen' },
+      { type: 'regel', label: 'Af te dragen (verkopen)', bedrag: t.afTeDragen },
+      { type: 'regel', label: 'Voorbelasting (inkopen/kosten)', bedrag: t.voorbelasting, aftrek: true },
+      { type: 'regel', label: 'Saldo', bedrag: t.saldo, totaal: true },
+      { type: 'tekst', tekst: `${saldoTekst(t.saldo)} ${boekingenInKwartaal.length} boeking(en) meegeteld.` },
+
+      { type: 'voet', tekst: voetTekst }
+    ]
+  };
+}
+
+export function downloadBtwPdf() {
+  const kwartaal = gekozenKwartaal || kwartaalNu();
+  downloadModelPdf(btwModel(kwartaal), `btw-${kwartaal}.pdf`);
 }
