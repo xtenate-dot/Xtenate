@@ -9,6 +9,7 @@
 import { GBNM, REKNM, isInkomst, maandLabel } from './helpers.js?v=20260902a';
 import { HOME_TOTALS, MAAND_SALDOS, groepNaam, state } from './storage.js?v=20260902a';
 import { bankPrijzenNu, inkoopwaardeVan } from './voorraadwaarde.js?v=20260902a';
+import { btwRelevant } from './btw.js?v=20260902a';
 
 const CREDITKAART = '1030';
 
@@ -28,16 +29,26 @@ function boekingenVanJaar(jaar) {
 // ------------------------------------------------------------ Bank JJJJ-MM
 
 /**
- * Eén werkblad per maand, met de boekingen links (kolom A t/m H) en het begin-
- * en eindsaldo rechts (kolom I en J), precies zoals de import het verwacht.
+ * Eén werkblad per maand, met de boekingen links (kolom A t/m H), het begin-
+ * en eindsaldo in kolom I en J, en de BTW-kolom helemaal rechts in kolom P
+ * (index 15) — precies zoals de import het verwacht.
+ *
+ * Kolom P staat bewust ver van de rest: de import leest per rij niet alleen
+ * kolom A t/m H, maar kijkt ook op kolom J t/m O naar een eventueel tweede
+ * transactieblok op dezelfde rij (modals.js, bevestigImport(), offset 8).
+ * Zou de BTW-kolom binnen dat bereik vallen, dan zou een BTW-bedrag daar per
+ * ongeluk als bedrag van een spooktransactie gelezen kunnen worden. Kolom P
+ * ligt daar ruim voorbij en wordt door de import simpelweg genegeerd, zoals
+ * dit bestand dat al documenteert voor kolommen die niet worden ingelezen.
  */
 function bankBlad(maand, boekingen) {
   const rijen = [[
-    'Nr', 'Datum', 'Grootboek', 'Bedrag', 'Omschrijving', 'Naam', 'Rekening', 'Soort', '', ''
+    'Nr', 'Datum', 'Grootboek', 'Bedrag', 'Omschrijving', 'Naam', 'Rekening', 'Soort',
+    '', '', '', '', '', '', '', 'BTW'
   ]];
 
   boekingen.forEach((t, i) => {
-    rijen.push([
+    const rij = [
       i + 1,
       t.datum,
       Number(t.gb) || t.gb,
@@ -46,22 +57,31 @@ function bankBlad(maand, boekingen) {
       t.naam || '',
       t.rek,
       REKNM[t.rek] || '',
-      '', ''
-    ]);
+      '', '', '', '', '', '', ''
+    ];
+    // Leeg, niet nul: alleen als deze boeking daadwerkelijk een BTW-percentage
+    // draagt — dus btwRelevant() (geen privé) én geboekt op/na de omslagdatum
+    // — staat hier een bedrag. Dezelfde functie als het BTW-scherm gebruikt,
+    // geen eigen, evenwijdige berekening.
+    rij.push(btwRelevant(t) && t.btw_percentage != null
+      ? Math.round((Number(t.btw_bedrag) || 0) * 100) / 100
+      : '');
+    rijen.push(rij);
   });
 
   // Saldo's in kolom I en J. De import zoekt hier letterlijk naar de woorden
   // Beginsaldo en Eindsaldo.
   const saldo = MAAND_SALDOS[maand];
   if (saldo) {
-    while (rijen.length < 3) rijen.push(['', '', '', '', '', '', '', '', '', '']);
+    while (rijen.length < 3) rijen.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
     if (saldo.begin != null) { rijen[1][8] = 'Beginsaldo'; rijen[1][9] = saldo.begin; }
     if (saldo.eind != null) { rijen[2][8] = 'Eindsaldo'; rijen[2][9] = saldo.eind; }
   }
 
   const ws = XLSX.utils.aoa_to_sheet(rijen);
   ws['!cols'] = [{ wch: 5 }, { wch: 12 }, { wch: 11 }, { wch: 11 }, { wch: 28 }, { wch: 30 },
-                 { wch: 10 }, { wch: 13 }, { wch: 12 }, { wch: 11 }];
+                 { wch: 10 }, { wch: 13 }, { wch: 12 }, { wch: 11 },
+                 { wch: 4 }, { wch: 4 }, { wch: 4 }, { wch: 4 }, { wch: 4 }, { wch: 11 }];
   return ws;
 }
 

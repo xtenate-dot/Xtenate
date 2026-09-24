@@ -73,8 +73,12 @@ function isOvergangskwartaal(kwartaal) {
   return vanaf >= start && vanaf <= eind;
 }
 
-/** Nooit privé, ongeacht wat er verder op de boeking staat. */
-function btwRelevant(t) {
+/**
+ * Nooit privé, ongeacht wat er verder op de boeking staat. Geëxporteerd zodat
+ * export.js dezelfde functie rechtstreeks kan gebruiken voor de BTW-kolom in
+ * het Excel-bestand — geen eigen, evenwijdige berekening daar.
+ */
+export function btwRelevant(t) {
   return isInkomst(t) || isUitgave(t);
 }
 
