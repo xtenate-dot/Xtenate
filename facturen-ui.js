@@ -12,7 +12,8 @@ import {
   voegFactuurToe, vindFactuur, werkFactuurBij, verwijderFactuur,
   factuurStatus, dagenTeLaat, vervaltBinnenkort,
   facturenVan, openstaandSaldo, factuurnummerInGebruik,
-  vindBoeking, koppelBetaling, ontkoppelBetaling
+  vindBoeking, koppelBetaling, ontkoppelBetaling,
+  ouderdomsanalyse, OUDERDOM_VOLGORDE
 } from './facturen.js?v=20260902a';
 import { esc, fmt, ddmm, bedragUit, leegVlak, isInkomst, isUitgave, weergaveNaam } from './helpers.js?v=20260902a';
 import { downloadModelPdf } from './pdf.js?v=20260902a';
@@ -89,7 +90,13 @@ export function renderFacturen() {
   const lijst = facturenVan(soort);
   const isDeb = soort === 'debiteur';
   const teken = isDeb ? 'pos' : 'neg';
-  const teLaat = lijst.filter(f => factuurStatus(f) === 'vervallen').length;
+
+  // De ouderdomsgroepen ná "niet vervallen" zijn per definitie de vervallen
+  // facturen — "Te laat" is dus de som daarvan, uit dezelfde bron als het
+  // blokje hieronder, in plaats van een eigen, aparte telling.
+  const analyse = ouderdomsanalyse(soort);
+  const vervallenGroepen = OUDERDOM_VOLGORDE.slice(1);
+  const teLaat = vervallenGroepen.reduce((s, g) => s + analyse[g].aantal, 0);
   const binnenkort = lijst.filter(f => vervaltBinnenkort(f)).length;
 
   const kop = `
@@ -100,7 +107,16 @@ export function renderFacturen() {
         <div class="kpi kpi--secondary"><div class="kpi-lbl">Vervalt binnenkort</div><div class="kpi-val">${binnenkort}</div></div>
       </div>
       <button class="btn btn-primary" onclick="openFactuurModal()">Nieuwe factuur</button>
-    </div>`;
+    </div>
+    <div class="table-wrap" style="margin-bottom:var(--spacing-4)"><table class="tbl-compact">
+      <thead><tr>${OUDERDOM_VOLGORDE.map((g, i) =>
+        `<th style="text-align:right${i === 0 ? ';padding-left:16px' : ''}${i === OUDERDOM_VOLGORDE.length - 1 ? ';padding-right:16px' : ''}">${esc(g)}</th>`).join('')}</tr></thead>
+      <tbody><tr>${OUDERDOM_VOLGORDE.map((g, i) => `
+        <td style="text-align:right${i === 0 ? ';padding-left:16px' : ''}${i === OUDERDOM_VOLGORDE.length - 1 ? ';padding-right:16px' : ''}">
+          <div>${analyse[g].aantal}</div>
+          <div class="muted" style="font-size:11px">${fmt(analyse[g].bedrag)}</div>
+        </td>`).join('')}</tr></tbody>
+    </table></div>`;
 
   if (!lijst.length) {
     doel.innerHTML = kop + leegVlak(
