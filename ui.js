@@ -2,6 +2,7 @@
 
 import { renderBank } from './bank.js?v=20260902a';
 import { renderBelasting } from './belasting.js?v=20260902a';
+import { renderBtw } from './btw.js?v=20260902a';
 import { renderCrediteuren } from './crediteuren.js?v=20260902a';
 import { renderDebiteuren } from './debiteuren.js?v=20260902a';
 import { renderHome } from './dashboard.js?v=20260902a';
@@ -23,6 +24,7 @@ const RENDERS = {
   debiteuren: renderDebiteuren,
   grootboek: renderGrootboek,
   belasting: renderBelasting,
+  btw: renderBtw,
   controle: renderControle,
   voorraad: renderCovers,
   hnvi: renderHNVI,
@@ -38,6 +40,7 @@ const TITELS = {
   debiteuren: 'Debiteuren',
   grootboek: 'Grootboek',
   belasting: 'Belasting',
+  btw: 'BTW',
   controle: 'Controle',
   voorraad: 'Voorraad',
   hnvi: 'HNVI / Xtenate',

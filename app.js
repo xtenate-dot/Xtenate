@@ -12,6 +12,7 @@ import { renderBeheer, bewaarMinVoorraad, bewaarReferentiePriveSt2022, herprobee
 import { renderPortaal } from './home.js?v=20260902a';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260902a';
 import { renderBelasting, openExtraKosten, openPercentages, openInkomenssoort, controlereBelasting, openControleDialog, kopieerAangifte, downloadAangifte, downloadAangiftePdf } from './belasting.js?v=20260902a';
+import { wisselBtwKwartaal } from './btw.js?v=20260902a';
 import { renderCrediteuren, wisselJaarCrediteuren } from './crediteuren.js?v=20260902a';
 import { renderDebiteuren, wisselJaarDebiteuren } from './debiteuren.js?v=20260902a';
 import {
@@ -76,6 +77,7 @@ Object.assign(window, {
   renderCrediteuren, wisselJaarCrediteuren, renderDebiteuren, wisselJaarDebiteuren,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
   renderBelasting, openExtraKosten, openPercentages, openInkomenssoort, controlereBelasting, openControleDialog, kopieerAangifte, downloadAangifte, downloadAangiftePdf,
+  wisselBtwKwartaal,
   renderControle, klapControleUit, toonAlleControleRegels,
   verbergControleMelding, zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen,
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
