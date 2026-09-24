@@ -200,11 +200,17 @@ export function closeTx() { el('modal-tx').classList.remove('open'); }
  * bewerken de datum over de omslagdatum heen schuift, in beide richtingen.
  * Het bedrag in #tx-b blijft, zoals nu al overal in de app, het volledige
  * (inclusief) bedrag — het BTW-bedrag wordt eruit herekend, niet erbij opgeteld.
+ *
+ * Alleen bij isInkomst()/isUitgave() — nooit bij een privé-soort, ook niet
+ * op een BTW-plichtige datum. Een privé-opname/storting is geen zakelijke
+ * omzet of inkoop en draagt nooit BTW.
  */
 export function syncTxBtw() {
   const blok = el('tx-btw-blok');
   if (!blok) return;
-  if (!isBtwPlichtig(el('tx-d').value)) {
+  const soort = { type: el('tx-t').value };
+  const magBtw = (isInkomst(soort) || isUitgave(soort)) && isBtwPlichtig(el('tx-d').value);
+  if (!magBtw) {
     blok.style.display = 'none';
     return;
   }
@@ -281,6 +287,9 @@ export function syncTxGrootboek() {
   const type = el('tx-t').value;
   if (type === 'prive_storting') el('tx-gb').value = '600';
   else if (type === 'prive_opname') el('tx-gb').value = '601';
+  // Wisselt de soort van/naar privé, dan moet het BTW-blok meteen mee —
+  // niet pas nadat ook de datum nog een keer wordt aangeraakt.
+  syncTxBtw();
 }
 
 export function saveTx() {
@@ -318,8 +327,10 @@ export function saveTx() {
   // het blok toonde vóórdat de datum nog werd gewijzigd. Zo blijft een
   // boeking vóór de omslagdatum byte voor byte hetzelfde object als altijd,
   // en volgt een boeking die tijdens het bewerken over de grens heen
-  // verschuift altijd de datum die nu in het formulier staat.
-  if (isBtwPlichtig(datum)) {
+  // verschuift altijd de datum die nu in het formulier staat. En alleen bij
+  // isInkomst()/isUitgave() — nooit bij een privé-soort, ook niet als de
+  // datum op zichzelf wél onder de BTW-plicht valt.
+  if ((isInkomst(tx) || isUitgave(tx)) && isBtwPlichtig(datum)) {
     const btwPct = Number(el('tx-btw-pct').value) || 0;
     tx.btw_percentage = btwPct;
     tx.btw_bedrag = btwPct > 0 ? Math.round((tx.bedrag * btwPct / (100 + btwPct)) * 100) / 100 : 0;
