@@ -20,7 +20,7 @@
 //    horen. Corrigeer je de uitgave wel en de storting niet, dan vallen de
 //    paren uit elkaar en schuiven Internet en Reiskosten over de jaargrens.
 
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, MAAND_SALDOS_DEFAULT, CONTROLE_INSTELLINGEN, state }
+import { HIST_TX_DEFAULT, HOME_TOTALS, MAAND_SALDOS, MAAND_SALDOS_DEFAULT, CONTROLE_INSTELLINGEN, state }
   from './storage.js?v=20260902a';
 
 const HISTORISCHE_JAREN = ['2022', '2023', '2024', '2025'];
@@ -223,25 +223,27 @@ export function herstelPreview() {
   const identiekInTx = [...telTx.entries()].filter(([, n]) => n > 1)
     .map(([k, n]) => ({ aantal: n, voorbeeld: nuHuidig.find(t => kenmerk(t) === k) }));
 
-  // Jaartotalen: de Excel-waarden zijn leidend in de app. We tonen erbij wat de
-  // boekingen zelf opleveren, zodat een verschil zichtbaar is in plaats van
-  // verstopt.
-  const jaartotalen = [...new Set([...Object.keys(HOME_TOTALS), ...Object.keys(HOME_TOTALS_DEFAULT)])]
-    .sort().map(jaar => {
-      const na = HOME_TOTALS_DEFAULT[jaar] || null;
-      const regelsVanJaar = jaar === HUIDIG_JAAR
-        ? nuHuidig.filter(t => jaarVan(t) === jaar)
-        : nieuweHistorie.filter(t => jaarVan(t) === jaar);
-      const berekend = metrics(regelsVanJaar);
-      const velden = ['omzet', 'kosten', 'priveOp', 'priveSt'];
-      return {
-        jaar,
-        nu: HOME_TOTALS[jaar] || null,
-        na,
-        berekend,
-        afwijking: na ? Object.fromEntries(velden.map(v => [v, +(berekend[v] - (na[v] ?? 0)).toFixed(2)])) : null
-      };
-    });
+  // Jaartotalen: HOME_TOTALS is de Excel-waarde zoals die nu leeft in de app
+  // (ingelezen via een eerdere import, zie storage.js) en is leidend. We tonen
+  // erbij wat de boekingen zelf opleveren, zodat een verschil zichtbaar is in
+  // plaats van verstopt. Er was hier eerder ook een vergelijking met
+  // HOME_TOTALS_DEFAULT — een in de broncode bevroren kopie die alleen als
+  // noodgreep diende als de browser-opslag leeg was. Die dataset is sinds de
+  // privacy-opschoning blijvend leeg, dus die vergelijking verviel.
+  const jaartotalen = Object.keys(HOME_TOTALS).sort().map(jaar => {
+    const nu = HOME_TOTALS[jaar] || null;
+    const regelsVanJaar = jaar === HUIDIG_JAAR
+      ? nuHuidig.filter(t => jaarVan(t) === jaar)
+      : nieuweHistorie.filter(t => jaarVan(t) === jaar);
+    const berekend = metrics(regelsVanJaar);
+    const velden = ['omzet', 'kosten', 'priveOp', 'priveSt'];
+    return {
+      jaar,
+      nu,
+      berekend,
+      afwijking: nu ? Object.fromEntries(velden.map(v => [v, +(berekend[v] - (nu[v] ?? 0)).toFixed(2)])) : null
+    };
+  });
 
   const totaalNu = nuHistorisch.length + nuHuidig.length;
   const totaalNa = nieuweHistorie.length + nuHuidig.length;

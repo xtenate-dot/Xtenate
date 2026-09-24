@@ -274,10 +274,8 @@ function renderHerstelPreview() {
   const jtRij = t => `
     <tr>
       <td style="padding-left:16px">${t.jaar}</td>
-      <td style="text-align:right" class="muted">${t.nu ? bedrag(t.nu.priveOp) : '—'}</td>
-      <td style="text-align:right" class="muted">${t.nu ? bedrag(t.nu.priveSt) : '—'}</td>
-      <td style="text-align:right;font-weight:600">${t.na ? bedrag(t.na.priveOp) : '—'}</td>
-      <td style="text-align:right;font-weight:600">${t.na ? bedrag(t.na.priveSt) : '—'}</td>
+      <td style="text-align:right;font-weight:600">${t.nu ? bedrag(t.nu.priveOp) : '—'}</td>
+      <td style="text-align:right;font-weight:600">${t.nu ? bedrag(t.nu.priveSt) : '—'}</td>
       <td style="text-align:right" class="muted">${bedrag(t.berekend.priveOp)}</td>
       <td style="text-align:right;padding-right:16px" class="${
         t.afwijking && Math.abs(t.afwijking.priveSt) > 0.01 ? 'neg' : 'muted'}">${bedrag(t.berekend.priveSt)}</td>
@@ -361,8 +359,7 @@ function renderHerstelPreview() {
     <div class="section-head"><div class="eyebrow">Privébedragen per jaar</div></div>
     <div class="card card-flush"><div class="table-wrap"><table class="tbl-compact">
       <thead><tr><th style="padding-left:16px">Jaar</th>
-        <th style="text-align:right">Opname nu</th><th style="text-align:right">Storting nu</th>
-        <th style="text-align:right">Opname na</th><th style="text-align:right">Storting na</th>
+        <th style="text-align:right">Opname uit Excel</th><th style="text-align:right">Storting uit Excel</th>
         <th style="text-align:right">Opname uit boekingen</th>
         <th style="text-align:right;padding-right:16px">Storting uit boekingen</th></tr></thead>
       <tbody>${p.jaartotalen.map(jtRij).join('')}</tbody>
@@ -419,8 +416,8 @@ export function herstelPreviewAlsTekst(p) {
   p.jaren.forEach(j => j.dubbelen.forEach(d =>
     q('  ', j.jaar, '|', d.aantal + 'x ->', d.na + 'x', '|', beschrijfRegel(d.voorbeeld))));
   q('');
-  q('PRIVEBEDRAGEN  jaar | opname na | storting na | opname uit boekingen | storting uit boekingen');
-  p.jaartotalen.forEach(t => q('  ', [t.jaar, t.na ? bedrag(t.na.priveOp) : '-', t.na ? bedrag(t.na.priveSt) : '-',
+  q('PRIVEBEDRAGEN  jaar | opname uit Excel | storting uit Excel | opname uit boekingen | storting uit boekingen');
+  p.jaartotalen.forEach(t => q('  ', [t.jaar, t.nu ? bedrag(t.nu.priveOp) : '-', t.nu ? bedrag(t.nu.priveSt) : '-',
     bedrag(t.berekend.priveOp), bedrag(t.berekend.priveSt)].join(' | ')));
   return r.join('\n');
 }
