@@ -7,7 +7,7 @@
 
 import { draaiControles } from './controle.js?v=20260902a';
 import { esc } from './helpers.js?v=20260902a';
-import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN } from './storage.js?v=20260902a';
+import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN } from './storage.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 import { getPendingItems } from './supabase-client-v2.js?v=20260902a';
 import { syncNu } from './autosync.js?v=20260902a';
@@ -97,6 +97,7 @@ export function renderBeheer() {
     synchronisatieBlok() +
     voorraadInstellingenBlok() +
     controleInstellingenBlok() +
+    btwInstellingenBlok() +
     groep('Voorzichtig', [
       tegel({
         titel: 'Data wissen', uitleg: 'Alles verwijderen uit deze browser — niet ongedaan te maken!',
@@ -191,6 +192,48 @@ export function bewaarReferentiePriveSt2022() {
   if (melding) melding.textContent = n === null
     ? 'Opgeslagen: deze controle staat nu uit.'
     : `Opgeslagen: de controle vergelijkt nu tegen € ${n.toFixed(2).replace('.', ',')}.`;
+  hertekenHuidigePagina();
+}
+
+/**
+ * Fase 1 van BTW-plichtig maken: alleen de instelling. Werkt nog nergens
+ * door in boekingen, export of de aangifte — dat is voor een latere fase.
+ */
+function btwInstellingenBlok() {
+  const huidig = BTW_INSTELLINGEN?.btwPlichtigVanaf;
+  return `
+    <div class="beheer-groep">
+      <div class="beheer-groep-kop">BTW</div>
+      <div class="card" style="padding:var(--spacing-4)">
+        <label for="beheer-btw-vanaf" style="display:block;font-weight:500;margin-bottom:4px">
+          BTW-plichtig vanaf
+        </label>
+        <div class="muted" style="font-size:12px;margin-bottom:10px">
+          Vanaf deze datum geldt BTW-plicht (de datum zelf telt mee). Leeg laten betekent:
+          geen BTW-plicht. Werkt op dit moment nog nergens door — dat volgt in een latere fase.
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="date" id="beheer-btw-vanaf" value="${huidig || ''}"
+            style="width:160px" aria-label="BTW-plichtig vanaf">
+          <button class="btn btn-primary" onclick="bewaarBtwVanaf()">Opslaan</button>
+          <span id="beheer-btw-melding" class="muted" style="font-size:12px"></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+export function bewaarBtwVanaf() {
+  const veld = el('beheer-btw-vanaf');
+  const melding = el('beheer-btw-melding');
+  const ruw = (veld?.value ?? '').trim();
+  if (ruw !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(ruw)) {
+    if (melding) melding.textContent = 'Vul een geldige datum in, of laat leeg.';
+    return;
+  }
+  saveBtwInstellingen({ btwPlichtigVanaf: ruw === '' ? null : ruw });
+  if (melding) melding.textContent = ruw === ''
+    ? 'Opgeslagen: geen BTW-plicht ingesteld.'
+    : `Opgeslagen: BTW-plichtig vanaf ${ruw}.`;
   hertekenHuidigePagina();
 }
 

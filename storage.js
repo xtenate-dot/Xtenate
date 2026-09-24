@@ -45,6 +45,7 @@ function appDataWaarde(sleutel) {
   if (sleutel === 'facturen') return { lijst: state.FACTUREN, volgende: state.nxtFactuur };
   if (sleutel === 'factuur_instellingen') return FACTUUR_INSTELLINGEN;
   if (sleutel === 'controle_instellingen') return CONTROLE_INSTELLINGEN;
+  if (sleutel === 'btw_instellingen') return BTW_INSTELLINGEN;
   if (sleutel === 'tellers') return { tx: state.nxtTx, cover: state.nxtCover, hnvi: state.nxtHnvi };
   return undefined;
 }
@@ -347,6 +348,35 @@ export function saveControleInstellingen(nieuwe) {
   duwAppData('controle_instellingen', CONTROLE_INSTELLINGEN);
 }
 
+// ─── BTW (fase 1) ───────────────────────────────────────────────────────────
+// Alleen de instelling en een simpele afleiding. Nog nergens vanuit de rest
+// van de app aangeroepen — geen boeking, export of aangifte houdt hier nu
+// al rekening mee. Dat is bewust voor een latere fase; dit legt alvast de
+// opslag klaar, in exact hetzelfde patroon als CONTROLE_INSTELLINGEN.
+export let BTW_INSTELLINGEN = load('xtenate_btw_instellingen', {
+  btwPlichtigVanaf: null   // 'YYYY-MM-DD', of null zolang er geen BTW-plicht is
+});
+
+export function saveBtwInstellingen(nieuwe) {
+  if (nieuwe) BTW_INSTELLINGEN = { ...BTW_INSTELLINGEN, ...nieuwe };
+  save('xtenate_btw_instellingen', BTW_INSTELLINGEN);
+  duwAppData('btw_instellingen', BTW_INSTELLINGEN);
+}
+
+/**
+ * Valt deze datum (tekst, 'YYYY-MM-DD') onder de BTW-plicht? Zonder ingestelde
+ * datum, of zonder geldige invoerdatum, altijd nee. De omslagdatum zelf telt
+ * mee ("vanaf" is inclusief). Vergelijking gebeurt als tekst, net als de rest
+ * van de app doet met datums — die blijven hier altijd 'YYYY-MM-DD', nooit
+ * een Date-object, dus dat is even betrouwbaar als een echte datumvergelijking
+ * en voorkomt tijdzone-eigenaardigheden.
+ */
+export function isBtwPlichtig(datum) {
+  const vanaf = BTW_INSTELLINGEN?.btwPlichtigVanaf;
+  if (!vanaf || !datum) return false;
+  return String(datum) >= String(vanaf);
+}
+
 // ─── STATE INITIALISATIE (identiek aan origineel) ──────────────────────────
 // Het jaar stond hier vast op '2025'. Dat is een dode waarde zodra het
 // kalenderjaar verder loopt: bij elke refresh viel de app terug op een jaar
@@ -447,6 +477,9 @@ export async function loadDataHybrid() {
         }
         if (extra.controle_instellingen) {
           CONTROLE_INSTELLINGEN = { ...CONTROLE_INSTELLINGEN, ...extra.controle_instellingen };
+        }
+        if (extra.btw_instellingen) {
+          BTW_INSTELLINGEN = { ...BTW_INSTELLINGEN, ...extra.btw_instellingen };
         }
         // Tellers: het hoogste getal wint, zodat twee apparaten nooit
         // hetzelfde id uitdelen aan verschillende dingen.
