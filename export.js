@@ -6,8 +6,8 @@
 // importfunctie leest; de overige kolommen zijn ingevuld met gegevens die het
 // bestand voor jou leesbaar maken maar bij het inlezen worden overgeslagen.
 
-import { GBNM, REKNM, isInkomst, maandLabel } from './helpers.js?v=20260902a';
-import { HOME_TOTALS, MAAND_SALDOS, groepNaam, state } from './storage.js?v=20260902a';
+import { isInkomst, maandLabel } from './helpers.js?v=20260902a';
+import { HOME_TOTALS, MAAND_SALDOS, groepNaam, state, grootboekNamen, rekeningNamen } from './storage.js?v=20260902a';
 import { bankPrijzenNu, inkoopwaardeVan } from './voorraadwaarde.js?v=20260902a';
 import { btwRelevant } from './btw.js?v=20260902a';
 
@@ -42,6 +42,7 @@ function boekingenVanJaar(jaar) {
  * dit bestand dat al documenteert voor kolommen die niet worden ingelezen.
  */
 function bankBlad(maand, boekingen) {
+  const REKNM = rekeningNamen();
   const rijen = [[
     'Nr', 'Datum', 'Grootboek', 'Bedrag', 'Omschrijving', 'Naam', 'Rekening', 'Soort',
     '', '', '', '', '', '', '', 'BTW'
@@ -152,6 +153,7 @@ function voorraadBlad() {
  * Totaal-kolom. Ontvangsten staan negatief, zoals in je eigen bestand.
  */
 function perPeriodeBlad(jaar, boekingen) {
+  const GBNM = grootboekNamen();
   const maanden = Array.from({ length: 12 }, (_, i) => `${jaar}-${String(i + 1).padStart(2, '0')}`);
   const kop = ['Grootboek', 'Omschrijving', ...maanden.map(m => maandLabel(m)), 'Totaal'];
 
@@ -254,9 +256,9 @@ function jaartotalenBlad() {
 /** Naslag: welk nummer hoort bij welke rekening. */
 function schemaBlad() {
   const rijen = [['Nummer', 'Omschrijving']];
-  Object.entries(GBNM).sort((a, b) => a[0].localeCompare(b[0])).forEach(([nr, naam]) => rijen.push([Number(nr) || nr, naam]));
+  Object.entries(grootboekNamen()).sort((a, b) => a[0].localeCompare(b[0])).forEach(([nr, naam]) => rijen.push([Number(nr) || nr, naam]));
   rijen.push([], ['Rekening', 'Omschrijving']);
-  Object.entries(REKNM).forEach(([nr, naam]) => rijen.push([Number(nr) || nr, naam]));
+  Object.entries(rekeningNamen()).forEach(([nr, naam]) => rijen.push([Number(nr) || nr, naam]));
   const ws = XLSX.utils.aoa_to_sheet(rijen);
   ws['!cols'] = [{ wch: 11 }, { wch: 34 }];
   return ws;

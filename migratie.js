@@ -8,9 +8,12 @@
 // iets uit localStorage verwijderd of overschreven.
 
 import {
-  BEGINSALDO_2026, GBNM, REKNM, calcIB, isInkomst, isOmzet, isUitgave, teltBij
+  BEGINSALDO_2026, calcIB, isInkomst, isOmzet, isUitgave, teltBij
 } from './helpers.js?v=20260902a';
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, state } from './storage.js?v=20260902a';
+import {
+  HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, state,
+  grootboekNamen, rekeningNamen
+} from './storage.js?v=20260902a';
 import { verborgenOverzicht } from './negeren.js?v=20260902a';
 import { getClient, leesbareFout } from './supabase.js?v=20260902a';
 
@@ -181,6 +184,8 @@ export function diagnoseAlsTekst(d) {
  * Supabase gaan. Leest uitsluitend; verandert niets.
  */
 export function bouwPlan() {
+  const GBNM = grootboekNamen();
+  const REKNM = rekeningNamen();
   const boekingen = alleBoekingen();
 
   const jaren = [...new Set(boekingen.map(t => t.jaar).filter(Boolean))].sort();

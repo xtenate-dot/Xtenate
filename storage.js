@@ -4,7 +4,7 @@
 // verwijzen zonder dat we losse globale variabelen nodig hebben.
 
 // Fase 3A: Import Supabase client v2 (pending queue + RLS)
-import { 
+import {
   loadBoekingenFromSupabase,
   loadHnviFromSupabase,
   loadCoversFromSupabase,
@@ -17,6 +17,11 @@ import {
   saveAppData,
   loadAppData
 } from './supabase-client-v2.js?v=20260902a';
+
+// Alleen voor de eenmalige overname hieronder — storage.js leest hier verder
+// niets anders uit helpers.js, en helpers.js blijft omgekeerd vrij van
+// afhankelijkheden (zie de eigen kopregel daar).
+import { GBNM, REKNM } from './helpers.js?v=20260902a';
 
 /**
  * Stuurt een los lijstje (groepen, facturen, tellers) naar de cloud zonder
@@ -42,6 +47,8 @@ export async function duwOpenstaandeAppData() {
 
 function appDataWaarde(sleutel) {
   if (sleutel === 'groepen') return state.GROEPEN;
+  if (sleutel === 'grootboek') return state.GROOTBOEK;
+  if (sleutel === 'rekeningen') return state.REKENINGEN;
   if (sleutel === 'facturen') return { lijst: state.FACTUREN, volgende: state.nxtFactuur };
   if (sleutel === 'factuur_instellingen') return FACTUUR_INSTELLINGEN;
   if (sleutel === 'controle_instellingen') return CONTROLE_INSTELLINGEN;
@@ -175,6 +182,102 @@ export function standaardGroep() {
 
 export function groepNaam(id) {
   return state.GROEPEN.find(g => g.id === id)?.naam || id || '—';
+}
+
+// ─── GROOTBOEK EN REKENINGEN (fase 1, zelfregistratie) ─────────────────────
+// Zelfde patroon als GROEPEN hierboven: zelf te beheren, dus in de opslag en
+// niet vast in de code. Twee verschillende startpunten, afhankelijk van wie
+// dit voor het eerst laadt:
+//
+// - Een gloednieuwe gebruiker (via de nog te bouwen registratiestroom) krijgt
+//   GROOTBOEK_STANDAARD/REKENINGEN_STANDAARD: een kleine, generieke set
+//   zonder merknamen, binnen dezelfde nummerbereiken die de rest van de app
+//   al aanneemt (600/601 privé, 4xxx kosten, 7xxx inkoop, 8xxx omzet).
+// - Deze, bestaande installatie heeft nog nooit een eigen override gehad —
+//   GBNM/REKNM in helpers.js waren tot nu toe de enige bron. Zodra deze code
+//   voor het eerst draait, is er dus nog niets opgeslagen, en zou de
+//   generieke starterset per ongeluk mijn eigen schema vervangen. Daarom is
+//   de terugvalwaarde hier niet GROOTBOEK_STANDAARD, maar GBNM/REKNM zelf,
+//   omgezet naar dezelfde vorm — zo wordt precies wat er al was de eigen,
+//   bewerkbare set, zonder dat er iets verdwijnt. GBNM/REKNM zelf blijven
+//   voorlopig ongewijzigd staan in helpers.js; dat opschonen is een bewuste,
+//   latere stap, pas nadat deze overgang in de echte app bevestigd is.
+
+export const GROOTBOEK_STANDAARD = [
+  { nummer: '600',  naam: 'Privé storting' },
+  { nummer: '601',  naam: 'Privé opname' },
+  { nummer: '4300', naam: 'Kantoorkosten' },
+  { nummer: '4350', naam: 'Bankkosten' },
+  { nummer: '4700', naam: 'Marketing en reclame' },
+  { nummer: '4900', naam: 'Overige kosten' },
+  { nummer: '7000', naam: 'Inkoop' },
+  { nummer: '8000', naam: 'Omzet' }
+];
+
+export const REKENINGEN_STANDAARD = [
+  { nummer: '1010', naam: 'Bank', isHoofdrekening: true }
+];
+
+const GBNM_ALS_ARRAY = Object.entries(GBNM).map(([nummer, naam]) => ({ nummer, naam }));
+const REKNM_ALS_ARRAY = Object.entries(REKNM).map(([nummer, naam]) => ({ nummer, naam, isHoofdrekening: nummer === '1010' }));
+
+state.GROOTBOEK = load('xtenate_grootboek', GBNM_ALS_ARRAY)
+  .filter(g => g && g.nummer && g.naam);
+if (!state.GROOTBOEK.length) state.GROOTBOEK = [...GBNM_ALS_ARRAY];
+
+state.REKENINGEN = load('xtenate_rekeningen', REKNM_ALS_ARRAY)
+  .filter(r => r && r.nummer && r.naam);
+if (!state.REKENINGEN.length) state.REKENINGEN = [...REKNM_ALS_ARRAY];
+
+export function saveGrootboek() {
+  save('xtenate_grootboek', state.GROOTBOEK);
+  duwAppData('grootboek', state.GROOTBOEK);
+}
+
+export function saveRekeningen() {
+  save('xtenate_rekeningen', state.REKENINGEN);
+  duwAppData('rekeningen', state.REKENINGEN);
+}
+
+/** {nummer: naam}, precies de vorm van het vroegere GBNM — voor plekken die
+ *  een tabel opzoeken in plaats van één nummer. */
+export function grootboekNamen() {
+  return Object.fromEntries(state.GROOTBOEK.map(g => [g.nummer, g.naam]));
+}
+
+/** {nummer: naam}, precies de vorm van het vroegere REKNM. */
+export function rekeningNamen() {
+  return Object.fromEntries(state.REKENINGEN.map(r => [r.nummer, r.naam]));
+}
+
+/**
+ * state.GROOTBOEK gegroepeerd voor een <select>, in dezelfde rubrieken en
+ * volgorde als de vaste optgroups die nu nog in index.html staan — bepaald
+ * op precies dezelfde nummerbereiken die de rest van de app al aanneemt
+ * (isOmzet()/OMZET_GB in de JS, rubriek_van() in Supabase): 8xxx omzet, 7xxx
+ * inkoop, 4xxx kosten, 600/601 privé, de rest overig. Geeft alleen niet-lege
+ * rubrieken terug.
+ */
+export function grootboekOptgroepen() {
+  const rubriek = nummer => {
+    if (nummer === '600' || nummer === '601') return 'Privé';
+    if (nummer.startsWith('8')) return 'Omzet';
+    if (nummer.startsWith('7')) return 'Inkoop';
+    if (nummer.startsWith('4')) return 'Kosten';
+    return 'Overig';
+  };
+  const VOLGORDE = ['Omzet', 'Inkoop', 'Kosten', 'Privé', 'Overig'];
+  const groepen = new Map(VOLGORDE.map(v => [v, []]));
+  [...state.GROOTBOEK].sort((a, b) => a.nummer.localeCompare(b.nummer)).forEach(g => {
+    groepen.get(rubriek(g.nummer)).push(g);
+  });
+  return VOLGORDE.map(naam => ({ naam, rekeningen: groepen.get(naam) })).filter(g => g.rekeningen.length);
+}
+
+/** state.REKENINGEN gesorteerd, hoofdrekening eerst — voor een <select>. */
+export function rekeningenLijst() {
+  return [...state.REKENINGEN].sort((a, b) =>
+    (b.isHoofdrekening ? 1 : 0) - (a.isHoofdrekening ? 1 : 0) || a.nummer.localeCompare(b.nummer));
 }
 
 /** Maakt van een naam een bruikbaar, uniek id. */
@@ -466,6 +569,14 @@ export async function loadDataHybrid() {
         if (Array.isArray(extra.groepen) && extra.groepen.length) {
           state.GROEPEN = extra.groepen.filter(g => g && g.id && g.naam);
           console.log(`✅ Groepen uit Supabase: ${state.GROEPEN.length}`);
+        }
+        if (Array.isArray(extra.grootboek) && extra.grootboek.length) {
+          state.GROOTBOEK = extra.grootboek.filter(g => g && g.nummer && g.naam);
+          console.log(`✅ Grootboek uit Supabase: ${state.GROOTBOEK.length}`);
+        }
+        if (Array.isArray(extra.rekeningen) && extra.rekeningen.length) {
+          state.REKENINGEN = extra.rekeningen.filter(r => r && r.nummer && r.naam);
+          console.log(`✅ Rekeningen uit Supabase: ${state.REKENINGEN.length}`);
         }
         if (extra.facturen && Array.isArray(extra.facturen.lijst)) {
           state.FACTUREN = extra.facturen.lijst;

@@ -1,9 +1,9 @@
 // belasting.js — Belasting-pagina (indicatieve IB-berekening).
 
 import { charts, dc, kleurVoorGb } from './charts.js?v=20260902a';
-import { GBNM, ddmm, fmt, gbCode, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260902a';
+import { ddmm, fmt, gbCode, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260902a';
 import { downloadModelPdf } from './pdf.js?v=20260902a';
-import { state } from './storage.js?v=20260902a';
+import { state, grootboekNamen } from './storage.js?v=20260902a';
 
 const HUIDIG_JAAR = '2026';
 
@@ -336,6 +336,7 @@ export function openControleDialog() {
 }
 
 export function renderBelasting() {
+  const GBNM = grootboekNamen();
   const jaar = state.huidigJaar || '2026';
   const belTX = jaar === 'all' ? [...state.HIST_TX, ...state.TX] : (jaar === '2026' ? state.TX : state.HIST_TX.filter(t => t.datum.startsWith(jaar)));
 
@@ -808,6 +809,7 @@ const VELD_VOLGORDE = [
  * zodat je een bedrag altijd terug kunt zoeken in je grootboek.
  */
 export function aangifteVelden(belTX, { cogs = 0, hnviInkoop = 0, handmatig = [] } = {}) {
+  const GBNM = grootboekNamen();
   const velden = {};
   const voegToe = (veld, bedrag, bron) => {
     velden[veld] = velden[veld] || { bedrag: 0, bronnen: [] };
@@ -1181,6 +1183,7 @@ export function openInkomenssoort() {
  * zakelijk is; onderaan zie je meteen wat dat aan aftrek oplevert.
  */
 export function openPercentages(startGb = '4235') {
+  const GBNM = grootboekNamen();
   const jaar = gekozenJaar();
   const belTX = jaar === 'all'
     ? [...state.HIST_TX, ...state.TX]

@@ -1,17 +1,16 @@
 // modals.js — beheer-acties: Excel-import, cloud sync, API-sleutel, data wissen.
 
-import { REKNM } from './helpers.js?v=20260902a';
 import { renderHome } from './dashboard.js?v=20260902a';
-
-/** Rekeningnummers die de app kent; gebruikt bij het inlezen van kolom G. */
-const REKENINGEN = new Set(Object.keys(REKNM));
 
 // De omzetrekeningen. Deze stond eerder binnen `reader.onload`, maar wordt ook
 // door `bevestigImport` gebruikt — een andere functie, dus een ander bereik.
 // Daardoor viel elke bevestigde import om met "OMZET_GB is not defined", ná het
 // wegschrijven van de boekingen en vóór het toepassen van de jaartotalen.
 const OMZET_GB = ['8000', '8010', '8020'];
-import { HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save, saveCoversData, saveHnviData, saveTxData, state, voegJaarcijfersToe } from './storage.js?v=20260902a';
+import {
+  HIST_TX_DEFAULT, HOME_TOTALS, HOME_TOTALS_DEFAULT, MAAND_SALDOS, normaliseerVoorraad, save,
+  saveCoversData, saveHnviData, saveTxData, state, voegJaarcijfersToe, rekeningNamen
+} from './storage.js?v=20260902a';
 import { addToPendingQueue, deleteFromSupabase, previewWisJaren, vervangBoekingenInSupabase, wisJarenInSupabase } from './supabase-client-v2.js?v=20260902a';
 
 // Leest het "Per Periode"-tabblad (indien aanwezig): een pivot-overzicht per grootboekrekening
@@ -72,6 +71,11 @@ export function importExcel(input) {
   document.getElementById('import-body').innerHTML = 'Excel bestand lezen...';
   document.getElementById('import-actions').style.display = 'none';
   document.getElementById('modal-import').classList.add('open');
+
+  // Vers opgehaald per import, niet één keer bij het laden van de module —
+  // anders zou een rekening die je net via Beheer hebt toegevoegd of
+  // hernoemd, pas na een herlaad van de pagina worden herkend.
+  const REKENINGEN = new Set(Object.keys(rekeningNamen()));
 
   const reader = new FileReader();
   reader.onload = function(e) {

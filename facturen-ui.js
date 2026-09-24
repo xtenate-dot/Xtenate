@@ -14,9 +14,9 @@ import {
   facturenVan, openstaandSaldo, factuurnummerInGebruik,
   vindBoeking, koppelBetaling, ontkoppelBetaling
 } from './facturen.js?v=20260902a';
-import { esc, fmt, ddmm, bedragUit, leegVlak, isInkomst, isUitgave, weergaveNaam, GBNM } from './helpers.js?v=20260902a';
+import { esc, fmt, ddmm, bedragUit, leegVlak, isInkomst, isUitgave, weergaveNaam } from './helpers.js?v=20260902a';
 import { downloadModelPdf } from './pdf.js?v=20260902a';
-import { state } from './storage.js?v=20260902a';
+import { state, grootboekNamen, grootboekOptgroepen } from './storage.js?v=20260902a';
 import { zoekBoekingen } from './search.js?v=20260902a';
 
 const el = id => document.getElementById(id);
@@ -159,6 +159,23 @@ export function renderFacturen() {
 // van een bestaande factuur zijn eigen vervaldatum nooit overschrijft.
 let vervaldatumHandmatig = false;
 
+/** Vult #fact-gb met de actuele grootboekrekeningen, mét de vaste
+ *  "— geen —"-optie vooraan. */
+function vulFactuurGrootboekSelect(huidigeWaarde) {
+  const select = el('fact-gb');
+  select.innerHTML = '<option value="">— geen —</option>' + grootboekOptgroepen().map(g => `
+    <optgroup label="${esc(g.naam)}">
+      ${g.rekeningen.map(r => `<option value="${esc(r.nummer)}">${esc(r.nummer)} ${esc(r.naam)}</option>`).join('')}
+    </optgroup>`).join('');
+  if (huidigeWaarde && ![...select.options].some(o => o.value === huidigeWaarde)) {
+    const optie = document.createElement('option');
+    optie.value = huidigeWaarde;
+    optie.textContent = `${huidigeWaarde} (niet in schema)`;
+    select.appendChild(optie);
+  }
+  select.value = huidigeWaarde || '';
+}
+
 export function openFactuurModal(id = null) {
   const f = id ? vindFactuur(id) : null;
   state.editFactuurId = f ? f.id : null;
@@ -173,7 +190,7 @@ export function openFactuurModal(id = null) {
   el('fact-relatie').value = f?.relatie || '';
   el('fact-nr').value = f?.factuurnummer || '';
   el('fact-omschr').value = f?.omschrijving || '';
-  el('fact-gb').value = f?.gb || '';
+  vulFactuurGrootboekSelect(f?.gb || '');
   el('fact-fout').textContent = '';
 
   vervaldatumHandmatig = !!f;
@@ -291,11 +308,12 @@ let koppelFactuurId = null;
 function boekingRij(t, factuur, actieLabel) {
   const positief = isInkomst(t) || t.type === 'prive_storting';
   const verschil = Math.abs(Number(t.bedrag) - Number(factuur.bedrag)) > 0.005;
+  const naam = grootboekNamen()[t.gb] || '';
   return `
     <div class="ctrl-item">
       <span class="ctrl-item-main" style="cursor:default">
         <span class="ctrl-item-label">${esc(weergaveNaam(t)) || '(geen naam)'}</span>
-        <span class="ctrl-item-sub">${ddmm(t.datum)} · ${esc(t.gb)} ${esc(GBNM[t.gb] || '')}</span>
+        <span class="ctrl-item-sub">${ddmm(t.datum)} · ${esc(t.gb)} ${esc(naam)}</span>
       </span>
       ${verschil ? `<span class="badge badge-amber" style="margin-right:8px">wijkt af van ${fmt(factuur.bedrag)}</span>` : ''}
       <span class="${positief ? 'pos' : 'neg'}" style="padding-right:12px">${positief ? '+' : '–'}${fmt(t.bedrag)}</span>

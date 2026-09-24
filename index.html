@@ -329,13 +329,7 @@
   <div class="toolbar">
     
     <select id="f-maand" onchange="renderBank()" aria-label="Maand"></select>
-    <select id="f-rek" onchange="renderBank()" aria-label="Rekening">
-      <option value="">Alle rekeningen</option>
-      <option value="1010">Bank</option>
-      <option value="1009">Revolut</option>
-      <option value="1030">Creditkaart</option>
-      <option value="1020">Paypal</option>
-    </select>
+    <select id="f-rek" onchange="renderBank()" aria-label="Rekening"></select>
     <select id="f-type" onchange="renderBank()" aria-label="Soort mutatie">
       <option value="">Alles</option>
       <option value="inkomst">Inkomsten</option>
@@ -427,6 +421,7 @@
       <div class="page-title">Grootboek</div>
       <div class="page-sub">Saldi en mutaties per grootboekrekening.</div>
     </div>
+    <button class="btn btn-ghost btn-sm" onclick="openGrootboekBeheerModal()">Rekeningen beheren</button>
   </div>
 
   <div class="toolbar">
@@ -740,6 +735,45 @@
 </div>
 </div>
 
+<!-- MODAL: GROOTBOEK EN REKENINGEN BEHEREN -->
+<div class="modal-overlay" id="modal-grootboek-beheer">
+<div class="modal" style="width:560px">
+  <h3>Grootboek en rekeningen</h3>
+  <p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:var(--spacing-4)">
+    Hernoem een rekening door de naam aan te passen. Het nummer zelf staat vast — dat gebruiken je boekingen als verwijzing.
+  </p>
+
+  <div class="section-head"><div class="eyebrow">Grootboekrekeningen</div></div>
+  <div id="gbb-grootboek-lijst" style="display:flex;flex-direction:column;gap:6px;margin-bottom:var(--spacing-3)"></div>
+  <div class="form-group full" style="margin-bottom:var(--spacing-4)">
+    <label>Nieuwe grootboekrekening</label>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="gbb-nieuw-nummer" placeholder="nummer, bijv. 4400" style="width:110px">
+      <input type="text" id="gbb-nieuw-naam" placeholder="naam" style="flex:1">
+      <button class="btn" onclick="voegGrootboekToe()">Toevoegen</button>
+    </div>
+    <div id="gbb-grootboek-fout" style="font-size:12px;color:var(--semantic-danger-bright);min-height:16px"></div>
+  </div>
+
+  <div class="section-head"><div class="eyebrow">Bankrekeningen</div></div>
+  <div id="gbb-rekening-lijst" style="display:flex;flex-direction:column;gap:6px;margin-bottom:var(--spacing-3)"></div>
+  <div class="form-group full" style="margin-bottom:var(--spacing-2)">
+    <label>Nieuwe bankrekening</label>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="gbb-nieuw-rek-nummer" placeholder="nummer, bijv. 1050" style="width:110px">
+      <input type="text" id="gbb-nieuw-rek-naam" placeholder="naam" style="flex:1">
+      <button class="btn" onclick="voegRekeningToe()">Toevoegen</button>
+    </div>
+    <div id="gbb-rekening-fout" style="font-size:12px;color:var(--semantic-danger-bright);min-height:16px"></div>
+  </div>
+
+  <div class="modal-actions">
+    <button class="btn" onclick="sluitGrootboekBeheerModal()">Annuleren</button>
+    <button class="btn btn-primary" onclick="bewaarGrootboekBeheer()">Opslaan</button>
+  </div>
+</div>
+</div>
+
 <!-- MODAL: HERSTEL UITVOEREN -->
 <div class="modal-overlay" id="modal-uitvoeren">
 <div class="modal" style="width:880px">
@@ -892,40 +926,10 @@
       </select>
     </div>
     <div class="form-group"><label>Rekening</label>
-      <select id="tx-rek" aria-label="Rekening">
-        <option value="1010">1010 Bank</option>
-        <option value="1009">1009 Revolut</option>
-        <option value="1030">1030 Creditkaart</option>
-        <option value="1020">1020 Paypal</option>
-        <option value="1090">1090 Kruisposten</option>
-      </select>
+      <select id="tx-rek" aria-label="Rekening"></select>
     </div>
     <div class="form-group full"><label>Grootboek</label>
-      <select id="tx-gb" aria-label="Grootboekrekening">
-        <optgroup label="Omzet">
-          <option value="8000">8000 Omzet Xtenate</option>
-          <option value="8010">8010 Omzet Bol.com (covers)</option>
-          <option value="8020">8020 Omzet Helmetstore</option>
-        </optgroup>
-        <optgroup label="Inkoop">
-          <option value="7000">7000 Inkoop AliExpress</option>
-          <option value="7010">7010 Inkoop HNVI</option>
-          <option value="7020">7020 Inkoop MijnMagie</option>
-          <option value="7100">7100 Inkoop verzendartikelen</option>
-          <option value="7900">7900 Transportkosten</option>
-        </optgroup>
-        <optgroup label="Kosten">
-          <option value="4235">4235 Kleine aanschaf inventaris</option>
-          <option value="4290">4290 Overige zakelijke aankopen</option>
-          <option value="4350">4350 Bankkosten</option>
-          <option value="4760">4760 Abonnement</option>
-          <option value="4810">4810 Reclame</option>
-          <option value="4815">4815 Website</option>
-          <option value="4895">4895 Overige verkoopkosten</option>
-          <option value="600">600 Privé storting</option>
-          <option value="601">601 Privé opname</option>
-        </optgroup>
-      </select>
+      <select id="tx-gb" aria-label="Grootboekrekening"></select>
     </div>
     <div class="form-group full"><label>Omschrijving (optioneel)</label><input type="text" id="tx-o" placeholder="extra toelichting"></div>
   </div>
@@ -961,30 +965,7 @@
       <div class="muted" style="font-size:11.5px;margin-top:4px" id="fact-status-hint">Betaald hier handmatig zetten koppelt geen boeking — gebruik daarvoor de knop "Koppelen".</div>
     </div>
     <div class="form-group full"><label>Grootboek (optioneel)</label>
-      <select id="fact-gb" aria-label="Grootboekrekening">
-        <option value="">— geen —</option>
-        <optgroup label="Omzet">
-          <option value="8000">8000 Omzet Xtenate</option>
-          <option value="8010">8010 Omzet Bol.com (covers)</option>
-          <option value="8020">8020 Omzet Helmetstore</option>
-        </optgroup>
-        <optgroup label="Inkoop">
-          <option value="7000">7000 Inkoop AliExpress</option>
-          <option value="7010">7010 Inkoop HNVI</option>
-          <option value="7020">7020 Inkoop MijnMagie</option>
-          <option value="7100">7100 Inkoop verzendartikelen</option>
-          <option value="7900">7900 Transportkosten</option>
-        </optgroup>
-        <optgroup label="Kosten">
-          <option value="4235">4235 Kleine aanschaf inventaris</option>
-          <option value="4290">4290 Overige zakelijke aankopen</option>
-          <option value="4350">4350 Bankkosten</option>
-          <option value="4760">4760 Abonnement</option>
-          <option value="4810">4810 Reclame</option>
-          <option value="4815">4815 Website</option>
-          <option value="4895">4895 Overige verkoopkosten</option>
-        </optgroup>
-      </select>
+      <select id="fact-gb" aria-label="Grootboekrekening"></select>
     </div>
     <div class="form-group full"><label>Omschrijving (optioneel)</label><input type="text" id="fact-omschr" placeholder="extra toelichting"></div>
   </div>

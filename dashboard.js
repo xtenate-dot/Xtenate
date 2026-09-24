@@ -2,10 +2,10 @@
 
 import { alpha, baseOpts, charts, cssVar, dc, donutMidden, lijn, lijnGloed, palette, staaf } from './charts.js?v=20260902a';
 import {
-  BEGINSALDO_2026, GBNM, calcIB, ddmm, esc, fmt, fmtKort, isInkomst, isOmzet, isUitgave,
+  BEGINSALDO_2026, calcIB, ddmm, esc, fmt, fmtKort, isInkomst, isOmzet, isUitgave,
   maandLabel, rekBadge, saldoDelta, typeBadge, weergaveNaam
 } from './helpers.js?v=20260902a';
-import { HOME_TOTALS, MAAND_SALDOS, state } from './storage.js?v=20260902a';
+import { HOME_TOTALS, MAAND_SALDOS, state, grootboekNamen, rekeningNamen } from './storage.js?v=20260902a';
 import { bankPrijzenNu, inkoopwaardeVan } from './voorraadwaarde.js?v=20260902a';
 import { maakSorteerbaar } from './tables.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
@@ -279,6 +279,8 @@ function vorigJaarMetrics(jaar) {
 }
 
 export function renderHome() {
+  const GBNM = grootboekNamen();
+  const REKNM = rekeningNamen();
   const homeTX = getHomeTX();
   const jaar = state.huidigJaar;
   const jaarTekst = jaar === 'all' ? 'alle jaren' : jaar;
@@ -502,7 +504,7 @@ export function renderHome() {
         <td class="muted" data-v="${t.datum}">${ddmm(t.datum)}</td>
         <td class="td-trunc">${esc(weergaveNaam(t))}</td>
         <td><span class="gbnr">${esc(t.gb)}</span> ${esc(GBNM[t.gb] || '')}</td>
-        <td>${rekBadge(t.rek)}</td>
+        <td>${rekBadge(t.rek, REKNM[t.rek])}</td>
         <td style="text-align:right" data-v="${t.bedrag}">${typeBadge(t.type, t.bedrag)}</td>
       </tr>`).join('')
     : `<tr data-geen-sort="1"><td colspan="5">${leegVlak('Nog geen boekingen', 'Importeer je Excel-bestand via het menu links, of voeg handmatig een transactie toe op de Bank-pagina.')}</td></tr>`;

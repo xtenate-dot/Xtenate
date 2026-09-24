@@ -1,7 +1,7 @@
 // search.js — globale zoekfunctie over boekingen, voorraad en HNVI-loten.
 
-import { GBNM, REKNM, ddmm, esc, fmt, isInkomst, vertraag, weergaveNaam } from './helpers.js?v=20260902a';
-import { state } from './storage.js?v=20260902a';
+import { ddmm, esc, fmt, isInkomst, vertraag, weergaveNaam } from './helpers.js?v=20260902a';
+import { state, grootboekNamen, rekeningNamen } from './storage.js?v=20260902a';
 import { openBoeking } from './drawer.js?v=20260902a';
 import { gaNaar } from './ui.js?v=20260902a';
 
@@ -9,7 +9,7 @@ const MAX_PER_GROEP = 6;
 let actieveIndex = -1;
 
 /** Alles waar een boeking op gevonden mag worden, als één doorzoekbare tekst. */
-function zoekTekst(t) {
+function zoekTekst(t, GBNM, REKNM) {
   return [
     t.naam, t.omschr, t.gb, GBNM[t.gb], t.rek, REKNM[t.rek],
     t.datum, t.bedrag != null ? t.bedrag.toFixed(2) : '',
@@ -19,8 +19,10 @@ function zoekTekst(t) {
 
 /** Ook gebruikt door facturen-ui.js om een boeking te koppelen aan een factuur. */
 export function zoekBoekingen(q) {
+  const GBNM = grootboekNamen();
+  const REKNM = rekeningNamen();
   return [...state.TX, ...state.HIST_TX]
-    .filter(t => zoekTekst(t).includes(q))
+    .filter(t => zoekTekst(t, GBNM, REKNM).includes(q))
     .sort((a, b) => b.datum.localeCompare(a.datum));
 }
 
@@ -35,7 +37,7 @@ function zoekLoten(q) {
       .filter(v => v != null).join(' ').toLowerCase().includes(q));
 }
 
-function regelBoeking(t) {
+function regelBoeking(t, GBNM, REKNM) {
   const positief = isInkomst(t) || t.type === 'prive_storting';
   return `<div class="sr-item" role="option" data-soort="boeking" data-id="${esc(t.id)}">
     <div class="sr-main">
@@ -85,8 +87,10 @@ export function zoek() {
 
   let html = '';
   if (boekingen.length) {
+    const GBNM = grootboekNamen();
+    const REKNM = rekeningNamen();
     html += `<div class="sr-group">Boekingen · ${boekingen.length}</div>`;
-    html += boekingen.slice(0, MAX_PER_GROEP).map(regelBoeking).join('');
+    html += boekingen.slice(0, MAX_PER_GROEP).map(t => regelBoeking(t, GBNM, REKNM)).join('');
   }
   if (covers.length) {
     html += `<div class="sr-group">Funny Covers · ${covers.length}</div>`;

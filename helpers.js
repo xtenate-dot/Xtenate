@@ -89,8 +89,11 @@ export const isInkomst = t => t.type === 'inkomst';
  */
 export const teltBij = t => t.type === 'inkomst' || t.type === 'prive_storting';
 
-export function rekBadge(rek) {
-  return `<span class="badge ${REK_COLOR[rek]||'badge-gray'}">${REKNM[rek]||rek}</span>`;
+/** `naam` is optioneel: geef 'm mee zodra je de actuele, per-gebruiker
+ *  rekeningnaam bij de hand hebt (storage.js's rekeningNamen()) — zonder
+ *  dat argument valt dit terug op het vaste REKNM hierboven. */
+export function rekBadge(rek, naam) {
+  return `<span class="badge ${REK_COLOR[rek]||'badge-gray'}">${naam ?? (REKNM[rek]||rek)}</span>`;
 }
 
 export function typeBadge(type, bedrag) {

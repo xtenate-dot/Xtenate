@@ -15,7 +15,11 @@ import {
 } from './facturen-ui.js?v=20260902a';
 import { renderBeheer, bewaarMinVoorraad, bewaarReferentiePriveSt2022, herprobeerSynchronisatie, bewaarBtwVanaf } from './beheer.js?v=20260902a';
 import { renderPortaal } from './home.js?v=20260902a';
-import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260902a';
+import {
+  renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
+  openGrootboekBeheerModal, sluitGrootboekBeheerModal, voegGrootboekToe, verwijderGrootboek,
+  voegRekeningToe, verwijderRekening, bewaarGrootboekBeheer
+} from './grootboek.js?v=20260902a';
 import { renderBelasting, openExtraKosten, openPercentages, openInkomenssoort, controlereBelasting, openControleDialog, kopieerAangifte, downloadAangifte, downloadAangiftePdf } from './belasting.js?v=20260902a';
 import { wisselBtwKwartaal, downloadBtwPdf } from './btw.js?v=20260902a';
 import { renderCrediteuren, wisselJaarCrediteuren } from './crediteuren.js?v=20260902a';
@@ -78,6 +82,8 @@ Object.assign(window, {
   saveFactuur, verwijderFactuurUitModal, sluitKoppelModal, zoekFactuurBoeking,
   renderCrediteuren, wisselJaarCrediteuren, renderDebiteuren, wisselJaarDebiteuren,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
+  openGrootboekBeheerModal, sluitGrootboekBeheerModal, voegGrootboekToe, verwijderGrootboek,
+  voegRekeningToe, verwijderRekening, bewaarGrootboekBeheer,
   renderBelasting, openExtraKosten, openPercentages, openInkomenssoort, controlereBelasting, openControleDialog, kopieerAangifte, downloadAangifte, downloadAangiftePdf,
   wisselBtwKwartaal, downloadBtwPdf,
   renderControle, klapControleUit, toonAlleControleRegels,

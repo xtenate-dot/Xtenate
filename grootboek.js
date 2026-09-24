@@ -1,8 +1,8 @@
 // grootboek.js — Grootboek: compacte saldotabel per rekening, met doorklik
 // naar de losse boekingen van één rekening.
 
-import { GBNM, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, rekBadge, teltBij, typeBadge, vulMaandSelect, weergaveNaam } from './helpers.js?v=20260902a';
-import { state } from './storage.js?v=20260902a';
+import { ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, rekBadge, teltBij, typeBadge, vulMaandSelect, weergaveNaam } from './helpers.js?v=20260902a';
+import { state, grootboekNamen, rekeningNamen, rekeningenLijst, saveGrootboek, saveRekeningen } from './storage.js?v=20260902a';
 import { maakSorteerbaar } from './tables.js?v=20260902a';
 
 const el = id => document.getElementById(id);
@@ -53,6 +53,7 @@ export function wisFiltersGrootboek() {
 // ---------------------------------------------------------------- overzicht
 
 function renderOverzicht(boekingen) {
+  const GBNM = grootboekNamen();
   const zoekterm = waarde('gb-zoek').toLowerCase();
   const rubriekFilter = waarde('f-rubriek-gb');
 
@@ -152,6 +153,8 @@ function renderOverzicht(boekingen) {
 // ------------------------------------------------------------------ detail
 
 function renderDetail(boekingen) {
+  const GBNM = grootboekNamen();
+  const REKNM = rekeningNamen();
   const gb = geopendeRekening;
   const rijen = boekingen.filter(t => t.gb === gb).sort((a, b) => b.datum.localeCompare(a.datum));
   const saldo = rijen.reduce((s, t) => s + (teltBij(t) ? t.bedrag : -t.bedrag), 0);
@@ -174,7 +177,7 @@ function renderDetail(boekingen) {
         <td class="muted" style="padding-left:16px" data-v="${t.datum}">${ddmm(t.datum)}</td>
         <td class="td-trunc">${esc(weergaveNaam(t))}</td>
         <td class="td-trunc muted">${esc(t.omschr) || '—'}</td>
-        <td data-v="${esc(t.rek)}">${rekBadge(t.rek)}</td>
+        <td data-v="${esc(t.rek)}">${rekBadge(t.rek, REKNM[t.rek])}</td>
         <td style="text-align:right;padding-right:16px" data-v="${t.bedrag}">${typeBadge(t.type, t.bedrag)}</td>
       </tr>`).join('')
     : `<tr data-geen-sort="1"><td colspan="5"><div class="empty">
@@ -208,6 +211,109 @@ export function openGrootboekRekening(gb) {
 
 export function sluitGrootboekRekening() {
   geopendeRekening = null;
+  renderGrootboek();
+}
+
+// ------------------------------------------------------- rekeningenbeheer
+// Zelfde patroon als het groepenbeheer op de Voorraadpagina (voorraad.js):
+// het nummer zelf staat vast (boekingen verwijzen ernaar), alleen de naam is
+// hier te wijzigen. Nieuwe rekeningen vragen wel expliciet om een nummer.
+
+const svgVerwijder = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>';
+
+function renderGrootboekBeheerLijsten() {
+  el('gbb-grootboek-lijst').innerHTML = [...state.GROOTBOEK].sort((a, b) => a.nummer.localeCompare(b.nummer))
+    .map(g => `
+    <div class="groep-rij">
+      <span class="gbnr" style="min-width:44px">${esc(g.nummer)}</span>
+      <input type="text" value="${esc(g.naam)}" data-gb-naam="${esc(g.nummer)}" aria-label="Naam van ${esc(g.naam)}">
+      <button class="icon-btn" onclick="verwijderGrootboek('${esc(g.nummer)}')" title="Verwijderen" aria-label="Verwijder ${esc(g.naam)}">${svgVerwijder}</button>
+    </div>`).join('');
+
+  el('gbb-rekening-lijst').innerHTML = rekeningenLijst()
+    .map(r => `
+    <div class="groep-rij">
+      <span class="gbnr" style="min-width:44px">${esc(r.nummer)}</span>
+      <input type="text" value="${esc(r.naam)}" data-rek-naam="${esc(r.nummer)}" aria-label="Naam van ${esc(r.naam)}">
+      ${r.isHoofdrekening ? '<span class="muted" style="font-size:11px;white-space:nowrap">hoofdrekening</span>' : ''}
+      <button class="icon-btn" onclick="verwijderRekening('${esc(r.nummer)}')" title="Verwijderen" aria-label="Verwijder ${esc(r.naam)}">${svgVerwijder}</button>
+    </div>`).join('');
+}
+
+export function openGrootboekBeheerModal() {
+  renderGrootboekBeheerLijsten();
+  ['gbb-nieuw-nummer', 'gbb-nieuw-naam', 'gbb-nieuw-rek-nummer', 'gbb-nieuw-rek-naam'].forEach(id => { el(id).value = ''; });
+  el('gbb-grootboek-fout').textContent = '';
+  el('gbb-rekening-fout').textContent = '';
+  el('modal-grootboek-beheer').classList.add('open');
+}
+
+export function sluitGrootboekBeheerModal() {
+  el('modal-grootboek-beheer').classList.remove('open');
+}
+
+export function voegGrootboekToe() {
+  const nummer = el('gbb-nieuw-nummer').value.trim();
+  const naam = el('gbb-nieuw-naam').value.trim();
+  const fout = el('gbb-grootboek-fout');
+  if (!/^\d{3,4}$/.test(nummer)) { fout.textContent = 'Vul een nummer van 3 of 4 cijfers in.'; return; }
+  if (!naam) { fout.textContent = 'Vul een naam in.'; return; }
+  if (state.GROOTBOEK.some(g => g.nummer === nummer)) { fout.textContent = `Nummer ${nummer} bestaat al.`; return; }
+  fout.textContent = '';
+  state.GROOTBOEK.push({ nummer, naam });
+  el('gbb-nieuw-nummer').value = '';
+  el('gbb-nieuw-naam').value = '';
+  renderGrootboekBeheerLijsten();
+}
+
+export function verwijderGrootboek(nummer) {
+  if (state.GROOTBOEK.length <= 1) { el('gbb-grootboek-fout').textContent = 'De laatste grootboekrekening kan niet weg.'; return; }
+  const aantal = [...state.TX, ...state.HIST_TX].filter(t => t.gb === nummer).length;
+  if (aantal && !window.confirm(`${aantal} boeking${aantal === 1 ? '' : 'en'} gebruik${aantal === 1 ? 't' : 'en'} rekening ${nummer}. Die blijven staan, maar tonen daarna "Onbekende rekening". Doorgaan?`)) return;
+  state.GROOTBOEK = state.GROOTBOEK.filter(g => g.nummer !== nummer);
+  el('gbb-grootboek-fout').textContent = '';
+  renderGrootboekBeheerLijsten();
+}
+
+export function voegRekeningToe() {
+  const nummer = el('gbb-nieuw-rek-nummer').value.trim();
+  const naam = el('gbb-nieuw-rek-naam').value.trim();
+  const fout = el('gbb-rekening-fout');
+  if (!/^\d{3,4}$/.test(nummer)) { fout.textContent = 'Vul een nummer van 3 of 4 cijfers in.'; return; }
+  if (!naam) { fout.textContent = 'Vul een naam in.'; return; }
+  if (state.REKENINGEN.some(r => r.nummer === nummer)) { fout.textContent = `Nummer ${nummer} bestaat al.`; return; }
+  fout.textContent = '';
+  state.REKENINGEN.push({ nummer, naam, isHoofdrekening: false });
+  el('gbb-nieuw-rek-nummer').value = '';
+  el('gbb-nieuw-rek-naam').value = '';
+  renderGrootboekBeheerLijsten();
+}
+
+export function verwijderRekening(nummer) {
+  if (state.REKENINGEN.length <= 1) { el('gbb-rekening-fout').textContent = 'De laatste bankrekening kan niet weg.'; return; }
+  const aantal = [...state.TX, ...state.HIST_TX].filter(t => t.rek === nummer).length;
+  if (aantal && !window.confirm(`${aantal} boeking${aantal === 1 ? '' : 'en'} gebruik${aantal === 1 ? 't' : 'en'} rekening ${nummer}. Die blijven staan, maar tonen daarna "onbekende rekening". Doorgaan?`)) return;
+  state.REKENINGEN = state.REKENINGEN.filter(r => r.nummer !== nummer);
+  el('gbb-rekening-fout').textContent = '';
+  renderGrootboekBeheerLijsten();
+}
+
+export function bewaarGrootboekBeheer() {
+  el('gbb-grootboek-lijst').querySelectorAll('input[data-gb-naam]').forEach(inp => {
+    const naam = inp.value.trim();
+    if (!naam) return;
+    const g = state.GROOTBOEK.find(x => x.nummer === inp.dataset.gbNaam);
+    if (g) g.naam = naam;
+  });
+  el('gbb-rekening-lijst').querySelectorAll('input[data-rek-naam]').forEach(inp => {
+    const naam = inp.value.trim();
+    if (!naam) return;
+    const r = state.REKENINGEN.find(x => x.nummer === inp.dataset.rekNaam);
+    if (r) r.naam = naam;
+  });
+  saveGrootboek();
+  saveRekeningen();
+  sluitGrootboekBeheerModal();
   renderGrootboek();
 }
 

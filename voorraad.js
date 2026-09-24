@@ -1,9 +1,10 @@
 // voorraad.js — Voorraad: kerncijfers, groepen per tab en voorraad per jaar.
 
-import { GBNM, esc, fmt, gbCode } from './helpers.js?v=20260902a';
+import { esc, fmt, gbCode } from './helpers.js?v=20260902a';
 import { REDENEN, legVast, logVan, verschilTekst, datumTekst } from './voorraadlog.js?v=20260902a';
 import {
-  standaardMinVoorraad, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state
+  standaardMinVoorraad, groepId, groepNaam, saveCoversData, saveGroepen, standaardGroep, state,
+  grootboekNamen
 } from './storage.js?v=20260902a';
 import { maakSorteerbaar } from './tables.js?v=20260902a';
 import { factorVan, heeftHandmatigePrijs, isHandelsvoorraad } from './belasting.js?v=20260902a';
@@ -713,6 +714,7 @@ export function wijzigFactor(id, waarde) {
 }
 
 function tekenVerdeling(behoudFocus) {
+  const GBNM = grootboekNamen();
   const doel = el('verdeling-rekeningen');
   if (!doel) return;
 

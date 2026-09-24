@@ -8,8 +8,8 @@
 //   'gb:<nr>'  -> die grootboekrekening
 //   'pagina:<naam>' -> die pagina
 
-import { BEGINSALDO_2026, GBNM, REKNM, esc, fmt, teltBij, weergaveNaam } from './helpers.js?v=20260902a';
-import { MAAND_SALDOS, state } from './storage.js?v=20260902a';
+import { BEGINSALDO_2026, esc, fmt, teltBij, weergaveNaam } from './helpers.js?v=20260902a';
+import { MAAND_SALDOS, state, grootboekNamen, rekeningNamen } from './storage.js?v=20260902a';
 import { DREMPEL, vindDuplicaten } from './duplicaten.js?v=20260902a';
 import {
   REDEN_LABEL, aantalVerborgen, herstelAlles, herstelControle, herstelMelding,
@@ -75,6 +75,8 @@ function bepaalBron() {
 }
 
 function controlesBoekingen(tx) {
+  const GBNM = grootboekNamen();
+  const REKNM = rekeningNamen();
   const uit = [];
 
   uit.push(check('tx-datum', 'Boekingen',
@@ -167,6 +169,7 @@ function controlesPrive(tx) {
 }
 
 function controlesRichting(tx) {
+  const GBNM = grootboekNamen();
   const uit = [];
 
   uit.push(check('prive-opname', 'Boekingen',

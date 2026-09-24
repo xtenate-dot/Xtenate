@@ -1,7 +1,7 @@
 // drawer.js — detailpaneel rechts met alle gegevens van één boeking.
 
-import { GBNM, REKNM, esc, fmt, isInkomst, rekBadge, weergaveNaam } from './helpers.js?v=20260902a';
-import { state } from './storage.js?v=20260902a';
+import { esc, fmt, isInkomst, rekBadge, weergaveNaam } from './helpers.js?v=20260902a';
+import { state, grootboekNamen, rekeningNamen } from './storage.js?v=20260902a';
 
 const TYPE_LABEL = {
   inkomst: 'Inkomst',
@@ -30,13 +30,15 @@ export function openBoeking(id) {
   const teken = positief ? '+' : '–';
   const anderen = [...state.TX, ...state.HIST_TX]
     .filter(x => x.id !== t.id && x.naam && x.naam === t.naam).length;
+  const GBNM = grootboekNamen();
+  const REKNM = rekeningNamen();
 
   document.getElementById('drawer-body').innerHTML = `
     <div class="drawer-amount ${positief ? 'pos' : 'neg'}">${teken}${fmt(t.bedrag)}</div>
     <div class="drawer-when">${esc(langeDatum(t.datum))}</div>
     <div class="dl-row"><span class="dl-key">Naam</span><span class="dl-val">${esc(weergaveNaam(t)) || '—'}</span></div>
     <div class="dl-row"><span class="dl-key">Grootboek</span><span class="dl-val"><span class="gbnr">${esc(t.gb)}</span> ${esc(GBNM[t.gb] || 'onbekende rekening')}</span></div>
-    <div class="dl-row"><span class="dl-key">Rekening</span><span class="dl-val">${rekBadge(t.rek)}</span></div>
+    <div class="dl-row"><span class="dl-key">Rekening</span><span class="dl-val">${rekBadge(t.rek, REKNM[t.rek])}</span></div>
     <div class="dl-row"><span class="dl-key">Soort</span><span class="dl-val">${TYPE_LABEL[t.type] || esc(t.type)}</span></div>
     <div class="dl-row"><span class="dl-key">Omschrijving</span><span class="dl-val">${esc(t.omschr) || '—'}</span></div>
     <div class="dl-row"><span class="dl-key">Tegenpartij (ruw)</span><span class="dl-val">${esc(t.naam) || '—'}</span></div>

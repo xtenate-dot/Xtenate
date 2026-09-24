@@ -1,10 +1,13 @@
 // bank.js — Bank: alle mutaties per rekening, inclusief transactie-modal.
 
 import {
-  GBNM, REKNM, bedragUit, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, maandLabel, rekBadge,
+  bedragUit, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, maandLabel, rekBadge,
   typeBadge, vulMaandSelect, weergaveNaam
 } from './helpers.js?v=20260902a';
-import { MAAND_SALDOS, saveHistTxData, saveTxData, state, isBtwPlichtig } from './storage.js?v=20260902a';
+import {
+  MAAND_SALDOS, saveHistTxData, saveTxData, state, isBtwPlichtig,
+  grootboekNamen, rekeningNamen, grootboekOptgroepen, rekeningenLijst
+} from './storage.js?v=20260902a';
 import { maakSorteerbaar } from './tables.js?v=20260902a';
 
 // Fase 3A: Supabase pending queue
@@ -35,10 +38,47 @@ function vorigeMaand(maand) {
   return d.toISOString().slice(0, 7);
 }
 
+/** Vult een <select> met optgroepen uit state.GROOTBOEK, net als de vaste
+ *  lijst die er hiervoor stond. `huidigeWaarde` blijft geselecteerd; staat
+ *  het nummer er niet (meer) bij — bv. een oude boeking buiten het huidige
+ *  schema — dan komt het er tijdelijk bij, zodat bewerken het niet
+ *  stilzwijgend verandert. */
+function vulGrootboekSelect(select, huidigeWaarde) {
+  select.innerHTML = grootboekOptgroepen().map(g => `
+    <optgroup label="${esc(g.naam)}">
+      ${g.rekeningen.map(r => `<option value="${esc(r.nummer)}">${esc(r.nummer)} ${esc(r.naam)}</option>`).join('')}
+    </optgroup>`).join('');
+  if (huidigeWaarde && ![...select.options].some(o => o.value === huidigeWaarde)) {
+    const optie = document.createElement('option');
+    optie.value = huidigeWaarde;
+    optie.textContent = `${huidigeWaarde} (niet in schema)`;
+    select.appendChild(optie);
+  }
+  if (huidigeWaarde) select.value = huidigeWaarde;
+}
+
+/** Zelfde idee, voor de bankrekeningen. */
+function vulRekeningSelect(select, huidigeWaarde) {
+  select.innerHTML = rekeningenLijst()
+    .map(r => `<option value="${esc(r.nummer)}">${esc(r.nummer)} ${esc(r.naam)}</option>`).join('');
+  select.value = rekeningenLijst().some(r => r.nummer === huidigeWaarde) ? huidigeWaarde : '1010';
+}
+
+/** Het rekeningfilter boven de tabel — dezelfde bron, huidige keuze blijft staan. */
+function vulRekeningFilter() {
+  const select = el('f-rek');
+  if (!select) return;
+  const huidig = select.value;
+  select.innerHTML = '<option value="">Alle rekeningen</option>' +
+    rekeningenLijst().map(r => `<option value="${esc(r.nummer)}">${esc(r.naam)}</option>`).join('');
+  if ([...select.options].some(o => o.value === huidig)) select.value = huidig;
+}
+
 export function renderBank() {
   const jaar = state.huidigJaar || '2026';
   const bron = bronVoorJaar(jaar);
   vulMaandSelect(el('f-maand'), bron);
+  vulRekeningFilter();
 
   const maand = el('f-maand').value;
   const rek = el('f-rek').value;
@@ -110,13 +150,15 @@ export function renderBank() {
     ${saldoKaart(saldoLabel, saldo, 'eindbalans rekening')}
     ${saldoKaart(vorigLabel, vorigSaldo, 'vorige periode')}`;
 
+  const GBNM = grootboekNamen();
+  const REKNM = rekeningNamen();
   el('bank-body').innerHTML = lijst.length
     ? lijst.map(t => `<tr class="row-click" data-id="${esc(t.id)}">
         <td class="muted" style="padding-left:16px" data-v="${t.datum}">${ddmm(t.datum)}</td>
         <td class="td-trunc">${esc(weergaveNaam(t))}${t.omschr && t.omschr !== t.naam
           ? ` <span style="color:var(--text-muted);font-size:10px">· ${esc(t.omschr)}</span>` : ''}</td>
         <td data-v="${esc(t.gb)}"><span class="gbnr">${esc(t.gb)}</span> ${esc(GBNM[t.gb] || '')}</td>
-        <td data-v="${esc(t.rek)}">${rekBadge(t.rek)}</td>
+        <td data-v="${esc(t.rek)}">${rekBadge(t.rek, REKNM[t.rek])}</td>
         <td style="text-align:right;padding-right:16px" data-v="${t.bedrag}">${typeBadge(t.type, t.bedrag)}</td>
       </tr>`).join('')
     : `<tr data-geen-sort="1"><td colspan="5">${leegVlak(
@@ -156,17 +198,8 @@ export function bewerkBoeking(id) {
   el('tx-n').value = tx.naam || '';
   el('tx-o').value = tx.omschr || '';
   el('tx-t').value = tx.type || 'uitgave';
-  el('tx-rek').value = REKNM[tx.rek] ? tx.rek : '1010';
-  // Staat het grootboeknummer niet in de keuzelijst, dan voegen we het
-  // tijdelijk toe — anders zou bewerken het nummer stilzwijgend veranderen.
-  const gbSel = el('tx-gb');
-  if (tx.gb && ![...gbSel.options].some(o => o.value === tx.gb)) {
-    const optie = window.document.createElement('option');
-    optie.value = tx.gb;
-    optie.textContent = `${tx.gb} (niet in schema)`;
-    gbSel.appendChild(optie);
-  }
-  gbSel.value = tx.gb || '';
+  vulRekeningSelect(el('tx-rek'), tx.rek);
+  vulGrootboekSelect(el('tx-gb'), tx.gb);
   el('tx-btw-pct').value = tx.btw_percentage != null ? String(tx.btw_percentage) : '21';
   el('tx-fout').textContent = '';
   el('modal-tx').classList.add('open');
@@ -183,6 +216,8 @@ export function openTxModal() {
   el('tx-b').value = '';
   el('tx-n').value = '';
   el('tx-o').value = '';
+  vulRekeningSelect(el('tx-rek'), '1010');
+  vulGrootboekSelect(el('tx-gb'), '');
   el('tx-btw-pct').value = '21';
   el('tx-fout').textContent = '';
   el('modal-tx').classList.add('open');
