@@ -90,7 +90,9 @@ export function addToPendingQueue(boeking, operation, isHistoric = false, soortH
           type: boeking.type,
           rek: boeking.rek,
           gb: boeking.gb,
-          bron: boeking.bron
+          bron: boeking.bron,
+          btw_percentage: boeking.btw_percentage,
+          btw_bedrag: boeking.btw_bedrag
         }
       : { ...boeking };
   }
@@ -312,6 +314,13 @@ export async function loadBoekingenFromSupabase() {
       // waarden ('excel', 'migratie', 'sync') betekenen lokaal simpelweg
       // "niet handmatig", dus daar zetten we lokaal niets voor.
       if (b.bron === 'handmatig') record.bron = 'handmatig';
+      // Zelfde redenering: alleen zetten als er echt BTW bij hoort. Anders
+      // zou elke boeking (ook alle boekingen van vóór deze fase) lokaal
+      // ineens btw_percentage: 0 krijgen — een veld dat er eerder nooit was.
+      if (b.btw_percentage) {
+        record.btw_percentage = b.btw_percentage;
+        record.btw_bedrag = Number(b.btw_bedrag) || 0;
+      }
 
       if (b.archief_jaar === null) {
         TX.push(record);
@@ -361,12 +370,12 @@ export async function saveToSupabase(boeking, isHistoric) {
       rek: boeking.rek,
       gb: boeking.gb,
       archief_jaar: isHistoric ? parseInt(boeking.datum.substring(0, 4)) : null,
-      btw_bedrag: 0,
-      btw_percentage: 0,
+      btw_bedrag: boeking.btw_bedrag || 0,
+      btw_percentage: boeking.btw_percentage || 0,
       bron: boeking.bron === 'handmatig' ? 'handmatig' : 'excel',
       updated_at: new Date().toISOString()
     };
-    
+
     // Delete old version (MET user_id, dus RLS laat het toe)
     await sb
       .from('boekingen')
@@ -483,8 +492,8 @@ function boekingRecord(boeking, isHistoric, userId) {
     rek: boeking.rek,
     gb: boeking.gb,
     archief_jaar: isHistoric ? parseInt(String(boeking.datum).substring(0, 4)) : null,
-    btw_bedrag: 0,
-    btw_percentage: 0,
+    btw_bedrag: boeking.btw_bedrag || 0,
+    btw_percentage: boeking.btw_percentage || 0,
     bron: boeking.bron === 'handmatig' ? 'handmatig' : 'excel',
     updated_at: new Date().toISOString()
   };

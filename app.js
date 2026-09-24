@@ -6,7 +6,7 @@ import { state } from './storage.js?v=20260902a';
 import { nav, gaNaar, hertekenHuidigePagina, paginaUitHash } from './ui.js?v=20260902a';
 import { startAutosync, syncNu } from './autosync.js?v=20260902a';
 import { wisselJaar, renderHome } from './dashboard.js?v=20260902a';
-import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking, deleteTx } from './bank.js?v=20260902a';
+import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, syncTxBtw, bewerkBoeking, deleteTx } from './bank.js?v=20260902a';
 import { renderFacturen, kiesFactuurTab } from './facturen-ui.js?v=20260902a';
 import { renderBeheer, bewaarMinVoorraad, bewaarReferentiePriveSt2022, herprobeerSynchronisatie, bewaarBtwVanaf } from './beheer.js?v=20260902a';
 import { renderPortaal } from './home.js?v=20260902a';
@@ -71,7 +71,7 @@ const zoekVoorraadVertraagd = vertraag(renderCovers);
 Object.assign(window, {
   zoekGrootboekVertraagd, zoekVoorraadVertraagd,
   nav, gaNaar, wisselJaar, hertekenHuidigePagina, paginaUitHash,
-  renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, bewerkBoeking, deleteTx,
+  renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, syncTxBtw, bewerkBoeking, deleteTx,
   renderFacturen, kiesFactuurTab, renderBeheer, renderPortaal,
   renderCrediteuren, wisselJaarCrediteuren, renderDebiteuren, wisselJaarDebiteuren,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,

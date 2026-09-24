@@ -4,7 +4,7 @@ import {
   GBNM, REKNM, bedragUit, ddmm, esc, fmt, isInkomst, isUitgave, leegVlak, maandLabel, rekBadge,
   typeBadge, vulMaandSelect, weergaveNaam
 } from './helpers.js?v=20260902a';
-import { MAAND_SALDOS, saveHistTxData, saveTxData, state } from './storage.js?v=20260902a';
+import { MAAND_SALDOS, saveHistTxData, saveTxData, state, isBtwPlichtig } from './storage.js?v=20260902a';
 import { maakSorteerbaar } from './tables.js?v=20260902a';
 
 // Fase 3A: Supabase pending queue
@@ -167,8 +167,10 @@ export function bewerkBoeking(id) {
     gbSel.appendChild(optie);
   }
   gbSel.value = tx.gb || '';
+  el('tx-btw-pct').value = tx.btw_percentage != null ? String(tx.btw_percentage) : '21';
   el('tx-fout').textContent = '';
   el('modal-tx').classList.add('open');
+  syncTxBtw();
   el('tx-b').focus();
 }
 
@@ -181,12 +183,37 @@ export function openTxModal() {
   el('tx-b').value = '';
   el('tx-n').value = '';
   el('tx-o').value = '';
+  el('tx-btw-pct').value = '21';
   el('tx-fout').textContent = '';
   el('modal-tx').classList.add('open');
+  syncTxBtw();
   el('tx-d').focus();
 }
 
 export function closeTx() { el('modal-tx').classList.remove('open'); }
+
+/**
+ * Fase 2 van BTW-plichtig maken: het BTW-blok in het boeking-formulier
+ * toont/verbergt zich en herberekent zichzelf, puur op basis van wat er op
+ * dit moment in #tx-d en #tx-b staat — nooit op basis van iets dat ooit werd
+ * opgeslagen. Dat is bewust: zo werkt het ook goed als je tijdens het
+ * bewerken de datum over de omslagdatum heen schuift, in beide richtingen.
+ * Het bedrag in #tx-b blijft, zoals nu al overal in de app, het volledige
+ * (inclusief) bedrag — het BTW-bedrag wordt eruit herekend, niet erbij opgeteld.
+ */
+export function syncTxBtw() {
+  const blok = el('tx-btw-blok');
+  if (!blok) return;
+  if (!isBtwPlichtig(el('tx-d').value)) {
+    blok.style.display = 'none';
+    return;
+  }
+  blok.style.display = '';
+  const bedrag = bedragUit('tx-b', 0);
+  const pct = Number(el('tx-btw-pct').value) || 0;
+  const btw = pct > 0 ? bedrag * pct / (100 + pct) : 0;
+  el('tx-btw-bedrag').textContent = fmt(btw);
+}
 
 /**
  * Verwijdert een bestaande boeking na bevestiging.
@@ -285,6 +312,18 @@ export function saveTx() {
     rek: el('tx-rek').value,
     gb
   };
+
+  // BTW-plicht fase 2: alleen toevoegen als DEZE datum, op dit moment, onder
+  // de BTW-plicht valt — nooit op basis van wat ooit werd ingevuld of van wat
+  // het blok toonde vóórdat de datum nog werd gewijzigd. Zo blijft een
+  // boeking vóór de omslagdatum byte voor byte hetzelfde object als altijd,
+  // en volgt een boeking die tijdens het bewerken over de grens heen
+  // verschuift altijd de datum die nu in het formulier staat.
+  if (isBtwPlichtig(datum)) {
+    const btwPct = Number(el('tx-btw-pct').value) || 0;
+    tx.btw_percentage = btwPct;
+    tx.btw_bedrag = btwPct > 0 ? Math.round((tx.bedrag * btwPct / (100 + btwPct)) * 100) / 100 : 0;
+  }
 
   let isHistoric = false;
 
