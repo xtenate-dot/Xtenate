@@ -121,13 +121,13 @@
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
     <span class="nav-label">Bank</span>
   </div>
-  <div class="nav-item" data-page="crediteuren" onclick="nav('crediteuren',this)" title="Crediteuren">
+  <div class="nav-item" data-page="crediteuren" onclick="nav('crediteuren',this)" title="Leveranciers">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-    <span class="nav-label">Crediteuren</span>
+    <span class="nav-label">Leveranciers</span>
   </div>
-  <div class="nav-item" data-page="debiteuren" onclick="nav('debiteuren',this)" title="Debiteuren">
+  <div class="nav-item" data-page="debiteuren" onclick="nav('debiteuren',this)" title="Klanten">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-    <span class="nav-label">Debiteuren</span>
+    <span class="nav-label">Klanten</span>
   </div>
   <div class="nav-item" data-page="grootboek" onclick="nav('grootboek',this)" title="Grootboek">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
@@ -371,39 +371,39 @@
   <div id="facturen-inhoud"></div>
 </div>
 
-<!-- CREDITEUREN (wie betaal ik) -->
+<!-- LEVERANCIERS (wie betaal ik) -->
 <div id="p-crediteuren" class="page">
   <div class="page-head">
     <div>
-      <div class="page-title">Crediteuren</div>
-      <div class="page-sub">Openstaande posten die je nog moet betalen.</div>
+      <div class="page-title">Leveranciers</div>
+      <div class="page-sub">Al je kosten, gegroepeerd per leverancier.</div>
     </div>
   </div>
   <div class="page-controls">
-    
+
   </div>
   <div class="card">
     <div style="padding: 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">
-      Totaal betaald: <span id="crediteuren-totaal" style="color: var(--text-primary); font-weight: 700;">€0,00</span>
+      Totaal kosten: <span id="crediteuren-totaal" style="color: var(--text-primary); font-weight: 700;">€0,00</span>
     </div>
     <div id="crediteuren-list"></div>
   </div>
 </div>
 
-<!-- DEBITEUREN (wie betaalt mij) -->
+<!-- KLANTEN (wie betaalt mij) -->
 <div id="p-debiteuren" class="page">
   <div class="page-head">
     <div>
-      <div class="page-title">Debiteuren</div>
-      <div class="page-sub">Openstaande posten die je nog moet ontvangen.</div>
+      <div class="page-title">Klanten</div>
+      <div class="page-sub">Al je omzet, gegroepeerd per klant.</div>
     </div>
   </div>
   <div class="page-controls">
-    
+
   </div>
   <div class="card">
     <div style="padding: 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">
-      Totaal ontvangen: <span id="debiteuren-totaal" style="color: var(--text-primary); font-weight: 700;">€0,00</span>
+      Totaal omzet: <span id="debiteuren-totaal" style="color: var(--text-primary); font-weight: 700;">€0,00</span>
     </div>
     <div id="debiteuren-list"></div>
   </div>
@@ -958,7 +958,7 @@
         <option value="betaald">Betaald</option>
         <option value="oninbaar">Oninbaar</option>
       </select>
-      <div class="muted" style="font-size:11.5px;margin-top:4px">Betaald hier handmatig zetten koppelt geen boeking — dat komt in een latere fase.</div>
+      <div class="muted" style="font-size:11.5px;margin-top:4px" id="fact-status-hint">Betaald hier handmatig zetten koppelt geen boeking — gebruik daarvoor de knop "Koppelen".</div>
     </div>
     <div class="form-group full"><label>Grootboek (optioneel)</label>
       <select id="fact-gb" aria-label="Grootboekrekening">
@@ -993,6 +993,28 @@
     <button class="btn" onclick="sluitFactuurModal()">Annuleren</button>
     <button class="btn btn-danger" id="fact-delete-btn" onclick="verwijderFactuurUitModal()" style="display:none">Verwijderen</button>
     <button class="btn btn-primary" onclick="saveFactuur()">Opslaan</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: FACTUUR KOPPELEN AAN BOEKING -->
+<div class="modal-overlay" id="modal-factuur-koppel">
+<div class="modal">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <h3 style="margin: 0;">Boeking koppelen</h3>
+    <button onclick="sluitKoppelModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary); padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Sluiten (ESC)">×</button>
+  </div>
+  <p class="muted" style="font-size:12.5px;margin:0 0 12px" id="fact-koppel-context"></p>
+
+  <div class="section-head"><div class="eyebrow">Gekoppelde boeking(en)</div></div>
+  <div id="fact-koppel-gekoppeld" class="card card-flush" style="margin-bottom:16px"></div>
+
+  <div class="section-head"><div class="eyebrow">Nieuwe boeking koppelen</div></div>
+  <input type="text" id="fact-koppel-zoek" placeholder="Zoek op naam, bedrag, datum of grootboek..." oninput="zoekFactuurBoeking()" style="width:100%;margin-bottom:8px">
+  <div id="fact-koppel-resultaten" class="card card-flush"></div>
+
+  <div class="modal-actions">
+    <button class="btn" onclick="sluitKoppelModal()">Sluiten</button>
   </div>
 </div>
 </div>

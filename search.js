@@ -17,7 +17,8 @@ function zoekTekst(t) {
   ].filter(Boolean).join(' ').toLowerCase();
 }
 
-function zoekBoekingen(q) {
+/** Ook gebruikt door facturen-ui.js om een boeking te koppelen aan een factuur. */
+export function zoekBoekingen(q) {
   return [...state.TX, ...state.HIST_TX]
     .filter(t => zoekTekst(t).includes(q))
     .sort((a, b) => b.datum.localeCompare(a.datum));

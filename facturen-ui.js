@@ -11,11 +11,13 @@ import {
   vandaagISO, plusDagen, dagenTussen, standaardTermijn,
   voegFactuurToe, vindFactuur, werkFactuurBij, verwijderFactuur,
   factuurStatus, dagenTeLaat, vervaltBinnenkort,
-  facturenVan, openstaandSaldo, factuurnummerInGebruik
+  facturenVan, openstaandSaldo, factuurnummerInGebruik,
+  vindBoeking, koppelBetaling, ontkoppelBetaling
 } from './facturen.js?v=20260902a';
-import { esc, fmt, ddmm, bedragUit, leegVlak } from './helpers.js?v=20260902a';
+import { esc, fmt, ddmm, bedragUit, leegVlak, isInkomst, isUitgave, weergaveNaam, GBNM } from './helpers.js?v=20260902a';
 import { downloadModelPdf } from './pdf.js?v=20260902a';
 import { state } from './storage.js?v=20260902a';
+import { zoekBoekingen } from './search.js?v=20260902a';
 
 const el = id => document.getElementById(id);
 
@@ -120,6 +122,7 @@ export function renderFacturen() {
         <td><span class="badge ${sw.klasse}">${esc(sw.tekst)}</span></td>
         <td style="text-align:right;padding-right:16px;white-space:nowrap">
           <button type="button" class="btn-details" data-bewerk="${esc(f.id)}">Bewerken</button>
+          <button type="button" class="btn-details" data-koppel="${esc(f.id)}">Koppelen${f.txIds && f.txIds.length ? ` (${f.txIds.length})` : ''}</button>
           <button type="button" class="btn-details" data-pdf="${esc(f.id)}">Pdf</button>
           <button type="button" class="btn-details" data-verwijder="${esc(f.id)}">Verwijderen</button>
         </td>
@@ -141,6 +144,8 @@ export function renderFacturen() {
 
   doel.querySelectorAll('[data-bewerk]').forEach(k =>
     k.addEventListener('click', () => openFactuurModal(k.dataset.bewerk)));
+  doel.querySelectorAll('[data-koppel]').forEach(k =>
+    k.addEventListener('click', () => openKoppelModal(k.dataset.koppel)));
   doel.querySelectorAll('[data-pdf]').forEach(k =>
     k.addEventListener('click', () => downloadFactuurPdf(k.dataset.pdf)));
   doel.querySelectorAll('[data-verwijder]').forEach(k =>
@@ -174,8 +179,20 @@ export function openFactuurModal(id = null) {
   vervaldatumHandmatig = !!f;
 
   const statusBlok = el('fact-status-blok');
-  if (f) { statusBlok.style.display = ''; el('fact-status').value = f.status; }
-  else { statusBlok.style.display = 'none'; }
+  if (f) {
+    statusBlok.style.display = '';
+    el('fact-status').value = f.status;
+    // Zolang er een boeking gekoppeld is, blijft factuurStatus() altijd
+    // 'betaald' tonen (isBetaald() kijkt naar txIds, niet naar dit veld) —
+    // dit veld hier laten wijzigen zou dus een schijnkeuze zijn.
+    const gekoppeld = Array.isArray(f.txIds) && f.txIds.length > 0;
+    el('fact-status').disabled = gekoppeld;
+    el('fact-status-hint').textContent = gekoppeld
+      ? 'Deze factuur is gekoppeld aan een boeking — koppel hem eerst los (via "Koppelen") om de status te wijzigen.'
+      : 'Betaald hier handmatig zetten koppelt geen boeking — gebruik daarvoor de knop "Koppelen".';
+  } else {
+    statusBlok.style.display = 'none';
+  }
 
   el('fact-delete-btn').style.display = f ? '' : 'none';
 
@@ -258,6 +275,112 @@ export function verwijderFactuurUitModal() {
   if (state.editFactuurId != null && verwijderFactuurUi(state.editFactuurId)) {
     sluitFactuurModal();
   }
+}
+
+// ──────────────────────────────────────────────────── koppelen aan boeking
+//
+// koppelBetaling()/ontkoppelBetaling() (facturen.js) doen zelf al het werk:
+// koppelen zet de status automatisch op 'betaald', loskoppelen zet hem
+// terug naar 'open' — dat wordt hier dus niet nogmaals gedaan, alleen
+// aangeroepen en herrenderd.
+
+let koppelFactuurId = null;
+
+/** Eén boekingsregel, met de knop-tekst en eventuele bedrag-waarschuwing
+ *  als los, herbruikbaar bouwblok voor zowel "gekoppeld" als "resultaten". */
+function boekingRij(t, factuur, actieLabel) {
+  const positief = isInkomst(t) || t.type === 'prive_storting';
+  const verschil = Math.abs(Number(t.bedrag) - Number(factuur.bedrag)) > 0.005;
+  return `
+    <div class="ctrl-item">
+      <span class="ctrl-item-main" style="cursor:default">
+        <span class="ctrl-item-label">${esc(weergaveNaam(t)) || '(geen naam)'}</span>
+        <span class="ctrl-item-sub">${ddmm(t.datum)} · ${esc(t.gb)} ${esc(GBNM[t.gb] || '')}</span>
+      </span>
+      ${verschil ? `<span class="badge badge-amber" style="margin-right:8px">wijkt af van ${fmt(factuur.bedrag)}</span>` : ''}
+      <span class="${positief ? 'pos' : 'neg'}" style="padding-right:12px">${positief ? '+' : '–'}${fmt(t.bedrag)}</span>
+      <button type="button" class="btn-details" data-tx="${esc(t.id)}">${esc(actieLabel)}</button>
+    </div>`;
+}
+
+function renderGekoppeld(f) {
+  const doel = el('fact-koppel-gekoppeld');
+  if (!f.txIds.length) {
+    doel.innerHTML = `<div class="ctrl-item"><span class="muted" style="padding:4px 0">Nog geen boeking gekoppeld.</span></div>`;
+    return;
+  }
+  doel.innerHTML = f.txIds.map(txId => {
+    const t = vindBoeking(txId);
+    if (!t) return `<div class="ctrl-item"><span class="neg">Boeking ${esc(txId)} niet gevonden (mogelijk verwijderd).</span></div>`;
+    return boekingRij(t, f, 'Loskoppelen');
+  }).join('');
+  doel.querySelectorAll('[data-tx]').forEach(k =>
+    k.addEventListener('click', () => ontkoppelBoekingVanFactuur(k.dataset.tx)));
+}
+
+export function openKoppelModal(id) {
+  const f = vindFactuur(id);
+  if (!f) return;
+  koppelFactuurId = f.id;
+  el('fact-koppel-context').textContent =
+    `${f.relatie || '(geen relatie)'} · ${fmt(f.bedrag)} · ${f.soort === 'debiteur' ? 'te ontvangen' : 'te betalen'}`;
+  renderGekoppeld(f);
+  el('fact-koppel-zoek').value = '';
+  el('fact-koppel-resultaten').innerHTML = '';
+  document.getElementById('modal-factuur-koppel').classList.add('open');
+  el('fact-koppel-zoek').focus();
+}
+
+export function sluitKoppelModal() {
+  document.getElementById('modal-factuur-koppel')?.classList.remove('open');
+  koppelFactuurId = null;
+}
+
+export function zoekFactuurBoeking() {
+  const f = vindFactuur(koppelFactuurId);
+  const doel = el('fact-koppel-resultaten');
+  if (!f) { doel.innerHTML = ''; return; }
+
+  const q = el('fact-koppel-zoek').value.trim().toLowerCase();
+  if (q.length < 2) {
+    doel.innerHTML = `<div class="ctrl-item"><span class="muted" style="padding:4px 0">Typ minstens 2 tekens om te zoeken.</span></div>`;
+    return;
+  }
+
+  // Alleen boekingen met de bij deze factuur passende richting: een
+  // debiteur-factuur (te ontvangen) koppelt aan inkomsten, een crediteur-
+  // factuur (te betalen) aan uitgaven. Een al gekoppelde boeking wordt hier
+  // nooit nogmaals aangeboden.
+  const richtingPast = t => (f.soort === 'debiteur' ? isInkomst(t) : isUitgave(t));
+  const resultaten = zoekBoekingen(q)
+    .filter(richtingPast)
+    .filter(t => !f.txIds.some(id => String(id) === String(t.id)))
+    .slice(0, 10);
+
+  if (!resultaten.length) {
+    doel.innerHTML = `<div class="ctrl-item"><span class="muted" style="padding:4px 0">Niets gevonden.</span></div>`;
+    return;
+  }
+
+  doel.innerHTML = resultaten.map(t => boekingRij(t, f, 'Koppelen')).join('');
+  doel.querySelectorAll('[data-tx]').forEach(k =>
+    k.addEventListener('click', () => koppelBoekingAanFactuur(k.dataset.tx)));
+}
+
+function koppelBoekingAanFactuur(txId) {
+  const r = koppelBetaling(koppelFactuurId, txId);
+  if (!r.ok) { alert('Koppelen mislukt: ' + r.reden); return; }
+  renderGekoppeld(r.factuur);
+  el('fact-koppel-zoek').value = '';
+  el('fact-koppel-resultaten').innerHTML = '';
+  renderFacturen();
+}
+
+function ontkoppelBoekingVanFactuur(txId) {
+  const r = ontkoppelBetaling(koppelFactuurId, txId);
+  if (!r.ok) { alert('Loskoppelen mislukt: ' + r.reden); return; }
+  renderGekoppeld(r.factuur);
+  renderFacturen();
 }
 
 // ──────────────────────────────────────────────────────────────────── pdf
