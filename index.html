@@ -56,7 +56,32 @@
       <button class="btn btn-primary" id="auth-knop" type="submit"
               style="width:100%;justify-content:center;margin-top:var(--spacing-4)">Inloggen</button>
       <p class="auth-voet">Je blijft ingelogd tot je zelf uitlogt.</p>
+      <p class="auth-voet"><a href="#" onclick="toonRegistreren();return false">Nog geen account? Registreren</a></p>
     </form>
+
+    <form id="auth-registreren" style="display:none" onsubmit="signUp(event)">
+      <div class="form-group full">
+        <label for="reg-email">E-mailadres</label>
+        <input type="email" id="reg-email" autocomplete="username" placeholder="jij@voorbeeld.nl" required>
+      </div>
+      <div class="form-group full" style="margin-top:var(--spacing-3)">
+        <label for="reg-wachtwoord">Wachtwoord</label>
+        <input type="password" id="reg-wachtwoord" autocomplete="new-password" required minlength="6">
+      </div>
+      <div class="form-group full" style="margin-top:var(--spacing-3)">
+        <label for="reg-wachtwoord-herhaal">Wachtwoord herhalen</label>
+        <input type="password" id="reg-wachtwoord-herhaal" autocomplete="new-password" required minlength="6">
+      </div>
+      <div class="alert alert-error" id="reg-fout" style="display:none;margin:var(--spacing-3) 0 0"></div>
+      <button class="btn btn-primary" id="reg-knop" type="submit"
+              style="width:100%;justify-content:center;margin-top:var(--spacing-4)">Account aanmaken</button>
+      <p class="auth-voet"><a href="#" onclick="toonInloggen();return false">Al een account? Inloggen</a></p>
+    </form>
+
+    <div id="auth-bevestig-email" style="display:none">
+      <p class="auth-tekst">Bijna klaar — controleer je e-mail en klik op de bevestigingslink om je account te activeren.</p>
+      <p class="auth-voet"><a href="#" onclick="toonInloggen();return false">Terug naar inloggen</a></p>
+    </div>
 
     <div id="auth-probleem" style="display:none">
       <div class="auth-probleem-titel" id="auth-probleem-titel"></div>

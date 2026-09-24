@@ -66,7 +66,7 @@ import {
 } from './uitvoeren-ui.js?v=20260902a';
 import { vertraag } from './helpers.js?v=20260902a';
 import { toonBoeking, sluitDrawer, openBoeking } from './drawer.js?v=20260902a';
-import { start as startAuth, login, uitloggen, opnieuwVerbinden } from './auth.js?v=20260902a';
+import { start as startAuth, login, uitloggen, opnieuwVerbinden, toonRegistreren, toonInloggen, signUp } from './auth.js?v=20260902a';
 
 // Zoeken tijdens typen wacht kort: anders wordt bij elke aanslag de hele
 // tabel opnieuw opgebouwd, wat bij honderden regels merkbaar hapert.
@@ -110,7 +110,7 @@ Object.assign(window, {
   openUitvoeren, sluitUitvoeren, doeStapBackup, zetBegrepen, doeStapUitvoeren,
   bevestigImport, annuleerImport,
   openOpslagDiagnose, sluitOpslagDiagnose, voerOpslagDiagnoseUit, kopieerOpslagDiagnose, maakOpslagSnapshot, toonOverrides, toonNegeerlijst, downloadBackup, downloadNegeerBestanden,
-  login, uitloggen, opnieuwVerbinden,
+  login, uitloggen, opnieuwVerbinden, toonRegistreren, toonInloggen, signUp,
   wisselThema, wisselMenu, wisselMobielMenu, sluitMobielMenu,
   wisselNavGroep,
   sluitDrawer
