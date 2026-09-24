@@ -220,6 +220,24 @@ export function facturenBijBoeking(txId) {
   return state.FACTUREN.filter(f => f.txIds.some(id => String(id) === String(txId)));
 }
 
+/**
+ * Bestaat er al een factuur met dit factuurnummer bij dezelfde relatie (en
+ * dezelfde soort)? Een leeg factuurnummer telt nooit als dubbel. Gebruikt
+ * dezelfde naamnormalisatie als relatiesMetOpenstaand(), geen eigen
+ * vergelijkingslogica. `uitgezonderdId` laat een factuur zichzelf negeren
+ * bij het bewerken.
+ */
+export function factuurnummerInGebruik(soort, relatie, factuurnummer, uitgezonderdId = null) {
+  const fn = String(factuurnummer || '').trim();
+  if (!fn) return false;
+  const sleutel = relatieSleutel(relatie);
+  return state.FACTUREN.some(f =>
+    String(f.id) !== String(uitgezonderdId) &&
+    f.soort === soort &&
+    relatieSleutel(f.relatie) === sleutel &&
+    String(f.factuurnummer || '').trim().toLowerCase() === fn.toLowerCase());
+}
+
 // ─── Relaties (voorlopig afgeleid uit de naam) ─────────────────────────────
 // Nog geen aparte entiteit: de naamkwaliteit in de boekingen is daarvoor te
 // wisselend (zie weergaveNaam in helpers.js, waar naam soms een IBAN is).

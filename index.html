@@ -938,6 +938,65 @@
 </div>
 </div>
 
+<!-- MODAL: FACTUUR -->
+<div class="modal-overlay" id="modal-factuur">
+<div class="modal">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <h3 id="fact-modal-title" style="margin: 0;">Factuur toevoegen</h3>
+    <button onclick="sluitFactuurModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary); padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Sluiten (ESC)">×</button>
+  </div>
+  <div class="form-grid">
+    <div class="form-group"><label>Datum</label><input type="date" id="fact-d" onchange="syncFactuurVervaldatum()"></div>
+    <div class="form-group"><label>Vervaldatum</label><input type="date" id="fact-verval" oninput="factVervaldatumHandmatig()"></div>
+    <div class="form-group"><label>Bedrag (€)</label><input type="text" inputmode="decimal" id="fact-bedrag" placeholder="0,00"></div>
+    <div class="form-group"><label id="fact-relatie-label">Relatie</label><input type="text" id="fact-relatie" placeholder="bijv. Bol.com B.V."></div>
+    <div class="form-group full"><label>Factuurnummer (optioneel)</label><input type="text" id="fact-nr" placeholder="bijv. 2026-014"></div>
+    <div class="form-group full" id="fact-status-blok" style="display:none">
+      <label>Status</label>
+      <select id="fact-status" aria-label="Status">
+        <option value="open">Open</option>
+        <option value="betaald">Betaald</option>
+        <option value="oninbaar">Oninbaar</option>
+      </select>
+      <div class="muted" style="font-size:11.5px;margin-top:4px">Betaald hier handmatig zetten koppelt geen boeking — dat komt in een latere fase.</div>
+    </div>
+    <div class="form-group full"><label>Grootboek (optioneel)</label>
+      <select id="fact-gb" aria-label="Grootboekrekening">
+        <option value="">— geen —</option>
+        <optgroup label="Omzet">
+          <option value="8000">8000 Omzet Xtenate</option>
+          <option value="8010">8010 Omzet Bol.com (covers)</option>
+          <option value="8020">8020 Omzet Helmetstore</option>
+        </optgroup>
+        <optgroup label="Inkoop">
+          <option value="7000">7000 Inkoop AliExpress</option>
+          <option value="7010">7010 Inkoop HNVI</option>
+          <option value="7020">7020 Inkoop MijnMagie</option>
+          <option value="7100">7100 Inkoop verzendartikelen</option>
+          <option value="7900">7900 Transportkosten</option>
+        </optgroup>
+        <optgroup label="Kosten">
+          <option value="4235">4235 Kleine aanschaf inventaris</option>
+          <option value="4290">4290 Overige zakelijke aankopen</option>
+          <option value="4350">4350 Bankkosten</option>
+          <option value="4760">4760 Abonnement</option>
+          <option value="4810">4810 Reclame</option>
+          <option value="4815">4815 Website</option>
+          <option value="4895">4895 Overige verkoopkosten</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="form-group full"><label>Omschrijving (optioneel)</label><input type="text" id="fact-omschr" placeholder="extra toelichting"></div>
+  </div>
+  <div id="fact-fout" style="font-size:12px;color:var(--semantic-danger-bright);min-height:16px;margin-top:8px"></div>
+  <div class="modal-actions">
+    <button class="btn" onclick="sluitFactuurModal()">Annuleren</button>
+    <button class="btn btn-danger" id="fact-delete-btn" onclick="verwijderFactuurUitModal()" style="display:none">Verwijderen</button>
+    <button class="btn btn-primary" onclick="saveFactuur()">Opslaan</button>
+  </div>
+</div>
+</div>
+
 <!-- MODAL: ALLES NAAR CLOUD -->
 <div class="modal-overlay" id="modal-voorraad-sync">
 <div class="modal">

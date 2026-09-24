@@ -7,7 +7,11 @@ import { nav, gaNaar, hertekenHuidigePagina, paginaUitHash } from './ui.js?v=202
 import { startAutosync, syncNu } from './autosync.js?v=20260902a';
 import { wisselJaar, renderHome } from './dashboard.js?v=20260902a';
 import { renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, syncTxBtw, bewerkBoeking, deleteTx } from './bank.js?v=20260902a';
-import { renderFacturen, kiesFactuurTab } from './facturen-ui.js?v=20260902a';
+import {
+  renderFacturen, kiesFactuurTab,
+  openFactuurModal, sluitFactuurModal, syncFactuurVervaldatum, factVervaldatumHandmatig,
+  saveFactuur, verwijderFactuurUitModal
+} from './facturen-ui.js?v=20260902a';
 import { renderBeheer, bewaarMinVoorraad, bewaarReferentiePriveSt2022, herprobeerSynchronisatie, bewaarBtwVanaf } from './beheer.js?v=20260902a';
 import { renderPortaal } from './home.js?v=20260902a';
 import { renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening } from './grootboek.js?v=20260902a';
@@ -69,6 +73,8 @@ Object.assign(window, {
   nav, gaNaar, wisselJaar, hertekenHuidigePagina, paginaUitHash,
   renderBank, openTxModal, closeTx, saveTx, syncTxGrootboek, syncTxBtw, bewerkBoeking, deleteTx,
   renderFacturen, kiesFactuurTab, renderBeheer, renderPortaal,
+  openFactuurModal, sluitFactuurModal, syncFactuurVervaldatum, factVervaldatumHandmatig,
+  saveFactuur, verwijderFactuurUitModal,
   renderCrediteuren, wisselJaarCrediteuren, renderDebiteuren, wisselJaarDebiteuren,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
   renderBelasting, openExtraKosten, openPercentages, openInkomenssoort, controlereBelasting, openControleDialog, kopieerAangifte, downloadAangifte, downloadAangiftePdf,
@@ -112,6 +118,7 @@ initZoek();
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   if (overlay.id === 'modal-hnvi') return; // deze mag alleen via de knoppen dicht
   if (overlay.id === 'modal-tx') return; // Fase 4: boeking-modal sluit NIET via click-outside
+  if (overlay.id === 'modal-factuur') return; // zelfde bescherming: geen formulierverlies door een verdwaalde klik
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 });
 
