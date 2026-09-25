@@ -15,6 +15,7 @@ import {
   zoekFactuurRelatie, sluitFactuurRelatieSuggesties,
   openRelatiesBeheerModal, sluitRelatiesBeheerModal, voegNieuweRelatieToe, bewaarRelatiesBeheer
 } from './facturen-ui.js?v=20260902a';
+import { openIbanClusterScherm } from './boekingen-relaties-ui.js?v=20260902a';
 import { renderBeheer, bewaarMinVoorraad, bewaarReferentiePriveSt2022, herprobeerSynchronisatie, bewaarBtwVanaf } from './beheer.js?v=20260902a';
 import { renderPortaal } from './home.js?v=20260902a';
 import {
@@ -84,6 +85,7 @@ Object.assign(window, {
   saveFactuur, verwijderFactuurUitModal, sluitKoppelModal, zoekFactuurBoeking,
   zoekFactuurRelatie, sluitFactuurRelatieSuggesties,
   openRelatiesBeheerModal, sluitRelatiesBeheerModal, voegNieuweRelatieToe, bewaarRelatiesBeheer,
+  openIbanClusterScherm,
   renderCrediteuren, wisselJaarCrediteuren, renderDebiteuren, wisselJaarDebiteuren,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
   openGrootboekBeheerModal, sluitGrootboekBeheerModal, voegGrootboekToe, verwijderGrootboek,

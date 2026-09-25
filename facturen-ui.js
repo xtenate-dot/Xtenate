@@ -108,6 +108,7 @@ export function renderFacturen() {
         <div class="kpi kpi--secondary"><div class="kpi-lbl">Vervalt binnenkort</div><div class="kpi-val">${binnenkort}</div></div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="openRelatiesBeheerModal()">Relaties beheren</button>
+      <button class="btn btn-ghost btn-sm" onclick="openIbanClusterScherm()">Boekingen koppelen (IBAN)</button>
       <button class="btn btn-primary" onclick="openFactuurModal()">Nieuwe factuur</button>
     </div>
     <div class="table-wrap" style="margin-bottom:var(--spacing-4)"><table class="tbl-compact">

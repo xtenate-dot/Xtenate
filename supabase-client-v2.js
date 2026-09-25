@@ -92,7 +92,8 @@ export function addToPendingQueue(boeking, operation, isHistoric = false, soortH
           gb: boeking.gb,
           bron: boeking.bron,
           btw_percentage: boeking.btw_percentage,
-          btw_bedrag: boeking.btw_bedrag
+          btw_bedrag: boeking.btw_bedrag,
+          relatieId: boeking.relatieId ?? null
         }
       : { ...boeking };
   }
@@ -404,6 +405,10 @@ export async function loadBoekingenFromSupabase() {
         record.btw_percentage = b.btw_percentage;
         record.btw_bedrag = Number(b.btw_bedrag) || 0;
       }
+      // Fase 4b-1: gekoppelde relatie meenemen als die er is. Zelfde
+      // redenering als bron/btw hierboven — alleen zetten als aanwezig, want
+      // de meeste boekingen hebben (nog) geen relatie_id.
+      if (b.relatie_id) record.relatieId = b.relatie_id;
 
       if (b.archief_jaar === null) {
         TX.push(record);
@@ -456,6 +461,11 @@ export async function saveToSupabase(boeking, isHistoric) {
       btw_bedrag: boeking.btw_bedrag || 0,
       btw_percentage: boeking.btw_percentage || 0,
       bron: boeking.bron === 'handmatig' ? 'handmatig' : 'excel',
+      // Fase 4b-1: relatie_id meesturen als de boeking er een heeft, anders
+      // expliciet null. Zonder dit zou elke gewone bewerking van deze boeking
+      // (via partijen.js) een eerder gekoppelde relatie stilletjes wissen —
+      // deze functie doet delete+insert, dus wat hier niet in staat, gaat weg.
+      relatie_id: boeking.relatieId || null,
       updated_at: new Date().toISOString()
     };
 
@@ -578,6 +588,9 @@ function boekingRecord(boeking, isHistoric, userId) {
     btw_bedrag: boeking.btw_bedrag || 0,
     btw_percentage: boeking.btw_percentage || 0,
     bron: boeking.bron === 'handmatig' ? 'handmatig' : 'excel',
+    // Fase 4b-1: zie de identieke toevoeging in saveToSupabase() hierboven —
+    // een volledige hersync mag een eerder gekoppelde relatie niet wissen.
+    relatie_id: boeking.relatieId || null,
     updated_at: new Date().toISOString()
   };
 }
