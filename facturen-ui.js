@@ -19,6 +19,7 @@ import { esc, fmt, ddmm, bedragUit, leegVlak, isInkomst, isUitgave, weergaveNaam
 import { downloadModelPdf } from './pdf.js?v=20260902a';
 import { state, grootboekNamen, grootboekOptgroepen } from './storage.js?v=20260902a';
 import { zoekBoekingen } from './search.js?v=20260902a';
+import { vindRelatie, zoekRelaties, maakRelatie, hernoemRelatie, voegRelatiesSamen, herlaadRelaties } from './relaties.js?v=20260902a';
 
 const el = id => document.getElementById(id);
 
@@ -106,6 +107,7 @@ export function renderFacturen() {
         <div class="kpi kpi--secondary"><div class="kpi-lbl">Te laat</div><div class="kpi-val${teLaat ? ' neg' : ''}">${teLaat}</div></div>
         <div class="kpi kpi--secondary"><div class="kpi-lbl">Vervalt binnenkort</div><div class="kpi-val">${binnenkort}</div></div>
       </div>
+      <button class="btn btn-ghost btn-sm" onclick="openRelatiesBeheerModal()">Relaties beheren</button>
       <button class="btn btn-primary" onclick="openFactuurModal()">Nieuwe factuur</button>
     </div>
     <div class="table-wrap" style="margin-bottom:var(--spacing-4)"><table class="tbl-compact">
@@ -204,6 +206,8 @@ export function openFactuurModal(id = null) {
   el('fact-verval').value = f?.vervaldatum || plusDagen(datum, standaardTermijn(actiefTab));
   el('fact-bedrag').value = f ? String(f.bedrag).replace('.', ',') : '';
   el('fact-relatie').value = f?.relatie || '';
+  el('fact-relatie-id').value = f?.relatieId || '';
+  sluitFactuurRelatieSuggesties();
   el('fact-nr').value = f?.factuurnummer || '';
   el('fact-omschr').value = f?.omschrijving || '';
   vulFactuurGrootboekSelect(f?.gb || '');
@@ -256,6 +260,7 @@ export function saveFactuur() {
   const vervaldatum = el('fact-verval').value;
   const bedrag = bedragUit('fact-bedrag', NaN);
   const relatie = el('fact-relatie').value.trim();
+  const relatieId = el('fact-relatie-id').value || null;
   const factuurnummer = el('fact-nr').value.trim();
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(datum)) {
@@ -277,7 +282,7 @@ export function saveFactuur() {
 
   const gegevens = {
     soort: actiefTab, datum, vervaldatum, bedrag,
-    relatie, factuurnummer,
+    relatie, relatieId, factuurnummer,
     omschrijving: el('fact-omschr').value.trim(),
     gb: el('fact-gb').value
   };
@@ -308,6 +313,148 @@ export function verwijderFactuurUitModal() {
   if (state.editFactuurId != null && verwijderFactuurUi(state.editFactuurId)) {
     sluitFactuurModal();
   }
+}
+
+// ─────────────────────────────────────────── relatie kiezen bij een factuur
+//
+// #fact-relatie blijft een gewoon vrij tekstveld — dat werkt exact als
+// voorheen. Dit blok komt er alleen bovenop: zoeken in state.RELATIES terwijl
+// je typt, een suggestie aanklikken vult zowel de tekst als het verborgen
+// #fact-relatie-id; verder typen na een keuze ontkoppelt die keuze weer
+// (relatieId gaat terug naar leeg), zodat tekst en id nooit uit elkaar lopen.
+
+export function zoekFactuurRelatie() {
+  el('fact-relatie-id').value = '';
+  const paneel = el('fact-relatie-suggesties');
+  const q = el('fact-relatie').value.trim();
+  if (q.length < 2) { sluitFactuurRelatieSuggesties(); return; }
+
+  const resultaten = zoekRelaties(q);
+  const exacteMatch = resultaten.some(r => r.naam.toLowerCase() === q.toLowerCase());
+
+  let html = resultaten.map(r => `
+    <div class="sr-item" role="option" data-relatie-id="${esc(r.id)}">
+      <div class="sr-main">
+        <div class="sr-title">${esc(r.naam)}</div>
+        ${r.aliassen && r.aliassen.length ? `<div class="sr-meta">ook bekend als: ${esc(r.aliassen.join(', '))}</div>` : ''}
+      </div>
+    </div>`).join('');
+
+  if (!exacteMatch) {
+    html += `<div class="sr-item" role="option" data-nieuwe-relatie="1">
+      <div class="sr-main"><div class="sr-title">+ Nieuwe relatie: "${esc(q)}"</div></div>
+    </div>`;
+  }
+
+  paneel.innerHTML = html || `<div class="sr-empty">Niets gevonden — typ verder of laat staan als vrije tekst.</div>`;
+  paneel.classList.add('open');
+
+  paneel.querySelectorAll('[data-relatie-id]').forEach(k =>
+    k.addEventListener('click', () => kiesFactuurRelatie(k.dataset.relatieId)));
+  const nieuweKnop = paneel.querySelector('[data-nieuwe-relatie]');
+  if (nieuweKnop) nieuweKnop.addEventListener('click', () => maakEnKiesFactuurRelatie(q));
+}
+
+export function sluitFactuurRelatieSuggesties() {
+  const paneel = el('fact-relatie-suggesties');
+  if (!paneel) return;
+  paneel.classList.remove('open');
+  paneel.innerHTML = '';
+}
+
+function kiesFactuurRelatie(id) {
+  const r = vindRelatie(id);
+  if (!r) return;
+  el('fact-relatie').value = r.naam;
+  el('fact-relatie-id').value = r.id;
+  sluitFactuurRelatieSuggesties();
+}
+
+async function maakEnKiesFactuurRelatie(naam) {
+  const r = await maakRelatie(naam);
+  if (!r) { alert('Relatie aanmaken mislukt. Probeer het nog eens.'); return; }
+  el('fact-relatie').value = r.naam;
+  el('fact-relatie-id').value = r.id;
+  sluitFactuurRelatieSuggesties();
+}
+
+// ─────────────────────────────────────────────────────── relaties beheren
+
+function renderRelatiesBeheerLijst() {
+  const lijst = el('relaties-beheer-lijst');
+  if (!state.RELATIES.length) {
+    lijst.innerHTML = `<div class="muted" style="padding:8px 0">Nog geen relaties. Voeg er hieronder een toe, of kies er één bij het aanmaken van een factuur.</div>`;
+    return;
+  }
+  lijst.innerHTML = state.RELATIES.map(r => `
+    <div>
+      <div class="groep-rij" style="flex-wrap:wrap">
+        <input type="text" value="${esc(r.naam)}" data-relatie-naam="${esc(r.id)}" style="flex:1;min-width:140px" aria-label="Naam van ${esc(r.naam)}">
+        <select data-relatie-doel="${esc(r.id)}" style="max-width:170px" aria-label="Samenvoegen met">
+          <option value="">Samenvoegen met…</option>
+          ${state.RELATIES.filter(x => x.id !== r.id).map(x => `<option value="${esc(x.id)}">${esc(x.naam)}</option>`).join('')}
+        </select>
+        <button type="button" class="btn-details" data-relatie-samenvoegen="${esc(r.id)}">Samenvoegen</button>
+      </div>
+      ${r.aliassen && r.aliassen.length ? `<div class="muted" style="font-size:11px;padding-left:2px;margin-top:2px">ook bekend als: ${esc(r.aliassen.join(', '))}</div>` : ''}
+    </div>`).join('');
+
+  lijst.querySelectorAll('[data-relatie-samenvoegen]').forEach(k =>
+    k.addEventListener('click', () => samenvoegRelatieUi(k.dataset.relatieSamenvoegen)));
+}
+
+export async function openRelatiesBeheerModal() {
+  el('relatie-fout').textContent = '';
+  el('relatie-nieuw').value = '';
+  el('relaties-beheer-lijst').innerHTML = `<div class="muted" style="padding:8px 0">Laden…</div>`;
+  document.getElementById('modal-relaties-beheer').classList.add('open');
+  await herlaadRelaties();
+  renderRelatiesBeheerLijst();
+  el('relatie-nieuw').focus();
+}
+
+export function sluitRelatiesBeheerModal() {
+  document.getElementById('modal-relaties-beheer')?.classList.remove('open');
+}
+
+export async function voegNieuweRelatieToe() {
+  const naam = el('relatie-nieuw').value.trim();
+  const fout = el('relatie-fout');
+  if (!naam) { fout.textContent = 'Vul een naam in.'; return; }
+  if (state.RELATIES.some(r => r.naam.toLowerCase() === naam.toLowerCase())) {
+    fout.textContent = `Er bestaat al een relatie "${naam}".`; return;
+  }
+  fout.textContent = '';
+  const r = await maakRelatie(naam);
+  if (!r) { fout.textContent = 'Aanmaken mislukt. Probeer het nog eens.'; return; }
+  el('relatie-nieuw').value = '';
+  renderRelatiesBeheerLijst();
+}
+
+async function samenvoegRelatieUi(opTeHevenId) {
+  const fout = el('relatie-fout');
+  const select = el('relaties-beheer-lijst').querySelector(`[data-relatie-doel="${opTeHevenId}"]`);
+  const behoudenId = select?.value;
+  if (!behoudenId) { fout.textContent = 'Kies eerst met welke relatie je wilt samenvoegen.'; return; }
+
+  const opTeHeven = vindRelatie(opTeHevenId);
+  const behouden = vindRelatie(behoudenId);
+  if (!window.confirm(`"${opTeHeven?.naam}" samenvoegen met "${behouden?.naam}"? "${opTeHeven?.naam}" blijft daarna als alias bij "${behouden?.naam}" herkenbaar staan.`)) return;
+
+  fout.textContent = '';
+  const ok = await voegRelatiesSamen(behoudenId, opTeHevenId);
+  if (!ok) { fout.textContent = 'Samenvoegen mislukt. Probeer het nog eens.'; return; }
+  renderRelatiesBeheerLijst();
+}
+
+export async function bewaarRelatiesBeheer() {
+  const invoervelden = [...el('relaties-beheer-lijst').querySelectorAll('input[data-relatie-naam]')];
+  for (const inp of invoervelden) {
+    const naam = inp.value.trim();
+    const r = vindRelatie(inp.dataset.relatieNaam);
+    if (r && naam && naam !== r.naam) await hernoemRelatie(r.id, naam);
+  }
+  sluitRelatiesBeheerModal();
 }
 
 // ──────────────────────────────────────────────────── koppelen aan boeking

@@ -11,7 +11,9 @@ import {
   renderFacturen, kiesFactuurTab,
   openFactuurModal, sluitFactuurModal, syncFactuurVervaldatum, factVervaldatumHandmatig,
   saveFactuur, verwijderFactuurUitModal,
-  sluitKoppelModal, zoekFactuurBoeking
+  sluitKoppelModal, zoekFactuurBoeking,
+  zoekFactuurRelatie, sluitFactuurRelatieSuggesties,
+  openRelatiesBeheerModal, sluitRelatiesBeheerModal, voegNieuweRelatieToe, bewaarRelatiesBeheer
 } from './facturen-ui.js?v=20260902a';
 import { renderBeheer, bewaarMinVoorraad, bewaarReferentiePriveSt2022, herprobeerSynchronisatie, bewaarBtwVanaf } from './beheer.js?v=20260902a';
 import { renderPortaal } from './home.js?v=20260902a';
@@ -80,6 +82,8 @@ Object.assign(window, {
   renderFacturen, kiesFactuurTab, renderBeheer, renderPortaal,
   openFactuurModal, sluitFactuurModal, syncFactuurVervaldatum, factVervaldatumHandmatig,
   saveFactuur, verwijderFactuurUitModal, sluitKoppelModal, zoekFactuurBoeking,
+  zoekFactuurRelatie, sluitFactuurRelatieSuggesties,
+  openRelatiesBeheerModal, sluitRelatiesBeheerModal, voegNieuweRelatieToe, bewaarRelatiesBeheer,
   renderCrediteuren, wisselJaarCrediteuren, renderDebiteuren, wisselJaarDebiteuren,
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
   openGrootboekBeheerModal, sluitGrootboekBeheerModal, voegGrootboekToe, verwijderGrootboek,

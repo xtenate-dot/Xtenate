@@ -8,6 +8,7 @@ import {
   loadBoekingenFromSupabase,
   loadHnviFromSupabase,
   loadCoversFromSupabase,
+  loadRelatiesFromSupabase,
   loadPendingQueue,
   syncPendingQueue,
   pendingQueue,
@@ -131,6 +132,16 @@ export const kopie = v => JSON.parse(JSON.stringify(v));
 state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
 
 state.COVERS = load('xtenate_covers', JSON.parse(JSON.stringify(COVERS_INIT)));
+
+// Relaties (fase 4a van de facturenmodule): een echte Supabase-tabel, geen
+// app_data-lijstje zoals GROEPEN/GROOTBOEK — wat hier lokaal staat is dus
+// alleen een offline-cache, ververst zodra loadDataHybrid() lukt, nooit de
+// bron van waarheid.
+state.RELATIES = load('xtenate_relaties_cache', []);
+
+export function saveRelatiesCache() {
+  save('xtenate_relaties_cache', state.RELATIES);
+}
 
 // Voorraadartikelen van vóór de categorie-indeling aanvullen. Alles wat er al
 // stond is een Funny Cover; inkoopprijs en minimumvoorraad blijven leeg tot ze
@@ -514,6 +525,7 @@ export async function loadDataHybrid() {
       const result = await loadBoekingenFromSupabase();
       const hnviData = await loadHnviFromSupabase();
       const coversData = await loadCoversFromSupabase();
+      const relatiesData = await loadRelatiesFromSupabase();
       
       if (result && (result.TX.length > 0 || result.HIST_TX.length > 0)) {
         state.TX = result.TX;
@@ -542,12 +554,22 @@ export async function loadDataHybrid() {
       } else {
         state.COVERS = load('xtenate_covers', []);
       }
+
+      // Relaties (fase 4a): zelfde terugval-patroon als HNVI/Covers hierboven.
+      if (relatiesData && relatiesData.length > 0) {
+        state.RELATIES = relatiesData;
+        saveRelatiesCache();
+        console.log(`✅ Relaties uit Supabase: ${relatiesData.length}`);
+      } else {
+        state.RELATIES = load('xtenate_relaties_cache', []);
+      }
     } catch (err) {
       console.warn(`⚠️  Supabase load failed: ${err.message}, falling back to localStorage`);
       state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
       state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
       state.HNVI_LOTS = load('xtenate_hnvi', []);
       state.COVERS = load('xtenate_covers', []);
+      state.RELATIES = load('xtenate_relaties_cache', []);
       state.loadedFromSupabase = false;
     }
   } else {
@@ -557,6 +579,7 @@ export async function loadDataHybrid() {
     state.HIST_TX = load('xtenate_hist_tx_override', JSON.parse(JSON.stringify(HIST_TX_DEFAULT)));
     state.HNVI_LOTS = load('xtenate_hnvi', []);
     state.COVERS = load('xtenate_covers', []);
+    state.RELATIES = load('xtenate_relaties_cache', []);
     state.loadedFromSupabase = false;
   }
   

@@ -61,6 +61,10 @@ export function maakFactuur(gegevens = {}) {
     id: gegevens.id || `f${jaar}_${volgnr}`,
     soort,
     relatie: (gegevens.relatie || '').trim(),
+    // Fase 4a: optioneel, naast het vrije tekstveld hierboven — nooit in
+    // plaats daarvan. Een factuur zonder gekozen relatie heeft hier null,
+    // precies zoals elke factuur van vóór deze fase.
+    relatieId: gegevens.relatieId || null,
     factuurnummer: (gegevens.factuurnummer || '').trim(),
     datum,
     vervaldatum: gegevens.vervaldatum || plusDagen(datum, standaardTermijn(soort)),

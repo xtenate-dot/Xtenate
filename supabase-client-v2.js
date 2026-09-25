@@ -271,6 +271,89 @@ export async function loadCoversFromSupabase() {
   }
 }
 
+// ─── RELATIES (fase 4a van de facturenmodule) ──────────────────────────────
+// Een eigen tabel, anders dan grootboek/rekeningen/groepen: die zijn platte
+// naam-opzoeklijsten waar niets naar verwijst, een relatie wordt straks
+// vanuit een factuur aangewezen via een echte id. RLS filtert al op
+// user_id = auth.uid(), dus hier geen losse .eq('user_id', ...) nodig.
+
+export async function loadRelatiesFromSupabase() {
+  if (!heeftClient()) return [];
+  try {
+    const sb = await getClient();
+    const { data, error } = await sb
+      .from('relaties')
+      .select('id, naam, aliassen')
+      .is('deleted_at', null)
+      .order('naam');
+    if (error) {
+      console.warn('⚠️  Relaties laden mislukt:', error.message);
+      return [];
+    }
+    return (data || []).map(r => ({ id: r.id, naam: r.naam, aliassen: r.aliassen || [] }));
+  } catch (err) {
+    console.warn('Error in loadRelatiesFromSupabase:', err);
+    return [];
+  }
+}
+
+export async function maakRelatieInSupabase(naam) {
+  if (!heeftClient()) return null;
+  try {
+    const sb = await getClient();
+    const { data: sessieData } = await sb.auth.getSession();
+    const userId = sessieData?.session?.user?.id;
+    if (!userId) return null;
+    const { data, error } = await sb.from('relaties')
+      .insert([{ user_id: userId, naam }])
+      .select('id, naam, aliassen')
+      .single();
+    if (error) {
+      console.warn('⚠️  Relatie aanmaken mislukt:', error.message);
+      return null;
+    }
+    return { id: data.id, naam: data.naam, aliassen: data.aliassen || [] };
+  } catch (err) {
+    console.warn('Error in maakRelatieInSupabase:', err);
+    return null;
+  }
+}
+
+export async function werkRelatieBijInSupabase(id, wijzigingen) {
+  if (!heeftClient()) return false;
+  try {
+    const sb = await getClient();
+    const { error } = await sb.from('relaties').update(wijzigingen).eq('id', id);
+    if (error) {
+      console.warn('⚠️  Relatie bijwerken mislukt:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Error in werkRelatieBijInSupabase:', err);
+    return false;
+  }
+}
+
+/** Zacht verwijderen (deleted_at), net als de andere tabellen — nooit een
+ *  echte DELETE, zodat een boeking/factuur die nog naar dit id verwijst niet
+ *  ineens op een spookrecord uitkomt. */
+export async function verwijderRelatieInSupabase(id) {
+  if (!heeftClient()) return false;
+  try {
+    const sb = await getClient();
+    const { error } = await sb.from('relaties').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+    if (error) {
+      console.warn('⚠️  Relatie verwijderen mislukt:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Error in verwijderRelatieInSupabase:', err);
+    return false;
+  }
+}
+
 export async function loadBoekingenFromSupabase() {
   if (!heeftClient()) {
     console.log('⚠️  Supabase client not initialized');
