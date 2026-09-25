@@ -16,7 +16,7 @@ import {
   openRelatiesBeheerModal, sluitRelatiesBeheerModal, voegNieuweRelatieToe, bewaarRelatiesBeheer
 } from './facturen-ui.js?v=20260902a';
 import { openIbanClusterScherm } from './boekingen-relaties-ui.js?v=20260902a';
-import { renderBeheer, bewaarMinVoorraad, bewaarReferentiePriveSt2022, herprobeerSynchronisatie, bewaarBtwVanaf } from './beheer.js?v=20260902a';
+import { renderBeheer, bewaarMinVoorraad, bewaarReferentiePriveSt2022, herprobeerSynchronisatie, bewaarBtwVanaf, bewaarBedrijfsgegevens } from './beheer.js?v=20260902a';
 import { renderPortaal } from './home.js?v=20260902a';
 import {
   renderGrootboek, wisFiltersGrootboek, openGrootboekRekening, sluitGrootboekRekening,
@@ -95,7 +95,7 @@ Object.assign(window, {
   renderControle, klapControleUit, toonAlleControleRegels,
   verbergControleMelding, zetControleUitVanaf, herstelControleMelding, herstelControleReeks, herstelAlleMeldingen,
   renderCovers, openCoverModal, openCoverEdit, closeCoverModal, saveCover, kiesVoorraadTab,
-  wisselVoorraadDetails, wisselDetailKolommen, filterVoorraadStatus, bewaarMinVoorraad, bewaarReferentiePriveSt2022, herprobeerSynchronisatie, bewaarBtwVanaf,
+  wisselVoorraadDetails, wisselDetailKolommen, filterVoorraadStatus, bewaarMinVoorraad, bewaarReferentiePriveSt2022, herprobeerSynchronisatie, bewaarBtwVanaf, bewaarBedrijfsgegevens,
   wisselVoorraadSelectie, selecteerAlleVoorraad, verplaatsVoorraadSelectie, wisVoorraadSelectie, zetHandelsvoorraadSelectie,
   openVerdeling, sluitVerdeling, herstelVerdeling, wijzigFactor, bewaarVerdeling,
   openVoorraadSyncModal, sluitVoorraadSyncModal, startVoorraadSync,

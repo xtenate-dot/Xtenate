@@ -17,7 +17,7 @@ import {
 } from './facturen.js?v=20260902a';
 import { esc, fmt, ddmm, bedragUit, leegVlak, isInkomst, isUitgave, weergaveNaam } from './helpers.js?v=20260902a';
 import { downloadModelPdf } from './pdf.js?v=20260902a';
-import { state, grootboekNamen, grootboekOptgroepen } from './storage.js?v=20260902a';
+import { state, grootboekNamen, grootboekOptgroepen, BEDRIJFSGEGEVENS } from './storage.js?v=20260902a';
 import { zoekBoekingen } from './search.js?v=20260902a';
 import { vindRelatie, zoekRelaties, maakRelatie, hernoemRelatie, voegRelatiesSamen, herlaadRelaties } from './relaties.js?v=20260902a';
 
@@ -568,6 +568,27 @@ function ontkoppelBoekingVanFactuur(txId) {
 // ──────────────────────────────────────────────────────────────────── pdf
 
 /**
+ * De footertekst van de factuur-pdf. Fase 5 van zelfregistratie: zodra er
+ * een bedrijfsnaam is ingevuld (Beheer > Bedrijfsgegevens), toont de pdf die
+ * gegevens in plaats van de neutrale "Interne kopie"-tekst. Zonder ingevulde
+ * naam blijft dit exact de tekst van vóór deze fase — dit wordt pas gelezen
+ * op het moment van downloaden, dus een pdf die je al eerder hebt
+ * gedownload verandert hier nooit door.
+ */
+function factuurFooterTekst() {
+  const g = BEDRIJFSGEGEVENS;
+  if (!g?.naam) {
+    return `Interne kopie uit de Xtenate-administratie, gegenereerd op ${new Date().toLocaleDateString('nl-NL')}.`;
+  }
+  const delen = [g.naam];
+  if (g.adres) delen.push(g.adres);
+  if (g.postcodePlaats) delen.push(g.postcodePlaats);
+  if (g.kvkNummer) delen.push(`KVK ${g.kvkNummer}`);
+  if (g.btwNummer) delen.push(`BTW ${g.btwNummer}`);
+  return delen.join(' · ');
+}
+
+/**
  * Het pdf-model voor één factuur. Het bedrag komt rechtstreeks uit f.bedrag
  * (een opgeslagen veld, geen optelsom) en de status komt uitsluitend via
  * statusWeergave() hierboven — dezelfde functie die de lijst gebruikt. Geen
@@ -590,7 +611,7 @@ function factuurModel(f) {
 
       ...(f.omschrijving ? [{ type: 'tekst', tekst: `Omschrijving: ${f.omschrijving}` }] : []),
 
-      { type: 'voet', tekst: `Interne kopie uit de Xtenate-administratie, gegenereerd op ${new Date().toLocaleDateString('nl-NL')}.` }
+      { type: 'voet', tekst: factuurFooterTekst() }
     ]
   };
 }

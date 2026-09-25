@@ -7,7 +7,7 @@
 
 import { draaiControles } from './controle.js?v=20260902a';
 import { esc } from './helpers.js?v=20260902a';
-import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN } from './storage.js?v=20260902a';
+import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN, saveBedrijfsgegevens, BEDRIJFSGEGEVENS } from './storage.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 import { getPendingItems } from './supabase-client-v2.js?v=20260902a';
 import { syncNu } from './autosync.js?v=20260902a';
@@ -98,6 +98,7 @@ export function renderBeheer() {
     voorraadInstellingenBlok() +
     controleInstellingenBlok() +
     btwInstellingenBlok() +
+    bedrijfsgegevensBlok() +
     groep('Voorzichtig', [
       tegel({
         titel: 'Data wissen', uitleg: 'Alles verwijderen uit deze browser — niet ongedaan te maken!',
@@ -235,6 +236,65 @@ export function bewaarBtwVanaf() {
     ? 'Opgeslagen: geen BTW-plicht ingesteld.'
     : `Opgeslagen: BTW-plichtig vanaf ${ruw}.`;
   hertekenHuidigePagina();
+}
+
+/**
+ * Fase 5 van zelfregistratie: eigen bedrijfsgegevens, alles optioneel. Werkt
+ * op dit moment alleen door in de footer van de factuur-pdf — zonder
+ * ingevulde naam blijft die de bestaande "Interne kopie"-tekst tonen. Een
+ * echt verzendklaar document (eigen briefhoofd) is een latere, grotere stap.
+ */
+function bedrijfsgegevensBlok() {
+  const g = BEDRIJFSGEGEVENS || {};
+  return `
+    <div class="beheer-groep">
+      <div class="beheer-groep-kop">Bedrijfsgegevens</div>
+      <div class="card" style="padding:var(--spacing-4)">
+        <div class="muted" style="font-size:12px;margin-bottom:10px">
+          Alles optioneel. Zodra de naam is ingevuld, toont de factuur-pdf deze gegevens
+          in plaats van de tekst "Interne kopie". Al gedownloade pdf's veranderen hier nooit door.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+            Bedrijfsnaam
+            <input type="text" id="beheer-bedrijf-naam" value="${esc(g.naam || '')}" aria-label="Bedrijfsnaam">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+            Adres
+            <input type="text" id="beheer-bedrijf-adres" value="${esc(g.adres || '')}" aria-label="Adres">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+            Postcode en plaats
+            <input type="text" id="beheer-bedrijf-postcode-plaats" value="${esc(g.postcodePlaats || '')}" aria-label="Postcode en plaats">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+            KVK-nummer
+            <input type="text" id="beheer-bedrijf-kvk" value="${esc(g.kvkNummer || '')}" aria-label="KVK-nummer">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+            BTW-nummer
+            <input type="text" id="beheer-bedrijf-btwnr" value="${esc(g.btwNummer || '')}" aria-label="BTW-nummer">
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-primary" onclick="bewaarBedrijfsgegevens()">Opslaan</button>
+          <span id="beheer-bedrijf-melding" class="muted" style="font-size:12px"></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+export function bewaarBedrijfsgegevens() {
+  const waarde = id => (el(id)?.value ?? '').trim();
+  saveBedrijfsgegevens({
+    naam: waarde('beheer-bedrijf-naam') || null,
+    adres: waarde('beheer-bedrijf-adres') || null,
+    postcodePlaats: waarde('beheer-bedrijf-postcode-plaats') || null,
+    kvkNummer: waarde('beheer-bedrijf-kvk') || null,
+    btwNummer: waarde('beheer-bedrijf-btwnr') || null
+  });
+  const melding = el('beheer-bedrijf-melding');
+  if (melding) melding.textContent = 'Opgeslagen.';
 }
 
 /**

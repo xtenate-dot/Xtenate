@@ -54,6 +54,7 @@ function appDataWaarde(sleutel) {
   if (sleutel === 'factuur_instellingen') return FACTUUR_INSTELLINGEN;
   if (sleutel === 'controle_instellingen') return CONTROLE_INSTELLINGEN;
   if (sleutel === 'btw_instellingen') return BTW_INSTELLINGEN;
+  if (sleutel === 'bedrijfsgegevens') return BEDRIJFSGEGEVENS;
   if (sleutel === 'tellers') return { tx: state.nxtTx, cover: state.nxtCover, hnvi: state.nxtHnvi };
   return undefined;
 }
@@ -491,6 +492,25 @@ export function isBtwPlichtig(datum) {
   return String(datum) >= String(vanaf);
 }
 
+// ─── BEDRIJFSGEGEVENS (fase 5, zelfregistratie) ────────────────────────────
+// Alles optioneel en leeg totdat jij het invult — precies hetzelfde patroon
+// als CONTROLE_INSTELLINGEN/BTW_INSTELLINGEN hierboven. Werkt op dit moment
+// alleen door in de footer van de factuur-pdf (facturen-ui.js): zonder een
+// ingevulde naam blijft die exact de bestaande "Interne kopie"-tekst tonen.
+export let BEDRIJFSGEGEVENS = load('xtenate_bedrijfsgegevens', {
+  naam: null,
+  adres: null,
+  postcodePlaats: null,
+  kvkNummer: null,
+  btwNummer: null
+});
+
+export function saveBedrijfsgegevens(nieuwe) {
+  if (nieuwe) BEDRIJFSGEGEVENS = { ...BEDRIJFSGEGEVENS, ...nieuwe };
+  save('xtenate_bedrijfsgegevens', BEDRIJFSGEGEVENS);
+  duwAppData('bedrijfsgegevens', BEDRIJFSGEGEVENS);
+}
+
 // ─── STATE INITIALISATIE (identiek aan origineel) ──────────────────────────
 // Het jaar stond hier vast op '2025'. Dat is een dode waarde zodra het
 // kalenderjaar verder loopt: bij elke refresh viel de app terug op een jaar
@@ -614,6 +634,9 @@ export async function loadDataHybrid() {
         }
         if (extra.btw_instellingen) {
           BTW_INSTELLINGEN = { ...BTW_INSTELLINGEN, ...extra.btw_instellingen };
+        }
+        if (extra.bedrijfsgegevens) {
+          BEDRIJFSGEGEVENS = { ...BEDRIJFSGEGEVENS, ...extra.bedrijfsgegevens };
         }
         // Tellers: het hoogste getal wint, zodat twee apparaten nooit
         // hetzelfde id uitdelen aan verschillende dingen.
