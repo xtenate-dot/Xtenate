@@ -19,7 +19,7 @@ import { esc, fmt, ddmm, bedragUit, leegVlak, isInkomst, isUitgave, weergaveNaam
 import { downloadModelPdf } from './pdf.js?v=20260902a';
 import { state, grootboekNamen, grootboekOptgroepen, BEDRIJFSGEGEVENS } from './storage.js?v=20260902a';
 import { zoekBoekingen } from './search.js?v=20260902a';
-import { vindRelatie, zoekRelaties, maakRelatie, hernoemRelatie, voegRelatiesSamen, herlaadRelaties } from './relaties.js?v=20260902a';
+import { vindRelatie, zoekRelaties, maakRelatie, hernoemRelatie, voegRelatiesSamen, herlaadRelaties, bewaarRelatieAdres } from './relaties.js?v=20260902a';
 
 const el = id => document.getElementById(id);
 
@@ -398,6 +398,12 @@ function renderRelatiesBeheerLijst() {
         <button type="button" class="btn-details" data-relatie-samenvoegen="${esc(r.id)}">Samenvoegen</button>
       </div>
       ${r.aliassen && r.aliassen.length ? `<div class="muted" style="font-size:11px;padding-left:2px;margin-top:2px">ook bekend als: ${esc(r.aliassen.join(', '))}</div>` : ''}
+      <div class="groep-rij" style="flex-wrap:wrap;margin-top:4px" data-relatie-adresrij="${esc(r.id)}">
+        <input type="text" value="${esc(r.adres || '')}" data-relatie-adres="${esc(r.id)}" placeholder="Adres" style="flex:1;min-width:110px;font-size:12px" aria-label="Adres van ${esc(r.naam)}">
+        <input type="text" value="${esc(r.postcodePlaats || '')}" data-relatie-postcode-plaats="${esc(r.id)}" placeholder="Postcode en plaats" style="flex:1;min-width:110px;font-size:12px" aria-label="Postcode en plaats van ${esc(r.naam)}">
+        <input type="text" value="${esc(r.kvkNummer || '')}" data-relatie-kvk="${esc(r.id)}" placeholder="KVK-nummer" style="width:100px;font-size:12px" aria-label="KVK-nummer van ${esc(r.naam)}">
+        <input type="text" value="${esc(r.btwNummer || '')}" data-relatie-btw="${esc(r.id)}" placeholder="BTW-nummer" style="width:130px;font-size:12px" aria-label="BTW-nummer van ${esc(r.naam)}">
+      </div>
     </div>`).join('');
 
   lijst.querySelectorAll('[data-relatie-samenvoegen]').forEach(k =>
@@ -455,6 +461,25 @@ export async function bewaarRelatiesBeheer() {
     const r = vindRelatie(inp.dataset.relatieNaam);
     if (r && naam && naam !== r.naam) await hernoemRelatie(r.id, naam);
   }
+
+  // Fase 6, deel 1: adresgegevens, gebatched net als de naam hierboven —
+  // alleen wegschrijven als er ook echt iets is veranderd.
+  const adresRijen = [...el('relaties-beheer-lijst').querySelectorAll('[data-relatie-adresrij]')];
+  for (const rij of adresRijen) {
+    const id = rij.dataset.relatieAdresrij;
+    const r = vindRelatie(id);
+    if (!r) continue;
+    const waarde = sel => rij.querySelector(sel)?.value.trim() || '';
+    const gegevens = {
+      adres: waarde('[data-relatie-adres]'),
+      postcodePlaats: waarde('[data-relatie-postcode-plaats]'),
+      kvkNummer: waarde('[data-relatie-kvk]'),
+      btwNummer: waarde('[data-relatie-btw]')
+    };
+    const veranderd = Object.keys(gegevens).some(k => gegevens[k] !== (r[k] || ''));
+    if (veranderd) await bewaarRelatieAdres(id, gegevens);
+  }
+
   sluitRelatiesBeheerModal();
 }
 
@@ -588,6 +613,38 @@ function factuurFooterTekst() {
   return delen.join(' · ');
 }
 
+/** Niet-lege adresregels voor één partij: naam, adres, postcode/plaats en
+ *  een gecombineerde KVK/BTW-regel — elk alleen als het veld is ingevuld. */
+function adresRegels(g) {
+  if (!g) return [];
+  const regels = [g.naam, g.adres, g.postcodePlaats].filter(r => r && String(r).trim());
+  const kvkBtw = [g.kvkNummer ? `KVK ${g.kvkNummer}` : '', g.btwNummer ? `BTW ${g.btwNummer}` : '']
+    .filter(Boolean).join(' · ');
+  if (kvkBtw) regels.push(kvkBtw);
+  return regels;
+}
+
+/**
+ * Fase 6, deel 1: afzender (BEDRIJFSGEGEVENS, fase 5) en geadresseerde (de
+ * gekoppelde relatie, fase 4a) boven aan de factuur-pdf — alleen als BEIDE
+ * aanwezig zijn. Zonder bedrijfsgegevens is er geen afzender om naast te
+ * zetten; zonder relatieId of zonder ingevulde adresgegevens bij die relatie
+ * is er niets om te tonen. In elk ander geval blijft de pdf precies zoals hij
+ * al was (fase 5: alleen de naam in de ondertitel, of "Interne kopie").
+ */
+function factuurAdresBlokken(f) {
+  if (!BEDRIJFSGEGEVENS?.naam) return [];
+  const relatie = f.relatieId ? vindRelatie(f.relatieId) : null;
+  if (!relatie || !(relatie.adres || relatie.postcodePlaats || relatie.kvkNummer || relatie.btwNummer)) {
+    return [];
+  }
+  return [
+    ...adresRegels(BEDRIJFSGEGEVENS).map(tekst => ({ type: 'tekst', tekst })),
+    { type: 'tekst', tekst: '' },
+    ...adresRegels(relatie).map(tekst => ({ type: 'tekst', tekst }))
+  ];
+}
+
 /**
  * Het pdf-model voor één factuur. Het bedrag komt rechtstreeks uit f.bedrag
  * (een opgeslagen veld, geen optelsom) en de status komt uitsluitend via
@@ -600,6 +657,7 @@ function factuurModel(f) {
     titel: `Factuur ${f.factuurnummer || f.id}`,
     ondertitel: `${f.relatie || '(geen relatie)'} · ${f.soort === 'debiteur' ? 'Te ontvangen' : 'Te betalen'}`,
     blokken: [
+      ...factuurAdresBlokken(f),
       { type: 'kop', tekst: 'Gegevens' },
       { type: 'tekst', tekst: `Factuurnummer: ${f.factuurnummer || '—'}` },
       { type: 'tekst', tekst: `Factuurdatum: ${f.datum}` },

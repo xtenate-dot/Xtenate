@@ -278,20 +278,32 @@ export async function loadCoversFromSupabase() {
 // vanuit een factuur aangewezen via een echte id. RLS filtert al op
 // user_id = auth.uid(), dus hier geen losse .eq('user_id', ...) nodig.
 
+/** Zet één relatie-rij uit Supabase (snake_case) om naar het vormpje dat de
+ *  rest van de app gebruikt (camelCase, zelfde stijl als BEDRIJFSGEGEVENS). */
+function relatieUitRij(r) {
+  return {
+    id: r.id, naam: r.naam, aliassen: r.aliassen || [],
+    adres: r.adres || null,
+    postcodePlaats: r.postcode_plaats || null,
+    kvkNummer: r.kvk_nummer || null,
+    btwNummer: r.btw_nummer || null
+  };
+}
+
 export async function loadRelatiesFromSupabase() {
   if (!heeftClient()) return [];
   try {
     const sb = await getClient();
     const { data, error } = await sb
       .from('relaties')
-      .select('id, naam, aliassen')
+      .select('id, naam, aliassen, adres, postcode_plaats, kvk_nummer, btw_nummer')
       .is('deleted_at', null)
       .order('naam');
     if (error) {
       console.warn('⚠️  Relaties laden mislukt:', error.message);
       return [];
     }
-    return (data || []).map(r => ({ id: r.id, naam: r.naam, aliassen: r.aliassen || [] }));
+    return (data || []).map(relatieUitRij);
   } catch (err) {
     console.warn('Error in loadRelatiesFromSupabase:', err);
     return [];
@@ -307,13 +319,13 @@ export async function maakRelatieInSupabase(naam) {
     if (!userId) return null;
     const { data, error } = await sb.from('relaties')
       .insert([{ user_id: userId, naam }])
-      .select('id, naam, aliassen')
+      .select('id, naam, aliassen, adres, postcode_plaats, kvk_nummer, btw_nummer')
       .single();
     if (error) {
       console.warn('⚠️  Relatie aanmaken mislukt:', error.message);
       return null;
     }
-    return { id: data.id, naam: data.naam, aliassen: data.aliassen || [] };
+    return relatieUitRij(data);
   } catch (err) {
     console.warn('Error in maakRelatieInSupabase:', err);
     return null;

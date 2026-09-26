@@ -62,6 +62,33 @@ export async function hernoemRelatie(id, naam) {
 }
 
 /**
+ * Fase 6, deel 1 (facturenmodule): adres/KVK/BTW-nummer van een relatie,
+ * voor op de factuur-pdf naast de bestaande bedrijfsgegevens (fase 5).
+ * Alles optioneel — een leeg veld wordt null, nooit een lege string, zodat
+ * "niet ingevuld" overal op dezelfde manier wordt herkend.
+ */
+export async function bewaarRelatieAdres(id, gegevens = {}) {
+  const naar = v => { const s = String(v || '').trim(); return s || null; };
+  const veranderd = {
+    adres: naar(gegevens.adres),
+    postcodePlaats: naar(gegevens.postcodePlaats),
+    kvkNummer: naar(gegevens.kvkNummer),
+    btwNummer: naar(gegevens.btwNummer)
+  };
+  const ok = await werkRelatieBijInSupabase(id, {
+    adres: veranderd.adres,
+    postcode_plaats: veranderd.postcodePlaats,
+    kvk_nummer: veranderd.kvkNummer,
+    btw_nummer: veranderd.btwNummer
+  });
+  if (ok) {
+    const r = vindRelatie(id);
+    if (r) Object.assign(r, veranderd);
+  }
+  return ok;
+}
+
+/**
  * Voegt de relatie `opTeHevenId` samen in `behoudenId`: de naam van
  * `behoudenId` blijft, de naam en aliassen van `opTeHevenId` worden
  * aliassen van `behoudenId` (dubbelen eruit), zodat de oude schrijfwijzen
