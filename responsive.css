@@ -420,6 +420,266 @@
     border: 0;
     padding: 0;
   }
+
+  /* ---------------------------------------------------------------- kilometers
+     Zelfde sjabloon als bank hierboven: datum en bedrag boven, de rest als
+     bijschrift eronder. #tbl-km heeft een vaste kolomvolgorde (datum, doel,
+     km, bedrag, acties) zonder data-labels, dus dit is puur positioneel via
+     nth-child — er is niets aan km-ui.js aangepast. */
+  #tbl-km thead { display: none; }
+
+  #tbl-km,
+  #tbl-km tbody,
+  #tbl-km td { display: block; width: auto; }
+
+  #tbl-km tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-base);
+    margin-bottom: 8px;
+    padding: 10px 14px;
+  }
+
+  #tbl-km tbody td {
+    border: 0;
+    padding: 0;
+    text-align: left !important;
+    min-width: 0;
+  }
+
+  /* Regel 1: datum links, bedrag rechts. */
+  #tbl-km tbody td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  #tbl-km tbody td:nth-child(4) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    text-align: right !important;
+    align-self: center;
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Regel 2: het doel van de rit, het belangrijkste van de rij. */
+  #tbl-km tbody td:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 14px;
+    font-weight: 500;
+    padding-top: 1px;
+    white-space: normal;
+  }
+
+  /* Regel 3: het aantal kilometers als bijschrift. */
+  #tbl-km tbody td:nth-child(3) {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding-top: 4px;
+  }
+  #tbl-km tbody td:nth-child(3)::before { content: 'Km: '; }
+
+  /* Regel 4: de knoppen, over de volle breedte. */
+  #tbl-km tbody td:nth-child(5) {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border-default);
+  }
+
+  /* ---------------------------------------------------------------- activa
+     Vaste kolomvolgorde (naam, aanschaf, aanschafwaarde, gebruiksduur,
+     afschrijving, boekwaarde, acties), zonder data-labels — ook hier puur
+     positioneel, niets aangepast aan activa-ui.js. Boekwaarde krijgt de
+     plek van het "grote cijfer" (net als bedrag bij bank/kilometers): dat is
+     wat je op deze pagina wilt zien. De kolomkop "Afschrijving {jaar}" is
+     dynamisch; op de kaart staat daarom alleen "Afschrijving" zonder
+     jaartal — dat jaar staat al in de KPI-kaart bovenaan de pagina. */
+  #tbl-activa thead { display: none; }
+
+  #tbl-activa,
+  #tbl-activa tbody,
+  #tbl-activa td { display: block; width: auto; }
+
+  #tbl-activa tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-base);
+    margin-bottom: 8px;
+    padding: 10px 14px;
+  }
+
+  #tbl-activa tbody td {
+    border: 0;
+    padding: 0;
+    text-align: left !important;
+    min-width: 0;
+  }
+
+  /* Regel 1: naam links, boekwaarde rechts. */
+  #tbl-activa tbody td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: normal;
+  }
+  #tbl-activa tbody td:nth-child(6) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    text-align: right !important;
+    align-self: center;
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Regel 2: aanschafdatum. */
+  #tbl-activa tbody td:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  /* Regel 3-5: aanschafwaarde, gebruiksduur en afschrijving als bijschrift. */
+  #tbl-activa tbody td:nth-child(3),
+  #tbl-activa tbody td:nth-child(4),
+  #tbl-activa tbody td:nth-child(5) {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding-top: 4px;
+  }
+  #tbl-activa tbody td:nth-child(3) { grid-row: 3; }
+  #tbl-activa tbody td:nth-child(4) { grid-row: 4; }
+  #tbl-activa tbody td:nth-child(5) { grid-row: 5; }
+
+  #tbl-activa tbody td:nth-child(3)::before { content: 'Aanschafwaarde: '; }
+  #tbl-activa tbody td:nth-child(4)::before { content: 'Gebruiksduur: '; }
+  #tbl-activa tbody td:nth-child(5)::before { content: 'Afschrijving: '; }
+
+  /* Regel 6: de knoppen, over de volle breedte. */
+  #tbl-activa tbody td:nth-child(7) {
+    grid-column: 1 / -1;
+    grid-row: 6;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border-default);
+  }
+
+  /* ---------------------------------------------------------------- facturen
+     Vaste kolomvolgorde (vervaldatum, relatie, nr., bedrag, status, acties),
+     zonder data-labels — puur positioneel, niets aangepast aan
+     facturen-ui.js. Zelfde opzet als bank: datum/bedrag boven, relatie
+     (met .td-trunc, dus dezelfde ontkap-regel als bank's naam-kolom) als
+     belangrijkste regel. Vier knoppen i.p.v. bank's acties, dus die rij mag
+     over twee regels vallen in plaats van de kaart te verbreden. */
+  #tbl-facturen thead { display: none; }
+
+  #tbl-facturen,
+  #tbl-facturen tbody,
+  #tbl-facturen td { display: block; width: auto; }
+
+  #tbl-facturen tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-base);
+    margin-bottom: 8px;
+    padding: 10px 14px;
+  }
+
+  #tbl-facturen tbody td {
+    border: 0;
+    padding: 0;
+    text-align: left !important;
+    min-width: 0;
+  }
+
+  /* Regel 1: vervaldatum links, bedrag rechts. */
+  #tbl-facturen tbody td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  #tbl-facturen tbody td:nth-child(4) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    text-align: right !important;
+    align-self: center;
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Regel 2: de relatie, het belangrijkste van de factuur. */
+  #tbl-facturen tbody td:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 14px;
+    font-weight: 500;
+    padding-top: 1px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  /* Regel 3: factuurnummer als bijschrift. */
+  #tbl-facturen tbody td:nth-child(3) {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding-top: 4px;
+  }
+  #tbl-facturen tbody td:nth-child(3)::before { content: 'Nr. '; }
+
+  /* Regel 4: de status-badge, spreekt al voor zich. */
+  #tbl-facturen tbody td:nth-child(5) {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    padding-top: 6px;
+  }
+
+  /* Regel 5: de knoppen, over de volle breedte. */
+  #tbl-facturen tbody td:nth-child(6) {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border-default);
+  }
 }
 
 @media (max-width: 720px) {

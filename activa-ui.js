@@ -67,7 +67,7 @@ export function renderActiva() {
   }).join('');
 
   const tabel = activa.length
-    ? `<div class="table-wrap"><table class="tbl-compact">
+    ? `<div class="table-wrap"><table class="tbl-compact" id="tbl-activa">
          <thead><tr><th>Naam</th><th>Aanschaf</th><th style="text-align:right">Aanschafwaarde</th><th>Gebruiksduur</th><th style="text-align:right">Afschrijving ${peiljaar}</th><th style="text-align:right">Boekwaarde</th><th></th></tr></thead>
          <tbody>${rijen}</tbody>
        </table></div>`

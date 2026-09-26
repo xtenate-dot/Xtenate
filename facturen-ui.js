@@ -140,7 +140,7 @@ export function renderFacturen() {
   }).join('');
 
   doel.innerHTML = kop + `
-    <div class="table-wrap"><table class="tbl-compact">
+    <div class="table-wrap"><table class="tbl-compact" id="tbl-facturen">
       <thead><tr>
         <th style="padding-left:16px">Vervaldatum</th>
         <th>Relatie</th>

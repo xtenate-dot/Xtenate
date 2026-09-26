@@ -53,7 +53,7 @@ export function renderKm() {
     </tr>`).join('');
 
   const tabel = ritten.length
-    ? `<div class="table-wrap"><table class="tbl-compact">
+    ? `<div class="table-wrap"><table class="tbl-compact" id="tbl-km">
          <thead><tr><th>Datum</th><th>Doel</th><th style="text-align:right">Km</th><th style="text-align:right">Bedrag</th><th></th></tr></thead>
          <tbody>${rijen}</tbody>
        </table></div>`
