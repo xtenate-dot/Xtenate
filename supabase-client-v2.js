@@ -509,6 +509,14 @@ export async function saveToSupabase(boeking, isHistoric) {
 
 // ===== OVERIGE APPGEGEVENS (groepen, facturen, tellers) =====
 
+// Onthoudt, per app_data-sleutel, de laatste foutmelding van een mislukte
+// save-poging — zelfde soort registratie als laatsteFoutPerId hierboven,
+// maar dan voor instellingen/lijstjes (grootboek, facturen, KM_INSTELLINGEN,
+// enz.) in plaats van boekingen. Puur informatief voor de
+// synchronisatiestatus in Beheer; verandert niets aan wat saveAppData() zelf
+// teruggeeft.
+export const laatsteAppDataFout = {};
+
 /**
  * Groepen, facturen en tellers zijn kleine lijstjes zonder eigen tabel. Ze
  * gaan als één JSON-waarde per sleutel naar de tabel app_data. Zo hoeft er
@@ -536,14 +544,18 @@ export async function saveAppData(sleutel, waarde) {
           console.warn('⚠️  Tabel app_data bestaat nog niet. Groepen en facturen blijven lokaal.');
           appDataGemeld = true;
         }
+        laatsteAppDataFout[sleutel] = 'Tabel app_data bestaat nog niet.';
         return false;
       }
       console.error(`❌ app_data (${sleutel}):`, error.message);
+      laatsteAppDataFout[sleutel] = error.message;
       return false;
     }
+    delete laatsteAppDataFout[sleutel];
     return true;
   } catch (err) {
     console.warn(`app_data (${sleutel}) mislukt:`, err.message);
+    laatsteAppDataFout[sleutel] = err.message;
     return false;
   }
 }

@@ -7,7 +7,7 @@
 
 import { draaiControles } from './controle.js?v=20260902a';
 import { esc } from './helpers.js?v=20260902a';
-import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN, saveBedrijfsgegevens, BEDRIJFSGEGEVENS, saveKmInstellingen, KM_INSTELLINGEN, saveFactuurInstellingen, FACTUUR_INSTELLINGEN } from './storage.js?v=20260902a';
+import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN, saveBedrijfsgegevens, BEDRIJFSGEGEVENS, saveKmInstellingen, KM_INSTELLINGEN, saveFactuurInstellingen, FACTUUR_INSTELLINGEN, appDataStatus } from './storage.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 import { getPendingItems } from './supabase-client-v2.js?v=20260902a';
 import { syncNu } from './autosync.js?v=20260902a';
@@ -390,13 +390,31 @@ export function bewaarKmTarief() {
   hertekenHuidigePagina();
 }
 
+/** Herkenbare namen voor app_data-sleutels, voor in de synchronisatiestatus
+ *  hieronder — dezelfde sleutels als appDataWaarde() in storage.js. */
+const APP_DATA_NAMEN = {
+  groepen: 'Voorraadgroepen',
+  grootboek: 'Grootboek',
+  rekeningen: 'Rekeningen',
+  facturen: 'Facturen',
+  factuur_instellingen: 'Factuurinstellingen',
+  controle_instellingen: 'Controle-instellingen',
+  btw_instellingen: 'BTW-instelling',
+  bedrijfsgegevens: 'Bedrijfsgegevens',
+  km_instellingen: 'Kilometertarief',
+  ritten: 'Ritten (kilometers)',
+  activa: 'Activaregister',
+  tellers: 'Tellers'
+};
+
 /**
  * Eén duidelijke plek voor de synchronisatiestatus, in plaats van alleen een
  * aantal in de topbalk of op de Bank-pagina. Toont per vastgelopen item
- * (5 mislukte pogingen) om welke boeking/welk artikel het gaat en wat de
- * laatste foutmelding was — die twee bestonden eerder niet; ze komen uit
- * addToPendingQueue() (welk item) en de nieuwe laatsteFoutPerId-registratie
- * in supabase-client-v2.js (welke fout).
+ * (5 mislukte pogingen) om welke boeking/welk artikel — of welke instelling —
+ * het gaat en wat de laatste foutmelding was. Twee gelijksoortige, maar
+ * gescheiden mechanismen naast elkaar in hetzelfde blok: de boekingen-
+ * wachtrij (getPendingItems(), addToPendingQueue()) en de instellingen-
+ * synchronisatie (appDataStatus(), duwAppData() in storage.js).
  */
 function synchronisatieBlok() {
   const items = getPendingItems();
@@ -413,11 +431,23 @@ function synchronisatieBlok() {
       </div>`;
   }).join('');
 
-  const inhoud = vastgelopen.length
-    ? `<div class="alert alert-error" style="margin-bottom:4px">${vastgelopen.length} wijziging(en) vastgelopen na 5 pogingen</div>${regels}
+  const appStatus = appDataStatus();
+  const appRegels = appStatus.items.map(it => `
+      <div style="padding:8px 0;border-top:1px solid var(--border)">
+        <div style="font-weight:500">${esc(APP_DATA_NAMEN[it.sleutel] || it.sleutel)}</div>
+        <div class="muted" style="font-size:12px">
+          ${it.pogingen} van 5 pogingen · ${esc(it.laatsteFout)}
+        </div>
+      </div>`).join('');
+
+  const totaalVastgelopen = vastgelopen.length + appStatus.vastgelopen;
+  const totaalOpenstaand = items.length + appStatus.open;
+
+  const inhoud = totaalVastgelopen
+    ? `<div class="alert alert-error" style="margin-bottom:4px">${totaalVastgelopen} wijziging(en) vastgelopen na 5 pogingen</div>${regels}${appRegels}
        <button class="btn btn-primary" style="margin-top:12px" onclick="herprobeerSynchronisatie()">Opnieuw proberen</button>`
     : `<div class="muted" style="font-size:13px">
-         Niets vastgelopen.${items.length ? ` ${items.length} wijziging(en) worden nog verwerkt.` : ' Alles is gesynchroniseerd.'}
+         Niets vastgelopen.${totaalOpenstaand ? ` ${totaalOpenstaand} wijziging(en) worden nog verwerkt.` : ' Alles is gesynchroniseerd.'}
        </div>`;
 
   return `

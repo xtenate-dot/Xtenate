@@ -5,7 +5,7 @@
 // altijd eerst duwen en dan halen: andersom zou je eigen werk overschreven
 // worden door een oudere versie uit de cloud.
 
-import { state, loadDataHybrid, duwOpenstaandeAppData } from './storage.js?v=20260902a';
+import { state, loadDataHybrid, duwOpenstaandeAppData, herstartVastgelopenAppData, appDataStatus } from './storage.js?v=20260902a';
 import { herstartVastgelopen, isSupabaseReady, syncPendingQueue, wachtrijStatus } from './supabase-client-v2.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 
@@ -127,10 +127,14 @@ export function startAutosync() {
  */
 export async function syncNu() {
   const hersteld = herstartVastgelopen();
+  const herstelInstellingen = herstartVastgelopenAppData();
   if (hersteld) console.log(`🔁 ${hersteld} vastgelopen wijziging(en) opnieuw in de rij gezet.`);
+  if (herstelInstellingen) console.log(`🔁 ${herstelInstellingen} vastgelopen instelling(en) opnieuw in de rij gezet.`);
   laatsteOphaal = 0;
   await syncRonde(true);
   const status = wachtrijStatus();
-  meldStatus(status.vastgelopen ? `${status.vastgelopen} niet opgeslagen` : 'Bijgewerkt',
-             status.vastgelopen ? 'fout' : 'ok');
+  const appStatus = appDataStatus();
+  const vastgelopenTotaal = status.vastgelopen + appStatus.vastgelopen;
+  meldStatus(vastgelopenTotaal ? `${vastgelopenTotaal} niet opgeslagen` : 'Bijgewerkt',
+             vastgelopenTotaal ? 'fout' : 'ok');
 }

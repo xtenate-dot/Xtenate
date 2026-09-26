@@ -16,7 +16,8 @@ import {
   addToPendingQueue,
   savePendingQueue,
   saveAppData,
-  loadAppData
+  loadAppData,
+  laatsteAppDataFout
 } from './supabase-client-v2.js?v=20260902a';
 
 /**
@@ -25,20 +26,77 @@ import {
  * automatische synchronisatie het straks opnieuw.
  */
 const appDataVuil = new Set();
+
+// Aantal mislukte pogingen op rij, per sleutel — alleen opgehoogd door de
+// retry-lus hieronder (duwOpenstaandeAppData), niet door de eerste,
+// meteen-bij-het-opslaan poging in duwAppData(). Zelfde opzet als attempts/
+// maxAttempts bij de boekingen-wachtrij (supabase-client-v2.js), en
+// bewust dezelfde drempel (5), zodat "vastgelopen" overal hetzelfde betekent.
+const appDataPogingen = {};
+const APP_DATA_MAX_POGINGEN = 5;
+
 function duwAppData(sleutel, waarde) {
   appDataVuil.add(sleutel);
+  // Een nieuwe wijziging krijgt een schone lei, ook als de vorige waarde van
+  // deze sleutel al vastgelopen was — precies zoals addToPendingQueue() een
+  // nieuwe boeking-wijziging ook altijd met attempts:0 begint, nooit met de
+  // oude, opgelopen teller. Anders zou duwOpenstaandeAppData() deze verse
+  // wijziging overslaan totdat er expliciet op "Opnieuw proberen" wordt
+  // geklikt, terwijl er net nieuwe data is om te versturen.
+  delete appDataPogingen[sleutel];
   saveAppData(sleutel, waarde)
-    .then(ok => { if (ok) appDataVuil.delete(sleutel); })
+    .then(ok => { if (ok) { appDataVuil.delete(sleutel); delete appDataPogingen[sleutel]; } })
     .catch(() => {});
 }
 
-/** Probeert alles wat nog niet aankwam opnieuw. Gebruikt door de autosync. */
+/**
+ * Probeert alles wat nog niet aankwam opnieuw. Gebruikt door de autosync.
+ * Een sleutel die de pogingendrempel al heeft bereikt, wordt overgeslagen —
+ * pas "Opnieuw proberen" (herstartVastgelopenAppData) zet die weer aan.
+ * Haalt bij elke poging de ACTUELE waarde op (appDataWaarde(sleutel)), dus
+ * een nieuwere wijziging aan dezelfde instelling stuurt vanzelf de nieuwste
+ * versie, nooit de oude, vastgelopen waarde.
+ */
 export async function duwOpenstaandeAppData() {
   for (const sleutel of [...appDataVuil]) {
+    if ((appDataPogingen[sleutel] || 0) >= APP_DATA_MAX_POGINGEN) continue;
     const waarde = appDataWaarde(sleutel);
-    if (waarde === undefined) { appDataVuil.delete(sleutel); continue; }
-    if (await saveAppData(sleutel, waarde)) appDataVuil.delete(sleutel);
+    if (waarde === undefined) { appDataVuil.delete(sleutel); delete appDataPogingen[sleutel]; continue; }
+    if (await saveAppData(sleutel, waarde)) {
+      appDataVuil.delete(sleutel);
+      delete appDataPogingen[sleutel];
+    } else {
+      appDataPogingen[sleutel] = (appDataPogingen[sleutel] || 0) + 1;
+    }
   }
+}
+
+/**
+ * Synchronisatiestatus van app_data-sleutels, voor het "Synchronisatie"-blok
+ * in Beheer — zelfde soort informatie als wachtrijStatus() voor boekingen.
+ */
+export function appDataStatus() {
+  const vastgelopenSleutels = [...appDataVuil].filter(s => (appDataPogingen[s] || 0) >= APP_DATA_MAX_POGINGEN);
+  return {
+    open: appDataVuil.size - vastgelopenSleutels.length,
+    vastgelopen: vastgelopenSleutels.length,
+    items: vastgelopenSleutels.map(sleutel => ({
+      sleutel,
+      pogingen: appDataPogingen[sleutel] || 0,
+      laatsteFout: laatsteAppDataFout[sleutel] || 'onbekende fout'
+    }))
+  };
+}
+
+/** Zet vastgelopen app_data-sleutels terug op nul pogingen, zodat de
+ *  eerstvolgende sync-ronde ze weer meeneemt. Zelfde rol als
+ *  herstartVastgelopen() voor de boekingen-wachtrij. */
+export function herstartVastgelopenAppData() {
+  let aantal = 0;
+  for (const sleutel of Object.keys(appDataPogingen)) {
+    if (appDataPogingen[sleutel] >= APP_DATA_MAX_POGINGEN) { delete appDataPogingen[sleutel]; aantal++; }
+  }
+  return aantal;
 }
 
 function appDataWaarde(sleutel) {
