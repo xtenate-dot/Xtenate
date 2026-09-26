@@ -12,6 +12,7 @@ import { renderHNVI } from './hnvi.js?v=20260902a';
 import { renderControle } from './controle.js?v=20260902a';
 import { renderCovers } from './voorraad.js?v=20260902a';
 import { renderFacturen } from './facturen-ui.js?v=20260902a';
+import { renderKm } from './km-ui.js?v=20260902a';
 import { renderBeheer } from './beheer.js?v=20260902a';
 import { toonGroepVan } from './navgroepen.js?v=20260902a';
 
@@ -28,6 +29,7 @@ const RENDERS = {
   controle: renderControle,
   voorraad: renderCovers,
   hnvi: renderHNVI,
+  km: renderKm,
   beheer: renderBeheer
 };
 
@@ -44,6 +46,7 @@ const TITELS = {
   controle: 'Controle',
   voorraad: 'Voorraad',
   hnvi: 'HNVI / Xtenate',
+  km: 'Kilometers',
   beheer: 'Beheer'
 };
 

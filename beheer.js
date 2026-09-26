@@ -7,7 +7,7 @@
 
 import { draaiControles } from './controle.js?v=20260902a';
 import { esc } from './helpers.js?v=20260902a';
-import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN, saveBedrijfsgegevens, BEDRIJFSGEGEVENS } from './storage.js?v=20260902a';
+import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN, saveBedrijfsgegevens, BEDRIJFSGEGEVENS, saveKmInstellingen, KM_INSTELLINGEN } from './storage.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 import { getPendingItems } from './supabase-client-v2.js?v=20260902a';
 import { syncNu } from './autosync.js?v=20260902a';
@@ -99,6 +99,7 @@ export function renderBeheer() {
     controleInstellingenBlok() +
     btwInstellingenBlok() +
     bedrijfsgegevensBlok() +
+    kmInstellingenBlok() +
     groep('Voorzichtig', [
       tegel({
         titel: 'Data wissen', uitleg: 'Alles verwijderen uit deze browser — niet ongedaan te maken!',
@@ -295,6 +296,52 @@ export function bewaarBedrijfsgegevens() {
   });
   const melding = el('beheer-bedrijf-melding');
   if (melding) melding.textContent = 'Opgeslagen.';
+}
+
+/**
+ * Kilometerregistratie: alleen het tarief per kilometer. Geen constante in
+ * de code, want de Belastingdienst past dit jaarlijks aan. Leeg laten
+ * betekent: nog geen berekening — de pagina Kilometers toont dan "—" in
+ * plaats van een vals €0.
+ */
+function kmInstellingenBlok() {
+  const huidig = KM_INSTELLINGEN?.tariefPerKm;
+  return `
+    <div class="beheer-groep">
+      <div class="beheer-groep-kop">Kilometerregistratie</div>
+      <div class="card" style="padding:var(--spacing-4)">
+        <label for="beheer-km-tarief" style="display:block;font-weight:500;margin-bottom:4px">
+          Tarief per kilometer
+        </label>
+        <div class="muted" style="font-size:12px;margin-bottom:10px">
+          Het bedrag per kilometer waarmee ritten worden omgerekend naar een aftrekbedrag.
+          Leeg laten betekent: nog geen berekening op de pagina Kilometers.
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="number" id="beheer-km-tarief" step="0.01" min="0" placeholder="€ 0,00"
+            value="${huidig != null ? huidig : ''}"
+            style="width:110px" aria-label="Tarief per kilometer">
+          <button class="btn btn-primary" onclick="bewaarKmTarief()">Opslaan</button>
+          <span id="beheer-km-melding" class="muted" style="font-size:12px"></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+export function bewaarKmTarief() {
+  const veld = el('beheer-km-tarief');
+  const melding = el('beheer-km-melding');
+  const ruw = (veld?.value ?? '').trim();
+  const n = ruw === '' ? null : Number(ruw);
+  if (n !== null && (!Number.isFinite(n) || n < 0)) {
+    if (melding) melding.textContent = 'Vul een getal van 0 of hoger in, of laat leeg.';
+    return;
+  }
+  saveKmInstellingen({ tariefPerKm: n });
+  if (melding) melding.textContent = n === null
+    ? 'Opgeslagen: nog geen tarief ingesteld.'
+    : `Opgeslagen: € ${n.toFixed(2).replace('.', ',')} per kilometer.`;
+  hertekenHuidigePagina();
 }
 
 /**

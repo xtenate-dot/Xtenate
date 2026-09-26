@@ -50,6 +50,8 @@ function appDataWaarde(sleutel) {
   if (sleutel === 'controle_instellingen') return CONTROLE_INSTELLINGEN;
   if (sleutel === 'btw_instellingen') return BTW_INSTELLINGEN;
   if (sleutel === 'bedrijfsgegevens') return BEDRIJFSGEGEVENS;
+  if (sleutel === 'km_instellingen') return KM_INSTELLINGEN;
+  if (sleutel === 'ritten') return { lijst: state.RITTEN, volgende: state.nxtRit };
   if (sleutel === 'tellers') return { tx: state.nxtTx, cover: state.nxtCover, hnvi: state.nxtHnvi };
   return undefined;
 }
@@ -496,6 +498,36 @@ export function saveBedrijfsgegevens(nieuwe) {
   duwAppData('bedrijfsgegevens', BEDRIJFSGEGEVENS);
 }
 
+// ─── KILOMETERREGISTRATIE ───────────────────────────────────────────────────
+// Kleinste eerste versie: alleen ritten registreren en het eigen jaartotaal
+// zien. Geen boeking, geen koppeling met de IB-berekening (belasting.js) of
+// de aangifte-pdf — dat is een latere, bewuste stap.
+//
+// Het tarief per kilometer is expliciet geen constante in de code: de
+// Belastingdienst past dit jaarlijks aan, dus dit is een instelling, precies
+// hetzelfde patroon als BTW_INSTELLINGEN/BEDRIJFSGEGEVENS hierboven. Zolang
+// er geen tarief is ingevuld, wordt er nergens een bedrag berekend — km.js's
+// kmTarief()/kmAftrek() geven dan null terug, nooit een vals nulbedrag.
+export let KM_INSTELLINGEN = load('xtenate_km_instellingen', {
+  tariefPerKm: null
+});
+
+export function saveKmInstellingen(nieuwe) {
+  if (nieuwe) KM_INSTELLINGEN = { ...KM_INSTELLINGEN, ...nieuwe };
+  save('xtenate_km_instellingen', KM_INSTELLINGEN);
+  duwAppData('km_instellingen', KM_INSTELLINGEN);
+}
+
+// Ritten zelf: zelfde opzet als FACTUREN — een array plus een eigen teller.
+state.RITTEN = load('xtenate_ritten', []);
+state.nxtRit = load('xtenate_nxt_rit', 1);
+
+export function saveRitten() {
+  save('xtenate_ritten', state.RITTEN);
+  save('xtenate_nxt_rit', state.nxtRit);
+  duwAppData('ritten', { lijst: state.RITTEN, volgende: state.nxtRit });
+}
+
 // ─── STATE INITIALISATIE (identiek aan origineel) ──────────────────────────
 // Het jaar stond hier vast op '2025'. Dat is een dode waarde zodra het
 // kalenderjaar verder loopt: bij elke refresh viel de app terug op een jaar
@@ -506,6 +538,7 @@ state.hnviSellId = null;
 state.editTxId = null;
 state.editCoverId = null;
 state.editFactuurId = null;
+state.editRitId = null;
 state.hnviLaatsteDatum = new Date().toISOString().split('T')[0];
 state.hnviImportItems = [];
 
@@ -622,6 +655,14 @@ export async function loadDataHybrid() {
         }
         if (extra.bedrijfsgegevens) {
           BEDRIJFSGEGEVENS = { ...BEDRIJFSGEGEVENS, ...extra.bedrijfsgegevens };
+        }
+        if (extra.km_instellingen) {
+          KM_INSTELLINGEN = { ...KM_INSTELLINGEN, ...extra.km_instellingen };
+        }
+        if (extra.ritten && Array.isArray(extra.ritten.lijst)) {
+          state.RITTEN = extra.ritten.lijst;
+          if (Number(extra.ritten.volgende) > 0) state.nxtRit = Number(extra.ritten.volgende);
+          console.log(`✅ Ritten uit Supabase: ${state.RITTEN.length}`);
         }
         // Tellers: het hoogste getal wint, zodat twee apparaten nooit
         // hetzelfde id uitdelen aan verschillende dingen.
