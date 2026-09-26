@@ -4,6 +4,7 @@ import { charts, dc, kleurVoorGb } from './charts.js?v=20260902a';
 import { ddmm, fmt, gbCode, isInkomst, isOmzet, isUitgave } from './helpers.js?v=20260902a';
 import { downloadModelPdf } from './pdf.js?v=20260902a';
 import { state, grootboekNamen } from './storage.js?v=20260902a';
+import { kmAftrek, kmTarief, totaalKmVanJaar } from './km.js?v=20260902a';
 
 const HUIDIG_JAAR = '2026';
 
@@ -416,7 +417,12 @@ export function renderBelasting() {
   const handmatig = handmatigeKosten(jaar);
   const handmatigTotaal = handmatig.reduce((s, k) => s + (Number(k.bedrag) || 0), 0);
 
-  const kostenAftrekbaar = kostenOverig + hnviAftrekbaar + voorraadCogs + handmatigTotaal;
+  // Kilometervergoeding: telt alléén mee als er een tarief is ingesteld.
+  // kmAftrek() geeft dan null terug, dus zonder tarief blijft dit exact 0 en
+  // verandert er niets aan de rest van deze berekening.
+  const kmBedrag = kmAftrek(jaar) || 0;
+
+  const kostenAftrekbaar = kostenOverig + hnviAftrekbaar + voorraadCogs + handmatigTotaal + kmBedrag;
   const winst = omzetTotal - kostenAftrekbaar;
 
   // Jaarprojectie op basis van huidige maanden
@@ -601,6 +607,7 @@ export function renderBelasting() {
     <div class="ib-row"><span>HNVI inkoop (verkochte loten)</span><span class="neg">– ${fmt(hnviAftrekbaar)}</span></div>
     <div class="ib-row"><span>Voorraad (inkoopprijs verkochte artikelen)</span><span class="neg">– ${fmt(voorraadCogs)}</span></div>
     ${handmatig.map(k => `<div class="ib-row"><span>${escHtml(k.label) || 'Overige post'}</span><span class="neg">– ${fmt(Number(k.bedrag) || 0)}</span></div>`).join('')}
+    ${kmBedrag > 0 ? `<div class="ib-row"><span>Kilometervergoeding (${totaalKmVanJaar(jaar).toLocaleString('nl-NL')} km × ${fmt(kmTarief())})</span><span class="neg">– ${fmt(kmBedrag)}</span></div>` : ''}
     <div class="ib-row" style="color:var(--text-secondary);font-size:11px"><span>HNVI inkoop (voorraad, niet aftrekbaar)</span><span>${fmt(hnviNietAftrekbaar)}</span></div>
     <div class="ib-row" style="color:var(--text-secondary);font-size:11px"><span>Voorraad nog op de plank (bezitting)</span><span>${fmt(voorraadEind)}</span></div>
     ${voorraadInkoopBank > 0 ? `<div class="ib-row" style="color:var(--text-secondary);font-size:11px"><span>Inkoop voorraad dit jaar (${vrdRek.join(', ')}) — geen kostenpost</span><span>${fmt(voorraadInkoopBank)}</span></div>` : ''}
@@ -808,7 +815,7 @@ const VELD_VOLGORDE = [
  * Geeft per veld het bedrag plus de rekeningen waar het uit is opgebouwd,
  * zodat je een bedrag altijd terug kunt zoeken in je grootboek.
  */
-export function aangifteVelden(belTX, { cogs = 0, hnviInkoop = 0, handmatig = [] } = {}) {
+export function aangifteVelden(belTX, { cogs = 0, hnviInkoop = 0, handmatig = [], kmBedrag = 0 } = {}) {
   const GBNM = grootboekNamen();
   const velden = {};
   const voegToe = (veld, bedrag, bron) => {
@@ -838,6 +845,11 @@ export function aangifteVelden(belTX, { cogs = 0, hnviInkoop = 0, handmatig = []
     const bedrag = Number(k.bedrag) || 0;
     if (bedrag > 0) voegToe('Overige kosten', bedrag, `handmatig: ${k.label}`);
   }
+
+  // Kilometervergoeding landt in de al bestaande Reiskosten-rubriek (4640),
+  // niet bij de generieke Overige kosten — dat veld bestaat al precies
+  // hiervoor.
+  if (kmBedrag > 0) voegToe('Reiskosten', kmBedrag, 'kilometervergoeding');
 
   return VELD_VOLGORDE
     .filter(v => velden[v]?.bedrag > 0)
@@ -890,13 +902,15 @@ export function aangifteModel(jaar = gekozenJaar()) {
   }, 0);
 
   const handmatig = handmatigeKosten(jaar);
+  // Kilometervergoeding: telt alléén mee als er een tarief is ingesteld.
+  const kmBedrag = kmAftrek(jaar) || 0;
   const inkoopwaarde = cogs + hnviInkoop;
-  const overigeKosten = kostenOverig + handmatig.reduce((s, k) => s + (Number(k.bedrag) || 0), 0);
+  const overigeKosten = kostenOverig + handmatig.reduce((s, k) => s + (Number(k.bedrag) || 0), 0) + kmBedrag;
   const winst = omzet - inkoopwaarde - overigeKosten;
   const mkb = winst > 0 ? winst * mkbTarief() : 0;
   const belastbaar = Math.max(0, winst - mkb);
 
-  const velden = aangifteVelden(belTX, { cogs, hnviInkoop, handmatig });
+  const velden = aangifteVelden(belTX, { cogs, hnviInkoop, handmatig, kmBedrag });
   const omzetSplit = nettoOmzet(belTX);
 
   // Het document als blokken, niet als kant-en-klare tekst. Zo kunnen het
@@ -918,6 +932,7 @@ export function aangifteModel(jaar = gekozenJaar()) {
       { type: 'kop', tekst: 'Overige bedrijfskosten' },
       { type: 'regel', label: 'Kosten uit de administratie', bedrag: kostenOverig },
       ...handmatig.map(k => ({ type: 'regel', label: k.label || 'Overige post', bedrag: Number(k.bedrag) || 0 })),
+      ...(kmBedrag > 0 ? [{ type: 'regel', label: `Kilometervergoeding (${totaalKmVanJaar(jaar)} km × € ${bedragTekst(kmTarief())})`, bedrag: kmBedrag }] : []),
       { type: 'regel', label: 'Totaal overige kosten', bedrag: overigeKosten, totaal: true },
 
       { type: 'kop', tekst: 'Resultaat' },
