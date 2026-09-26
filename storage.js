@@ -19,11 +19,6 @@ import {
   loadAppData
 } from './supabase-client-v2.js?v=20260902a';
 
-// Alleen voor de eenmalige overname hieronder — storage.js leest hier verder
-// niets anders uit helpers.js, en helpers.js blijft omgekeerd vrij van
-// afhankelijkheden (zie de eigen kopregel daar).
-import { GBNM, REKNM } from './helpers.js?v=20260902a';
-
 /**
  * Stuurt een los lijstje (groepen, facturen, tellers) naar de cloud zonder
  * erop te wachten. Mislukt het, dan blijft het lokaal staan en probeert de
@@ -198,22 +193,15 @@ export function groepNaam(id) {
 
 // ─── GROOTBOEK EN REKENINGEN (fase 1, zelfregistratie) ─────────────────────
 // Zelfde patroon als GROEPEN hierboven: zelf te beheren, dus in de opslag en
-// niet vast in de code. Twee verschillende startpunten, afhankelijk van wie
-// dit voor het eerst laadt:
+// niet vast in de code.
 //
-// - Een gloednieuwe gebruiker (via de nog te bouwen registratiestroom) krijgt
-//   GROOTBOEK_STANDAARD/REKENINGEN_STANDAARD: een kleine, generieke set
-//   zonder merknamen, binnen dezelfde nummerbereiken die de rest van de app
-//   al aanneemt (600/601 privé, 4xxx kosten, 7xxx inkoop, 8xxx omzet).
-// - Deze, bestaande installatie heeft nog nooit een eigen override gehad —
-//   GBNM/REKNM in helpers.js waren tot nu toe de enige bron. Zodra deze code
-//   voor het eerst draait, is er dus nog niets opgeslagen, en zou de
-//   generieke starterset per ongeluk mijn eigen schema vervangen. Daarom is
-//   de terugvalwaarde hier niet GROOTBOEK_STANDAARD, maar GBNM/REKNM zelf,
-//   omgezet naar dezelfde vorm — zo wordt precies wat er al was de eigen,
-//   bewerkbare set, zonder dat er iets verdwijnt. GBNM/REKNM zelf blijven
-//   voorlopig ongewijzigd staan in helpers.js; dat opschonen is een bewuste,
-//   latere stap, pas nadat deze overgang in de echte app bevestigd is.
+// GROOTBOEK_STANDAARD/REKENINGEN_STANDAARD is de terugval voor iedereen
+// zonder eigen, al opgeslagen schema — zowel een gloednieuwe gebruiker als
+// (via localStorage/app_data) deze installatie zelf, ná de eenmalige
+// overname die eerder vanuit de toen nog hardgecodeerde GBNM/REKNM in
+// helpers.js is gebeurd en inmiddels bevestigd in app_data staat (25
+// grootboekrekeningen, 5 rekeningen). Die overname was een eenmalige,
+// afgeronde stap; GBNM/REKNM zelf bestaan niet meer.
 
 export const GROOTBOEK_STANDAARD = [
   { nummer: '600',  naam: 'Privé storting' },
@@ -230,16 +218,13 @@ export const REKENINGEN_STANDAARD = [
   { nummer: '1010', naam: 'Bank', isHoofdrekening: true }
 ];
 
-const GBNM_ALS_ARRAY = Object.entries(GBNM).map(([nummer, naam]) => ({ nummer, naam }));
-const REKNM_ALS_ARRAY = Object.entries(REKNM).map(([nummer, naam]) => ({ nummer, naam, isHoofdrekening: nummer === '1010' }));
-
-state.GROOTBOEK = load('xtenate_grootboek', GBNM_ALS_ARRAY)
+state.GROOTBOEK = load('xtenate_grootboek', GROOTBOEK_STANDAARD)
   .filter(g => g && g.nummer && g.naam);
-if (!state.GROOTBOEK.length) state.GROOTBOEK = [...GBNM_ALS_ARRAY];
+if (!state.GROOTBOEK.length) state.GROOTBOEK = [...GROOTBOEK_STANDAARD];
 
-state.REKENINGEN = load('xtenate_rekeningen', REKNM_ALS_ARRAY)
+state.REKENINGEN = load('xtenate_rekeningen', REKENINGEN_STANDAARD)
   .filter(r => r && r.nummer && r.naam);
-if (!state.REKENINGEN.length) state.REKENINGEN = [...REKNM_ALS_ARRAY];
+if (!state.REKENINGEN.length) state.REKENINGEN = [...REKENINGEN_STANDAARD];
 
 export function saveGrootboek() {
   save('xtenate_grootboek', state.GROOTBOEK);

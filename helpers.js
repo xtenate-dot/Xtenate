@@ -1,35 +1,6 @@
 // helpers.js — pure hulpfuncties en constanten (grootboek-namen, formattering,
 // badges). Geen afhankelijkheden van andere modules.
 
-export const GBNM = {
-  // Balans (0-3, 600-601)
-  '600':'Privé storting','601':'Privé opname',
-  '1520':'Vorderingen overig',
-  '2000':'Schulden overig','2080':'Bankposten in transit',
-  
-  // Bedrijfskosten (4-6)
-  '4230':'Kantoorbenodigdheden',
-  '4235':'Kleine aanschaf inv.','4290':'Overige zakelijke aank.','4350':'Bankkosten',
-  '4410':'Huur/huisvesting',
-  '4640':'Reiskosten',
-  '4760':'Abonnement','4810':'Reclame','4815':'Website','4895':'Overige verkoopkosten',
-  
-  // Inkoop (7000-7900)
-  '7000':'Inkoop AliExpress','7010':'Inkoop HNVI','7020':'Inkoop MijnMagie',
-  '7100':'Inkoop verzendartikelen','7350':'Uitbestede diensten',
-  '7900':'Transportkosten',
-  
-  // Omzet (8000-8020)
-  '8000':'Omzet Xtenate','8010':'Omzet Bol.com','8020':'Omzet Helmetstore',
-  
-  // Overig (9000+)
-  '9999':'Testregel'
-};
-
-// Rekening 1010 heet bewust gewoon 'Bank': er kunnen meerdere banken naast
-// elkaar bestaan, dus nergens in de interface staat een merknaam.
-export const REKNM = {'1009':'Revolut','1010':'Bank','1020':'Paypal','1030':'Creditkaart','1090':'Kruisposten'};
-
 export function isIban(str) {
   return typeof str === 'string' && /^[A-Z]{2}\d{2}[A-Z0-9]{4,}\d*$/.test(str.trim());
 }
@@ -91,9 +62,12 @@ export const teltBij = t => t.type === 'inkomst' || t.type === 'prive_storting';
 
 /** `naam` is optioneel: geef 'm mee zodra je de actuele, per-gebruiker
  *  rekeningnaam bij de hand hebt (storage.js's rekeningNamen()) — zonder
- *  dat argument valt dit terug op het vaste REKNM hierboven. */
+ *  dat argument valt dit terug op het kale rekeningnummer. Vroeger viel dit
+ *  terug op een vast REKNM-lijstje; dat bestaat niet meer (GROOTBOEK/
+ *  REKENINGEN in storage.js zijn nu de enige bron), en in de praktijk geeft
+ *  elke aanroep in de app toch al een naam mee. */
 export function rekBadge(rek, naam) {
-  return `<span class="badge ${REK_COLOR[rek]||'badge-gray'}">${naam ?? (REKNM[rek]||rek)}</span>`;
+  return `<span class="badge ${REK_COLOR[rek]||'badge-gray'}">${naam ?? rek}</span>`;
 }
 
 export function typeBadge(type, bedrag) {
