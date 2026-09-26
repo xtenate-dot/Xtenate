@@ -452,10 +452,11 @@ export function saveControleInstellingen(nieuwe) {
 }
 
 // ─── BTW (fase 1) ───────────────────────────────────────────────────────────
-// Alleen de instelling en een simpele afleiding. Nog nergens vanuit de rest
-// van de app aangeroepen — geen boeking, export of aangifte houdt hier nu
-// al rekening mee. Dat is bewust voor een latere fase; dit legt alvast de
-// opslag klaar, in exact hetzelfde patroon als CONTROLE_INSTELLINGEN.
+// De instelling en een simpele afleiding, in hetzelfde patroon als
+// CONTROLE_INSTELLINGEN. Inmiddels wel degelijk gebruikt: isBtwPlichtig()
+// hieronder bepaalt in bank.js of het BTW-veld op het boekingformulier
+// verschijnt, en btw.js gebruikt btwPlichtigVanaf rechtstreeks om het
+// overgangskwartaal te herkennen.
 export let BTW_INSTELLINGEN = load('xtenate_btw_instellingen', {
   btwPlichtigVanaf: null   // 'YYYY-MM-DD', of null zolang er geen BTW-plicht is
 });

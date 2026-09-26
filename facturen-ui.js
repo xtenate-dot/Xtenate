@@ -41,15 +41,6 @@ export function kiesFactuurTab(id) {
   renderFacturen();
 }
 
-/** Voor deeplinks: #debiteuren en #crediteuren openen het juiste tabblad. */
-export function zetFactuurTab(id) {
-  if (TABS.some(t => t.id === id)) actiefTab = id;
-}
-
-export function huidigFactuurTab() {
-  return actiefTab;
-}
-
 function tekenTabs() {
   const balk = el('facturen-tabs');
   if (!balk) return;

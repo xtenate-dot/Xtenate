@@ -1484,10 +1484,6 @@ export function isSupabaseReady() {
   return heeftClient();
 }
 
-export function getPendingCount() {
-  return Object.keys(pendingQueue).length;
-}
-
 export function getPendingItems() {
   return Object.values(pendingQueue);
 }
