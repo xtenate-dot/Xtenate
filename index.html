@@ -170,6 +170,10 @@
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17H3v-4l2-5h9l4 4h1a2 2 0 012 2v3h-2"/><path d="M9 8V5h4"/></svg>
     <span class="nav-label">Kilometers</span>
   </div>
+  <div class="nav-item" data-page="activa" onclick="nav('activa',this)" title="Activa">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16"/><path d="M10 4v16"/></svg>
+    <span class="nav-label">Activa</span>
+  </div>
 
 
   </div>
@@ -575,6 +579,17 @@
     </div>
   </div>
   <div id="km-inhoud"></div>
+</div>
+
+<!-- ACTIVA -->
+<div id="p-activa" class="page">
+  <div class="page-head">
+    <div>
+      <div class="page-title">Activa</div>
+      <div class="page-sub">Bedrijfsmiddelen en de berekende afschrijving per jaar.</div>
+    </div>
+  </div>
+  <div id="activa-inhoud"></div>
 </div>
 
 <!-- CONTROLE -->
@@ -1041,6 +1056,29 @@
     <button class="btn" onclick="sluitRitModal()">Annuleren</button>
     <button class="btn btn-danger" id="rit-delete-btn" onclick="verwijderRitUitModal()" style="display:none">Verwijderen</button>
     <button class="btn btn-primary" onclick="saveRit()">Opslaan</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: ACTIVUM (ACTIVAREGISTER) -->
+<div class="modal-overlay" id="modal-activum">
+<div class="modal">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <h3 id="activum-modal-title" style="margin: 0;">Nieuw bedrijfsmiddel</h3>
+    <button onclick="sluitActivumModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary); padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Sluiten (ESC)">×</button>
+  </div>
+  <div class="form-grid">
+    <div class="form-group full"><label>Naam</label><input type="text" id="activum-naam" placeholder="bijv. MacBook Pro"></div>
+    <div class="form-group"><label>Aanschafdatum</label><input type="date" id="activum-aanschafdatum"></div>
+    <div class="form-group"><label>Aanschafwaarde (€)</label><input type="number" step="0.01" min="0" id="activum-aanschafwaarde" placeholder="0,00"></div>
+    <div class="form-group"><label>Restwaarde (€)</label><input type="number" step="0.01" min="0" id="activum-restwaarde" placeholder="0,00"></div>
+    <div class="form-group"><label>Gebruiksduur (jaren)</label><input type="number" step="0.5" min="0" id="activum-gebruiksduur" placeholder="5"></div>
+  </div>
+  <div id="activum-fout" style="font-size:12px;color:var(--semantic-danger-bright);min-height:16px;margin-top:8px"></div>
+  <div class="modal-actions">
+    <button class="btn" onclick="sluitActivumModal()">Annuleren</button>
+    <button class="btn btn-danger" id="activum-delete-btn" onclick="verwijderActivumUitModal()" style="display:none">Verwijderen</button>
+    <button class="btn btn-primary" onclick="saveActivum()">Opslaan</button>
   </div>
 </div>
 </div>

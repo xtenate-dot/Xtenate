@@ -52,6 +52,7 @@ function appDataWaarde(sleutel) {
   if (sleutel === 'bedrijfsgegevens') return BEDRIJFSGEGEVENS;
   if (sleutel === 'km_instellingen') return KM_INSTELLINGEN;
   if (sleutel === 'ritten') return { lijst: state.RITTEN, volgende: state.nxtRit };
+  if (sleutel === 'activa') return { lijst: state.ACTIVA, volgende: state.nxtActivum };
   if (sleutel === 'tellers') return { tx: state.nxtTx, cover: state.nxtCover, hnvi: state.nxtHnvi };
   return undefined;
 }
@@ -528,6 +529,22 @@ export function saveRitten() {
   duwAppData('ritten', { lijst: state.RITTEN, volgende: state.nxtRit });
 }
 
+// ─── ACTIVAREGISTER (afschrijvingen) ───────────────────────────────────────
+// Kleinste eerste versie: alleen vastleggen en het eigen jaaroverzicht zien.
+// Nog niet gekoppeld aan de winstberekening in belasting.js of aan een
+// bankboeking — net als bij kilometers zijn dat bewuste, latere stappen.
+//
+// Gebruiksduur/restwaarde staan per activum, niet als globale instelling
+// zoals KM_INSTELLINGEN: dat verschilt juist per soort bedrijfsmiddel.
+state.ACTIVA = load('xtenate_activa', []);
+state.nxtActivum = load('xtenate_nxt_activum', 1);
+
+export function saveActiva() {
+  save('xtenate_activa', state.ACTIVA);
+  save('xtenate_nxt_activum', state.nxtActivum);
+  duwAppData('activa', { lijst: state.ACTIVA, volgende: state.nxtActivum });
+}
+
 // ─── STATE INITIALISATIE (identiek aan origineel) ──────────────────────────
 // Het jaar stond hier vast op '2025'. Dat is een dode waarde zodra het
 // kalenderjaar verder loopt: bij elke refresh viel de app terug op een jaar
@@ -539,6 +556,7 @@ state.editTxId = null;
 state.editCoverId = null;
 state.editFactuurId = null;
 state.editRitId = null;
+state.editActivumId = null;
 state.hnviLaatsteDatum = new Date().toISOString().split('T')[0];
 state.hnviImportItems = [];
 
@@ -663,6 +681,11 @@ export async function loadDataHybrid() {
           state.RITTEN = extra.ritten.lijst;
           if (Number(extra.ritten.volgende) > 0) state.nxtRit = Number(extra.ritten.volgende);
           console.log(`✅ Ritten uit Supabase: ${state.RITTEN.length}`);
+        }
+        if (extra.activa && Array.isArray(extra.activa.lijst)) {
+          state.ACTIVA = extra.activa.lijst;
+          if (Number(extra.activa.volgende) > 0) state.nxtActivum = Number(extra.activa.volgende);
+          console.log(`✅ Activa uit Supabase: ${state.ACTIVA.length}`);
         }
         // Tellers: het hoogste getal wint, zodat twee apparaten nooit
         // hetzelfde id uitdelen aan verschillende dingen.
