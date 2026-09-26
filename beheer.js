@@ -128,7 +128,7 @@ function voorraadInstellingenBlok() {
           Ligt er van een artikel minder dan dit aantal, dan geldt de voorraad als laag.
           Artikelen met een eigen minimum houden dat; deze waarde geldt voor de rest.
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <input type="number" id="beheer-min-voorraad" min="0" step="1" value="${huidig}"
             style="width:90px" aria-label="Standaard minimumvoorraad">
           <button class="btn btn-primary" onclick="bewaarMinVoorraad()">Opslaan</button>
@@ -171,7 +171,7 @@ function controleInstellingenBlok() {
           Het bedrag uit het Per Periode-tabblad waar de Gegevenscontrole het jaartotaal van 2022
           tegen vergelijkt. Vul dit eenmalig in, na eigen natelling. Leeg laten zet de controle uit.
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <input type="number" id="beheer-referentie-privest-2022" step="0.01" placeholder="€ 0,00"
             value="${huidig != null ? huidig : ''}"
             style="width:140px" aria-label="Jaartotaal 2022 privé-storting">
@@ -215,7 +215,7 @@ function btwInstellingenBlok() {
           Vanaf deze datum geldt BTW-plicht (de datum zelf telt mee). Leeg laten betekent:
           geen BTW-plicht. Werkt op dit moment nog nergens door — dat volgt in een latere fase.
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <input type="date" id="beheer-btw-vanaf" value="${huidig || ''}"
             style="width:160px" aria-label="BTW-plichtig vanaf">
           <button class="btn btn-primary" onclick="bewaarBtwVanaf()">Opslaan</button>
@@ -256,7 +256,7 @@ function bedrijfsgegevensBlok() {
           Alles optioneel. Zodra de naam is ingevuld, toont de factuur-pdf deze gegevens
           in plaats van de tekst "Interne kopie". Al gedownloade pdf's veranderen hier nooit door.
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="form-grid" style="margin-bottom:10px">
           <label style="display:flex;flex-direction:column;gap:4px;font-size:12px">
             Bedrijfsnaam
             <input type="text" id="beheer-bedrijf-naam" value="${esc(g.naam || '')}" aria-label="Bedrijfsnaam">
@@ -363,7 +363,7 @@ function kmInstellingenBlok() {
           Het bedrag per kilometer waarmee ritten worden omgerekend naar een aftrekbedrag.
           Leeg laten betekent: nog geen berekening op de pagina Kilometers.
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <input type="number" id="beheer-km-tarief" step="0.01" min="0" placeholder="€ 0,00"
             value="${huidig != null ? huidig : ''}"
             style="width:110px" aria-label="Tarief per kilometer">
