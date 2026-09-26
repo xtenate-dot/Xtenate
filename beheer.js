@@ -7,7 +7,7 @@
 
 import { draaiControles } from './controle.js?v=20260902a';
 import { esc } from './helpers.js?v=20260902a';
-import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN, saveBedrijfsgegevens, BEDRIJFSGEGEVENS, saveKmInstellingen, KM_INSTELLINGEN } from './storage.js?v=20260902a';
+import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN, saveBedrijfsgegevens, BEDRIJFSGEGEVENS, saveKmInstellingen, KM_INSTELLINGEN, saveFactuurInstellingen, FACTUUR_INSTELLINGEN } from './storage.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 import { getPendingItems } from './supabase-client-v2.js?v=20260902a';
 import { syncNu } from './autosync.js?v=20260902a';
@@ -99,6 +99,7 @@ export function renderBeheer() {
     controleInstellingenBlok() +
     btwInstellingenBlok() +
     bedrijfsgegevensBlok() +
+    factuurInstellingenBlok() +
     kmInstellingenBlok() +
     groep('Voorzichtig', [
       tegel({
@@ -296,6 +297,51 @@ export function bewaarBedrijfsgegevens() {
   });
   const melding = el('beheer-bedrijf-melding');
   if (melding) melding.textContent = 'Opgeslagen.';
+}
+
+/**
+ * Betaaltermijnen voor nieuwe facturen. Verandert nooit facturen die al
+ * bestaan — standaardTermijn() (facturen.js) wordt alleen gelezen op het
+ * moment dat een nieuwe factuur wordt aangemaakt, om de vervaldatum af te
+ * leiden; een eenmaal opgeslagen vervaldatum staat vast.
+ */
+function factuurInstellingenBlok() {
+  const debiteur = FACTUUR_INSTELLINGEN?.betaaltermijnDebiteur;
+  const crediteur = FACTUUR_INSTELLINGEN?.betaaltermijnCrediteur;
+  return `
+    <div class="beheer-groep">
+      <div class="beheer-groep-kop">Facturen</div>
+      <div class="card" style="padding:var(--spacing-4)">
+        <div class="muted" style="font-size:12px;margin-bottom:10px">
+          Standaard betaaltermijn in dagen, gebruikt om de vervaldatum van een nieuwe factuur te
+          berekenen. Al bestaande facturen behouden hun eigen vervaldatum.
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+            Debiteuren (dagen)
+            <input type="number" id="beheer-fact-termijn-deb" min="0" step="1" value="${debiteur != null ? debiteur : ''}" style="width:90px" aria-label="Betaaltermijn debiteuren">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+            Crediteuren (dagen)
+            <input type="number" id="beheer-fact-termijn-cred" min="0" step="1" value="${crediteur != null ? crediteur : ''}" style="width:90px" aria-label="Betaaltermijn crediteuren">
+          </label>
+          <button class="btn btn-primary" onclick="bewaarFactuurInstellingen()">Opslaan</button>
+          <span id="beheer-fact-melding" class="muted" style="font-size:12px"></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+export function bewaarFactuurInstellingen() {
+  const melding = el('beheer-fact-melding');
+  const deb = Number(el('beheer-fact-termijn-deb').value);
+  const cred = Number(el('beheer-fact-termijn-cred').value);
+  if (!Number.isFinite(deb) || deb < 0 || !Number.isFinite(cred) || cred < 0) {
+    if (melding) melding.textContent = 'Vul voor beide een getal van 0 of hoger in.';
+    return;
+  }
+  saveFactuurInstellingen({ betaaltermijnDebiteur: Math.round(deb), betaaltermijnCrediteur: Math.round(cred) });
+  if (melding) melding.textContent = `Opgeslagen: ${Math.round(deb)} dagen (debiteuren), ${Math.round(cred)} dagen (crediteuren).`;
 }
 
 /**
