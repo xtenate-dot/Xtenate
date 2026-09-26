@@ -125,3 +125,14 @@ export function boekwaardeEindJaar(activum, jaar) {
   const boekwaarde = aanschafwaarde - cumulatieveAfschrijving(activum, jaar);
   return Math.max(restwaarde, boekwaarde);
 }
+
+/**
+ * Som van afschrijvingInJaar() over alle geregistreerde activa, voor de
+ * winstberekening in belasting.js. Afschrijving over "alle jaren" is geen
+ * zinnige, optelbare grootheid (zie ook activa-ui.js) — 'all' valt daarom
+ * terug op het huidige kalenderjaar, net als op het scherm zelf.
+ */
+export function totaalAfschrijvingVanJaar(jaar) {
+  const peiljaar = jaar === 'all' ? new Date().getFullYear() : Number(jaar);
+  return activaLijst().reduce((s, a) => s + afschrijvingInJaar(a, peiljaar), 0);
+}
