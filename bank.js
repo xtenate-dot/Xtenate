@@ -9,6 +9,7 @@ import {
   grootboekNamen, rekeningNamen, grootboekOptgroepen, rekeningenLijst
 } from './storage.js?v=20260902a';
 import { maakSorteerbaar } from './tables.js?v=20260902a';
+import { facturenBijBoeking, ontkoppelAlleFacturenVanBoeking } from './facturen.js?v=20260902a';
 
 // Fase 3A: Supabase pending queue
 import {
@@ -275,11 +276,21 @@ export function deleteTx() {
   const { tx, historisch } = gevonden;
   const berichtDatum = tx.datum ? ` (${tx.datum})` : '';
   const berichtBedrag = tx.bedrag ? ` – €${tx.bedrag}` : '';
-  
+
+  // Een boeking waar een factuur naar verwijst blijft anders "betaald" tonen
+  // terwijl de onderliggende betaling niet meer bestaat — dus eerst
+  // waarschuwen, en bij doorzetten de koppeling netjes losmaken.
+  const gekoppeld = facturenBijBoeking(tx.id);
+  const koppelWaarschuwing = gekoppeld.length
+    ? `\n\n⚠️ Gekoppeld aan ${gekoppeld.length > 1 ? gekoppeld.length + ' facturen' : 'de factuur'}: ` +
+      gekoppeld.map(f => `${f.factuurnummer || f.id} (${f.relatie || '(geen relatie)'}, ${fmt(f.bedrag)})`).join(', ') +
+      `.\nBij verwijderen wordt die koppeling losgemaakt en komt ${gekoppeld.length > 1 ? 'ze' : 'die'} weer op "openstaand" te staan.`
+    : '';
+
   // Vraag duidelijke bevestiging
   const bevestiging = window.confirm(
     `⚠️ BOEKING VERWIJDEREN\n\n` +
-    `${tx.naam}${berichtBedrag}${berichtDatum}\n\n` +
+    `${tx.naam}${berichtBedrag}${berichtDatum}${koppelWaarschuwing}\n\n` +
     `Deze actie kan niet ongedaan gemaakt worden.\n` +
     `Weet je zeker dat je deze boeking wilt verwijderen?`
   );
@@ -287,6 +298,8 @@ export function deleteTx() {
   if (!bevestiging) {
     return; // Gebruiker heeft geannuleerd
   }
+
+  ontkoppelAlleFacturenVanBoeking(tx.id);
 
   // Verwijder uit TX of HIST_TX (hard delete lokaal)
   if (historisch) {

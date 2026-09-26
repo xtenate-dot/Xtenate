@@ -225,6 +225,19 @@ export function facturenBijBoeking(txId) {
 }
 
 /**
+ * Ontkoppelt alle facturen die naar deze boeking verwijzen — bedoeld om vlak
+ * vóór het daadwerkelijk verwijderen van een boeking aan te roepen, zodat een
+ * factuur nooit een txId overhoudt die niet meer bestaat. Gebruikt de
+ * bestaande ontkoppelBetaling(), die een factuur zonder overgebleven
+ * koppeling automatisch terugzet naar status 'open'.
+ */
+export function ontkoppelAlleFacturenVanBoeking(txId) {
+  const geraakt = facturenBijBoeking(txId);
+  for (const f of geraakt) ontkoppelBetaling(f.id, txId);
+  return geraakt;
+}
+
+/**
  * Bestaat er al een factuur met dit factuurnummer bij dezelfde relatie (en
  * dezelfde soort)? Een leeg factuurnummer telt nooit als dubbel. Gebruikt
  * dezelfde naamnormalisatie als relatiesMetOpenstaand(), geen eigen

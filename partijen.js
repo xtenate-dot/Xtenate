@@ -18,6 +18,7 @@ import {
   deleteFromSupabase,
   addToPendingQueue
 } from './supabase-client-v2.js?v=20260902a';
+import { facturenBijBoeking, ontkoppelAlleFacturenVanBoeking } from './facturen.js?v=20260902a';
 
 export const veilig = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -243,7 +244,20 @@ function openBewerkVenster(boeking, o) {
 
 async function verwijderBoeking(boeking, o) {
   const regel = `${boeking.datum} — ${fmt(boeking.bedrag)} — ${boeking.naam || '(geen naam)'}`;
-  if (!confirm(`Deze boeking verwijderen?\n\n${regel}`)) return;
+
+  // Een boeking waar een factuur naar verwijst blijft anders "betaald" tonen
+  // terwijl de onderliggende betaling niet meer bestaat — dus eerst
+  // waarschuwen, en bij doorzetten de koppeling netjes losmaken.
+  const gekoppeld = facturenBijBoeking(boeking.id);
+  const koppelTekst = gekoppeld.length
+    ? `\n\nLet op: gekoppeld aan ${gekoppeld.length > 1 ? 'de facturen' : 'de factuur'} ` +
+      gekoppeld.map(f => `${f.factuurnummer || f.id} (${fmt(f.bedrag)})`).join(', ') +
+      `. Bij verwijderen wordt die koppeling losgemaakt en komt ${gekoppeld.length > 1 ? 'ze' : 'die'} weer op "openstaand" te staan.`
+    : '';
+
+  if (!confirm(`Deze boeking verwijderen?\n\n${regel}${koppelTekst}`)) return;
+
+  ontkoppelAlleFacturenVanBoeking(boeking.id);
 
   const hist = isHistorisch(boeking);
   if (hist) {
