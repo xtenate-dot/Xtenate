@@ -86,6 +86,10 @@ export function renderBeheer() {
         icoon: I.export, actie: 'openExportModal()'
       }),
       tegel({
+        titel: 'Volledige back-up downloaden', uitleg: 'Eén bestand met alle gegevens uit deze browser, inclusief checksums',
+        icoon: I.herstel, actie: 'downloadBackup()'
+      }),
+      tegel({
         titel: 'Cloud sync', uitleg: 'Gegevens uitwisselen met de cloud',
         icoon: I.sync, actie: 'openSyncModal()'
       }),
