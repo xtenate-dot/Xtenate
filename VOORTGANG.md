@@ -29,6 +29,8 @@ Drie tabellen met RLS `TO authenticated` op zowel test- als echt project:
 
 De Edge Function `bank-koppeling`, met alleen de auth-start-actie: de aanroeper komt uitsluitend uit `auth.getUser()` op de doorgegeven gebruikers-JWT (nooit een `user_id` uit de request-body), er wordt nergens de service-role-sleutel geladen (geverifieerd door alle `Deno.env.get()`-aanroepen na te lopen), en er komt nergens een secret in een antwoord of logregel terecht. Getest op zowel test- als echt project, inclusief een ingetrokken token en een token van een ander project (beide geweigerd).
 
+**Bekend, open punt:** in `afhandelenAuthStart()` wordt de aanvraaglimiet (max 5 lopende pogingen, afgedwongen door de trigger `bank_koppeling_poging_limiet()` op de insert in `bank_koppeling_pogingen`) pas gecontroleerd **ná** de eerste aanroep naar Enable Banking (`GET /aspsps`) — die insert gebeurt namelijk pas nadat de gekozen bank uit de aspsps-lijst bekend is. Een gebruiker die al op de limiet zit, verbruikt dus alsnog een Enable Banking-aanroep voordat de limiet hem tegenhoudt. Bewust nog niet opgelost: vergt een herstructurering (de aspsp-naam is nu pas ná die eerste aanroep bekend), dus een aparte wijziging.
+
 **Nog niet gestart, in volgorde:**
 1. Sessies-inwisselen in de Edge Function testen op het echte project (auth-start is daar wel getest, sessies-inwisselen nog niet).
 2. Fase 4b-3: de app vangt `?code=` op (`history.replaceState` om de URL weer schoon te maken, controle dat de `state` overeenkomt met een lokaal onthouden waarde, de code zelf nooit tonen of loggen) + de knop "Bankrekening koppelen" in Beheer.
