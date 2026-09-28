@@ -16,6 +16,36 @@ Fase 1 t/m 5b volledig gebouwd, getest en gecommit: de `BTW_INSTELLINGEN`/`isBtw
 
 **Optioneel, niet gestart:** fase 4 (korte vragenlijst in plaats van het vaste startschema), fase 5 (eigen bedrijfsgegevens per gebruiker, bijv. voor op een verzendklare factuur).
 
+## Bankkoppeling (Enable Banking) — fase 1 t/m 4b-2 af, fase 4b-3 t/m 4c nog niet gestart
+
+**Af:** JWT-ondertekening (RS256) en het volledige autorisatie-rondje bewezen tegen de Enable Banking-sandbox (fase 1-3) — eigen sleutel, `/auth`, bank-login, `/sessions`, `/transactions` met paginering, allemaal empirisch getest tegen echte sandbox-data, niet alleen tegen documentatie.
+
+Drie tabellen met RLS `TO authenticated` op zowel test- als echt project:
+- `bank_inbox` — nog leeg, wacht op fase 4b-4.
+- `bank_koppelingen` — `session_id`/`account_uid`/`geldig_tot` zijn kolomvergrendeld: de rol `authenticated` mag ze niet lezen én niet schrijven, ook niet de eigenaar zelf, ook niet via `INSERT ... ON CONFLICT DO UPDATE`. Alleen `rek` is gewoon bewerkbaar.
+- `bank_koppeling_pogingen` — `state` (uuid) is de sleutel, 15 minuten geldig; een trigger ruimt bij elke nieuwe poging automatisch de verlopen pogingen van dezelfde gebruiker op en weigert een zesde gelijktijdige poging.
+
+`koppel_bankrekening()` als SECURITY DEFINER-functie (zelfde patroon als `zet_stamgegevens_klaar()`, `search_path` vastgepind, `EXECUTE` alleen voor `authenticated`) — valideert dat `p_iban`/`p_session_id` niet leeg zijn en `p_geldig_tot` in de toekomst ligt maar niet verder dan 90 dagen vooruit, en is de enige plek die de drie beschermde kolommen mag zetten.
+
+De Edge Function `bank-koppeling`, met alleen de auth-start-actie: de aanroeper komt uitsluitend uit `auth.getUser()` op de doorgegeven gebruikers-JWT (nooit een `user_id` uit de request-body), er wordt nergens de service-role-sleutel geladen (geverifieerd door alle `Deno.env.get()`-aanroepen na te lopen), en er komt nergens een secret in een antwoord of logregel terecht. Getest op zowel test- als echt project, inclusief een ingetrokken token en een token van een ander project (beide geweigerd).
+
+**Nog niet gestart, in volgorde:**
+1. Sessies-inwisselen in de Edge Function testen op het echte project (auth-start is daar wel getest, sessies-inwisselen nog niet).
+2. Fase 4b-3: de app vangt `?code=` op (`history.replaceState` om de URL weer schoon te maken, controle dat de `state` overeenkomt met een lokaal onthouden waarde, de code zelf nooit tonen of loggen) + de knop "Bankrekening koppelen" in Beheer.
+3. Fase 4b-4: transacties ophalen — paginering via `continuation_key`, datumvenster (90 dagen terug bij een eerste sync, `laatste_sync` met een overlap van enkele dagen bij een volgende), `entry_reference` als dedup-sleutel, foutafhandeling (verlopen consent, rate limits, een halve sync die veilig hervat kan worden).
+4. Fase 4b-5: de knop "Nu ophalen" in de app zelf.
+5. Fase 4c: het inboxscherm — bekijken, categoriseren (grootboekcode kiezen), omzetten naar echte boekingen.
+
+**Harde eisen, blijven gelden bij elke volgende fase:**
+- Banktekst (naam, omschrijving) altijd met `esc()` tonen bij het opbouwen van HTML — nooit ongefilterd. (Bij formulier-invulling via `.value =` is dat al veilig, geen aparte escaping nodig.)
+- Een transactie is pas een boeking op het moment dat er een grootboekcode gekozen is en hij expliciet is omgezet — nooit stilzwijgend meetellen of wegvallen in de IB-berekening of het BTW-overzicht.
+- Secrets (`ENABLE_BANKING_PRIVATE_KEY`/`APP_ID`, sessie-tokens, wachtwoorden) nooit in een antwoord of logregel, ook niet tijdens testen.
+- De sandbox-toepassing bij Enable Banking is niet dezelfde registratie als productie — een echte bank vraagt later een nieuwe app-registratie en een nieuwe sleutel bij Enable Banking; dat moment komt dus nog terug.
+
+**Twee praktijkbevindingen uit fase 3, tegen echte sandbox-data (niet alleen documentatie):**
+- De dedup-sleutel bij het ophalen moet `entry_reference` zijn, niet `transaction_id` — dat laatste bleek in de praktijk vrijwel nooit gevuld.
+- Bij een inkomende betaling (CRDT) is de tegenpartij-naam (`debtor.name`) vaak leeg — `remittance_information` is dan de gebruikelijke, niet de uitzonderlijke, terugval.
+
 ## Verder nog open
 
 - **GBNM/REKNM in `helpers.js` opschonen** — bewust uitgesteld tot de overgang naar `state.GROOTBOEK`/`REKENINGEN` zich in de echte app heeft bewezen.
