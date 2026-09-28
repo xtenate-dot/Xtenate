@@ -7,7 +7,7 @@
 
 import { draaiControles } from './controle.js?v=20260902a';
 import { esc } from './helpers.js?v=20260902a';
-import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN, saveBedrijfsgegevens, BEDRIJFSGEGEVENS, saveKmInstellingen, KM_INSTELLINGEN, saveFactuurInstellingen, FACTUUR_INSTELLINGEN, appDataStatus } from './storage.js?v=20260902a';
+import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN, saveBedrijfsgegevens, BEDRIJFSGEGEVENS, saveKmInstellingen, KM_INSTELLINGEN, saveFactuurInstellingen, FACTUUR_INSTELLINGEN, appDataStatus, state, rekeningenLijst, zetBankKoppelingRek, bankKoppelingDagenTotVerval } from './storage.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 import { getPendingItems } from './supabase-client-v2.js?v=20260902a';
 import { syncNu } from './autosync.js?v=20260902a';
@@ -105,6 +105,7 @@ export function renderBeheer() {
     bedrijfsgegevensBlok() +
     factuurInstellingenBlok() +
     kmInstellingenBlok() +
+    bankKoppelingenBlok() +
     groep('Voorzichtig', [
       tegel({
         titel: 'Data wissen', uitleg: 'Alles verwijderen uit deze browser — niet ongedaan te maken!',
@@ -394,6 +395,74 @@ export function bewaarKmTarief() {
   hertekenHuidigePagina();
 }
 
+/** Opties voor een rekeningen-<select>, met de huidige waarde vooraf
+ *  geselecteerd — bouwt de hele string in één keer, want dit blok wordt als
+ *  platte HTML samengesteld (geen DOM-manipulatie achteraf zoals
+ *  vulRekeningSelect() in bank.js dat doet). */
+function rekeningOpties(huidig) {
+  const opties = rekeningenLijst()
+    .map(r => `<option value="${esc(r.nummer)}"${r.nummer === huidig ? ' selected' : ''}>${esc(r.nummer)} ${esc(r.naam)}</option>`)
+    .join('');
+  return `<option value=""${!huidig ? ' selected' : ''}>— kies een rekening —</option>${opties}`;
+}
+
+/**
+ * Bankkoppelingen (Enable Banking, fase 4a). Alleen het beheer van de
+ * rek-koppeling per IBAN en de vervalwaarschuwing — het daadwerkelijk
+ * koppelen van een bankrekening (de Edge Function, "Nu ophalen") is fase 4b.
+ * Begint dus altijd leeg totdat die fase een koppeling toevoegt.
+ */
+function bankKoppelingenBlok() {
+  const koppelingen = state.BANK_KOPPELINGEN || [];
+  const rijen = koppelingen.length
+    ? koppelingen.map(k => {
+        const dagen = bankKoppelingDagenTotVerval(k);
+        let waarschuwing = '';
+        if (dagen != null && dagen < 0) {
+          waarschuwing = `<span class="home-tegel-merk home-tegel-merk-fout">verlopen</span>`;
+        } else if (dagen != null && dagen <= 14) {
+          waarschuwing = `<span class="home-tegel-merk home-tegel-merk-waarschuwing">verloopt over ${dagen} dag${dagen === 1 ? '' : 'en'}</span>`;
+        }
+        return `
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--border)">
+            <div style="min-width:180px">
+              <div style="font-weight:500">${esc(k.aspspNaam || '—')}</div>
+              <div class="muted" style="font-size:12px">${esc(k.iban || '—')}</div>
+            </div>
+            <select id="beheer-bank-rek-${esc(k.id)}" style="min-width:160px" aria-label="Rekening voor ${esc(k.iban || k.aspspNaam || '')}">
+              ${rekeningOpties(k.rek)}
+            </select>
+            <button class="btn" onclick="bewaarBankKoppelingRek('${esc(k.id)}')">Opslaan</button>
+            ${waarschuwing}
+          </div>`;
+      }).join('')
+    : `<div class="muted" style="font-size:12px">Nog geen bankkoppelingen. Dat komt in een latere fase.</div>`;
+
+  return `
+    <div class="beheer-groep">
+      <div class="beheer-groep-kop">Bankkoppelingen</div>
+      <div class="card" style="padding:var(--spacing-4)">
+        <div class="muted" style="font-size:12px;margin-bottom:10px">
+          Per gekoppelde bankrekening: welke eigen rekening dit is, en hoelang de toestemming
+          van de bank nog geldig is. Een toestemming die bijna verloopt, moet je zelf bij de
+          bank opnieuw bevestigen — dat kan geen automatisering overnemen.
+        </div>
+        ${rijen}
+        <div style="margin-top:6px"><span id="beheer-bank-koppeling-melding" class="muted" style="font-size:12px"></span></div>
+      </div>
+    </div>`;
+}
+
+export function bewaarBankKoppelingRek(id) {
+  const select = el(`beheer-bank-rek-${id}`);
+  const melding = el('beheer-bank-koppeling-melding');
+  if (!select) return;
+  const koppeling = (state.BANK_KOPPELINGEN || []).find(k => k.id === id);
+  if (!koppeling) { if (melding) melding.textContent = 'Koppeling niet gevonden.'; return; }
+  const gelukt = zetBankKoppelingRek(koppeling.iban, select.value || null);
+  if (melding) melding.textContent = gelukt ? 'Opgeslagen.' : 'Opslaan mislukt.';
+}
+
 /** Herkenbare namen voor app_data-sleutels, voor in de synchronisatiestatus
  *  hieronder — dezelfde sleutels als appDataWaarde() in storage.js. */
 const APP_DATA_NAMEN = {
@@ -408,6 +477,7 @@ const APP_DATA_NAMEN = {
   km_instellingen: 'Kilometertarief',
   ritten: 'Ritten (kilometers)',
   activa: 'Activaregister',
+  bank_koppelingen: 'Bankkoppelingen',
   tellers: 'Tellers'
 };
 
