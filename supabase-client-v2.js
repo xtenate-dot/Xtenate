@@ -367,6 +367,58 @@ export async function verwijderRelatieInSupabase(id) {
   }
 }
 
+// ─── BANKKOPPELINGEN (fase 4b-1) ────────────────────────────────────────────
+// session_id/account_uid/geldig_tot staan bewust niet in de select hieronder
+// — de frontend heeft ze nooit nodig, dus vraagt ze ook niet op. De echte
+// bescherming zit in de database zelf: de rol authenticated heeft op die drie
+// kolommen geen insert/update-recht meer (kolomrechten, fase 4b-1-migratie),
+// dus deze module zou er sowieso nooit naar kunnen schrijven, ook niet per
+// programmeerfout.
+
+function bankKoppelingUitRij(r) {
+  return {
+    id: r.id, aspspNaam: r.aspsp_naam, iban: r.iban, rek: r.rek,
+    geldigTot: r.geldig_tot, status: r.status
+  };
+}
+
+export async function loadBankKoppelingenFromSupabase() {
+  if (!heeftClient()) return [];
+  try {
+    const sb = await getClient();
+    const { data, error } = await sb
+      .from('bank_koppelingen')
+      .select('id, aspsp_naam, iban, rek, geldig_tot, status')
+      .order('aspsp_naam');
+    if (error) {
+      console.warn('⚠️  Bankkoppelingen laden mislukt:', error.message);
+      return [];
+    }
+    return (data || []).map(bankKoppelingUitRij);
+  } catch (err) {
+    console.warn('Error in loadBankKoppelingenFromSupabase:', err);
+    return [];
+  }
+}
+
+/** Het enige veld dat de frontend van een bankkoppeling mag bewerken — de
+ *  database weigert dit ook voor elk ander veld (zie hierboven). */
+export async function werkBankKoppelingRekBijInSupabase(id, rek) {
+  if (!heeftClient()) return false;
+  try {
+    const sb = await getClient();
+    const { error } = await sb.from('bank_koppelingen').update({ rek }).eq('id', id);
+    if (error) {
+      console.warn('⚠️  Bankkoppeling-rekening bijwerken mislukt:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Error in werkBankKoppelingRekBijInSupabase:', err);
+    return false;
+  }
+}
+
 export async function loadBoekingenFromSupabase() {
   if (!heeftClient()) {
     console.log('⚠️  Supabase client not initialized');

@@ -9,6 +9,7 @@ import {
   loadHnviFromSupabase,
   loadCoversFromSupabase,
   loadRelatiesFromSupabase,
+  loadBankKoppelingenFromSupabase,
   loadPendingQueue,
   syncPendingQueue,
   pendingQueue,
@@ -111,7 +112,6 @@ function appDataWaarde(sleutel) {
   if (sleutel === 'km_instellingen') return KM_INSTELLINGEN;
   if (sleutel === 'ritten') return { lijst: state.RITTEN, volgende: state.nxtRit };
   if (sleutel === 'activa') return { lijst: state.ACTIVA, volgende: state.nxtActivum };
-  if (sleutel === 'bank_koppelingen') return state.BANK_KOPPELINGEN;
   if (sleutel === 'tellers') return { tx: state.nxtTx, cover: state.nxtCover, hnvi: state.nxtHnvi };
   return undefined;
 }
@@ -605,30 +605,16 @@ export function saveActiva() {
   duwAppData('activa', { lijst: state.ACTIVA, volgende: state.nxtActivum });
 }
 
-// ─── BANKKOPPELINGEN (Enable Banking, fase 4a) ─────────────────────────────
-// Alleen het datamodel en de rek-koppeling per IBAN. Het daadwerkelijk
-// ophalen van transacties (de Edge Function, de "Nu ophalen"-knop) is fase
-// 4b — hier staat alleen de lijst van gekoppelde bankrekeningen, met de
-// vertaling IBAN -> eigen rek-code en het herkennen van een verlopende
-// toestemming. Begint leeg: er is pas in 4b een manier om zelf een koppeling
-// toe te voegen. Elke koppeling: { id, aspspNaam, iban, rek, sessionId,
-// accountUid, geldigTot, laatsteSync }.
-state.BANK_KOPPELINGEN = load('xtenate_bank_koppelingen', []);
-
-export function saveBankKoppelingen() {
-  save('xtenate_bank_koppelingen', state.BANK_KOPPELINGEN);
-  duwAppData('bank_koppelingen', state.BANK_KOPPELINGEN);
-}
-
-/** Wijst een interne rek-code toe aan een gekoppelde bankrekening (op iban).
- *  Geeft false terug als er geen koppeling met dat iban bestaat. */
-export function zetBankKoppelingRek(iban, rek) {
-  const k = state.BANK_KOPPELINGEN.find(k => k.iban === iban);
-  if (!k) return false;
-  k.rek = rek || null;
-  saveBankKoppelingen();
-  return true;
-}
+// ─── BANKKOPPELINGEN (Enable Banking, fase 4b-1) ───────────────────────────
+// Géén app_data meer (dat was de opzet in fase 4a, nu herzien): session_id/
+// account_uid/geldig_tot geven tot 90 dagen toegang tot echte bankgegevens
+// bij Enable Banking en horen niet in een blob die de frontend rechtstreeks
+// leest/schrijft. Deze lijst komt nu rechtstreeks uit de eigen tabel
+// bank_koppelingen (RLS + kolomrechten — zie supabase-client-v2.js), en
+// wordt bij het opstarten gevuld door loadDataHybrid(). Alleen `rek` wordt
+// door de app zelf bewerkt (Beheer); de rest is alleen-lezen client-side.
+// Elke koppeling: { id, aspspNaam, iban, rek, geldigTot, status }.
+state.BANK_KOPPELINGEN = [];
 
 /** Aantal hele dagen tot het verlopen van de toestemming (negatief = al
  *  verlopen), of null als er geen geldigTot bekend is. Rekent in hele
@@ -678,7 +664,8 @@ export async function loadDataHybrid() {
       const hnviData = await loadHnviFromSupabase();
       const coversData = await loadCoversFromSupabase();
       const relatiesData = await loadRelatiesFromSupabase();
-      
+      const bankKoppelingenData = await loadBankKoppelingenFromSupabase();
+
       if (result && (result.TX.length > 0 || result.HIST_TX.length > 0)) {
         state.TX = result.TX;
         state.HIST_TX = result.HIST_TX;
@@ -715,6 +702,12 @@ export async function loadDataHybrid() {
       } else {
         state.RELATIES = load('xtenate_relaties_cache', []);
       }
+
+      // Bankkoppelingen (fase 4b-1): geen lokale cache, in tegenstelling tot
+      // hierboven — session_id/account_uid horen niet in localStorage, en
+      // zonder koppeling is een lege lijst gewoon de juiste stand.
+      state.BANK_KOPPELINGEN = bankKoppelingenData || [];
+      console.log(`✅ Bankkoppelingen uit Supabase: ${state.BANK_KOPPELINGEN.length}`);
     } catch (err) {
       console.warn(`⚠️  Supabase load failed: ${err.message}, falling back to localStorage`);
       state.TX = load('xtenate_tx', JSON.parse(JSON.stringify(TX_INIT)));
@@ -722,6 +715,7 @@ export async function loadDataHybrid() {
       state.HNVI_LOTS = load('xtenate_hnvi', []);
       state.COVERS = load('xtenate_covers', []);
       state.RELATIES = load('xtenate_relaties_cache', []);
+      state.BANK_KOPPELINGEN = [];
       state.loadedFromSupabase = false;
     }
   } else {
@@ -732,6 +726,7 @@ export async function loadDataHybrid() {
     state.HNVI_LOTS = load('xtenate_hnvi', []);
     state.COVERS = load('xtenate_covers', []);
     state.RELATIES = load('xtenate_relaties_cache', []);
+    state.BANK_KOPPELINGEN = [];
     state.loadedFromSupabase = false;
   }
   
@@ -782,10 +777,6 @@ export async function loadDataHybrid() {
           state.ACTIVA = extra.activa.lijst;
           if (Number(extra.activa.volgende) > 0) state.nxtActivum = Number(extra.activa.volgende);
           console.log(`✅ Activa uit Supabase: ${state.ACTIVA.length}`);
-        }
-        if (Array.isArray(extra.bank_koppelingen)) {
-          state.BANK_KOPPELINGEN = extra.bank_koppelingen;
-          console.log(`✅ Bankkoppelingen uit Supabase: ${state.BANK_KOPPELINGEN.length}`);
         }
         // Tellers: het hoogste getal wint, zodat twee apparaten nooit
         // hetzelfde id uitdelen aan verschillende dingen.

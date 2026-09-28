@@ -7,7 +7,8 @@
 
 import { draaiControles } from './controle.js?v=20260902a';
 import { esc } from './helpers.js?v=20260902a';
-import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN, saveBedrijfsgegevens, BEDRIJFSGEGEVENS, saveKmInstellingen, KM_INSTELLINGEN, saveFactuurInstellingen, FACTUUR_INSTELLINGEN, appDataStatus, state, rekeningenLijst, zetBankKoppelingRek, bankKoppelingDagenTotVerval } from './storage.js?v=20260902a';
+import { saveVoorraadInstellingen, standaardMinVoorraad, saveControleInstellingen, CONTROLE_INSTELLINGEN, saveBtwInstellingen, BTW_INSTELLINGEN, saveBedrijfsgegevens, BEDRIJFSGEGEVENS, saveKmInstellingen, KM_INSTELLINGEN, saveFactuurInstellingen, FACTUUR_INSTELLINGEN, appDataStatus, state, rekeningenLijst, bankKoppelingDagenTotVerval } from './storage.js?v=20260902a';
+import { werkBankKoppelingRekBijInSupabase } from './supabase-client-v2.js?v=20260902a';
 import { hertekenHuidigePagina } from './ui.js?v=20260902a';
 import { getPendingItems } from './supabase-client-v2.js?v=20260902a';
 import { syncNu } from './autosync.js?v=20260902a';
@@ -407,10 +408,13 @@ function rekeningOpties(huidig) {
 }
 
 /**
- * Bankkoppelingen (Enable Banking, fase 4a). Alleen het beheer van de
- * rek-koppeling per IBAN en de vervalwaarschuwing — het daadwerkelijk
- * koppelen van een bankrekening (de Edge Function, "Nu ophalen") is fase 4b.
- * Begint dus altijd leeg totdat die fase een koppeling toevoegt.
+ * Bankkoppelingen (Enable Banking). De lijst komt uit de eigen tabel
+ * bank_koppelingen (fase 4b-1) — alleen `rek` is hier bewerkbaar, de rest
+ * (inclusief session_id/account_uid/geldig_tot) is alleen-lezen client-side
+ * en wordt door de database zelf beschermd tegen schrijven door de rol
+ * authenticated. Het daadwerkelijk koppelen van een bankrekening (de Edge
+ * Function, "Nu ophalen") is latere fasering (4b-2 en verder). Begint dus
+ * altijd leeg totdat die fase een koppeling toevoegt.
  */
 function bankKoppelingenBlok() {
   const koppelingen = state.BANK_KOPPELINGEN || [];
@@ -453,13 +457,15 @@ function bankKoppelingenBlok() {
     </div>`;
 }
 
-export function bewaarBankKoppelingRek(id) {
+export async function bewaarBankKoppelingRek(id) {
   const select = el(`beheer-bank-rek-${id}`);
   const melding = el('beheer-bank-koppeling-melding');
   if (!select) return;
   const koppeling = (state.BANK_KOPPELINGEN || []).find(k => k.id === id);
   if (!koppeling) { if (melding) melding.textContent = 'Koppeling niet gevonden.'; return; }
-  const gelukt = zetBankKoppelingRek(koppeling.iban, select.value || null);
+  const nieuweRek = select.value || null;
+  const gelukt = await werkBankKoppelingRekBijInSupabase(id, nieuweRek);
+  if (gelukt) koppeling.rek = nieuweRek;
   if (melding) melding.textContent = gelukt ? 'Opgeslagen.' : 'Opslaan mislukt.';
 }
 
@@ -477,7 +483,6 @@ const APP_DATA_NAMEN = {
   km_instellingen: 'Kilometertarief',
   ritten: 'Ritten (kilometers)',
   activa: 'Activaregister',
-  bank_koppelingen: 'Bankkoppelingen',
   tellers: 'Tellers'
 };
 
