@@ -22,6 +22,14 @@
 //   - De Enable Banking-privésleutel en het app-id komen nooit in een
 //     antwoord of logregel terecht -- alleen gebruikt om lokaal een JWT
 //     mee te ondertekenen.
+//   - Geen enkel antwoord bevat een ruwe respons van Enable Banking of een
+//     error.message (van Supabase of van een lokale catch) -- uitsluitend
+//     vaste, algemene meldingen met een statuscode.
+//   - Sessies-inwisselen zoekt de koppelpoging op (state, RLS-beschermd op
+//     user_id, niet verlopen) vóórdat de code naar Enable Banking gaat; bij
+//     geen (eigen, geldige) poging wordt de code niet verbruikt.
+//     koppel_bankrekening() blijft de gezaghebbende controle op state/iban/
+//     geldig_tot.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -101,15 +109,17 @@ async function afhandelenAuthStart(req: Request): Promise<Response> {
   let jwt: string;
   try {
     jwt = await ondertekenJwt(secrets.appId, secrets.privateKey);
-  } catch (err) {
-    return Response.json({ ok: false, fout: "JWT-ondertekening mislukt: " + String((err as Error)?.message || err) }, { status: 500 });
+  } catch {
+    // Geen err.message in het antwoord -- kan interne details lekken.
+    return Response.json({ ok: false, fout: "Kon de aanvraag niet voorbereiden." }, { status: 500 });
   }
 
   const aspspsResp = await fetch(`https://api.enablebanking.com/aspsps?country=${encodeURIComponent(country)}`, {
     headers: { Authorization: `Bearer ${jwt}` },
   });
   if (!aspspsResp.ok) {
-    return Response.json({ ok: false, fout: "Ophalen van banken bij Enable Banking mislukt.", status: aspspsResp.status }, { status: 502 });
+    // Geen aspspsResp.status doorgeven -- alleen onze eigen, vaste statuscode.
+    return Response.json({ ok: false, fout: "Ophalen van banken bij Enable Banking mislukt." }, { status: 502 });
   }
   const aspspsData = await aspspsResp.json();
   const lijst = (aspspsData?.aspsps || []) as { name: string; country: string }[];
@@ -131,7 +141,8 @@ async function afhandelenAuthStart(req: Request): Promise<Response> {
     .single();
 
   if (pogingFout || !poging) {
-    return Response.json({ ok: false, fout: pogingFout?.message || "Aanmaken van koppelpoging mislukt." }, { status: 400 });
+    // Geen pogingFout.message in het antwoord -- altijd dezelfde, vaste tekst.
+    return Response.json({ ok: false, fout: "Aanmaken van koppelpoging mislukt." }, { status: 400 });
   }
 
   const authBody = {
@@ -150,7 +161,9 @@ async function afhandelenAuthStart(req: Request): Promise<Response> {
   const authData = await authResp.json().catch(() => null);
 
   if (!authResp.ok || !authData?.url) {
-    return Response.json({ ok: false, fout: "Starten van de autorisatie bij Enable Banking mislukt.", status: authResp.status, antwoord: authData }, { status: 502 });
+    // Geen authResp.status en geen antwoord (authData) doorgeven -- dat is
+    // de ruwe respons van Enable Banking.
+    return Response.json({ ok: false, fout: "Starten van de autorisatie bij Enable Banking mislukt." }, { status: 502 });
   }
 
   return Response.json({ ok: true, redirect_url: authData.url, state: poging.state }, { status: 200 });
@@ -178,11 +191,31 @@ async function afhandelenSessiesInwisselen(req: Request): Promise<Response> {
     return Response.json({ ok: false, fout: "Velden 'code' en 'state' zijn verplicht." }, { status: 400 });
   }
 
+  // Vóórdat de code naar Enable Banking gaat: de poging opzoeken via een
+  // gewone, RLS-beschermde select (user_id = auth.uid(), zie het beleid
+  // "eigen_rijen_lezen"). Bestaat de poging niet, is ze verlopen, of is ze
+  // van een andere gebruiker -- RLS maakt "niet gevonden" en "van een
+  // ander" ononderscheidbaar, precies zoals gewenst -- dan dezelfde
+  // algemene fout, en de code wordt niet verbruikt (geen aanroep naar
+  // Enable Banking). koppel_bankrekening() blijft de gezaghebbende
+  // controle; dit is alleen een goedkope check vooraf.
+  const { data: poging } = await supabase
+    .from("bank_koppeling_pogingen")
+    .select("state")
+    .eq("state", state)
+    .gt("verloopt_op", new Date().toISOString())
+    .maybeSingle();
+
+  if (!poging) {
+    return Response.json({ ok: false, fout: "Koppelpoging ongeldig of verlopen." }, { status: 400 });
+  }
+
   let jwt: string;
   try {
     jwt = await ondertekenJwt(secrets.appId, secrets.privateKey);
-  } catch (err) {
-    return Response.json({ ok: false, fout: "JWT-ondertekening mislukt: " + String((err as Error)?.message || err) }, { status: 500 });
+  } catch {
+    // Geen err.message in het antwoord -- kan interne details lekken.
+    return Response.json({ ok: false, fout: "Kon de aanvraag niet voorbereiden." }, { status: 500 });
   }
 
   const sessionsResp = await fetch("https://api.enablebanking.com/sessions", {
@@ -193,7 +226,9 @@ async function afhandelenSessiesInwisselen(req: Request): Promise<Response> {
   const sessionsData = await sessionsResp.json().catch(() => null);
 
   if (!sessionsResp.ok || !sessionsData?.session_id) {
-    return Response.json({ ok: false, fout: "Sessie-inwisseling bij Enable Banking mislukt.", status: sessionsResp.status, antwoord: sessionsData }, { status: 502 });
+    // Geen sessionsResp.status en geen antwoord (sessionsData) doorgeven --
+    // dat is de ruwe respons van Enable Banking.
+    return Response.json({ ok: false, fout: "Sessie-inwisseling bij Enable Banking mislukt." }, { status: 502 });
   }
 
   const accounts = (sessionsData.accounts || []) as Record<string, unknown>[];
@@ -231,7 +266,10 @@ async function afhandelenSessiesInwisselen(req: Request): Promise<Response> {
   });
 
   if (koppelFout) {
-    return Response.json({ ok: false, fout: koppelFout.message }, { status: 400 });
+    // Geen koppelFout.message in het antwoord -- die kan Postgres-interne
+    // tekst bevatten. koppel_bankrekening() is en blijft de gezaghebbende
+    // controle; alleen het resultaat (gelukt/niet) komt naar buiten.
+    return Response.json({ ok: false, fout: "Koppelen van de bankrekening mislukt." }, { status: 400 });
   }
 
   return Response.json({ ok: true, koppeling_id: koppelingId }, { status: 200 });
@@ -244,7 +282,9 @@ Deno.serve(async (req: Request) => {
       return await afhandelenSessiesInwisselen(req);
     }
     return await afhandelenAuthStart(req);
-  } catch (err) {
-    return Response.json({ ok: false, fout: "Onverwachte fout: " + String((err as Error)?.message || err) }, { status: 500 });
+  } catch {
+    // Geen err.message in het antwoord -- ook deze catch-all mag geen
+    // interne details lekken.
+    return Response.json({ ok: false, fout: "Onverwachte fout." }, { status: 500 });
   }
 });
